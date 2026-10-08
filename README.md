@@ -68,7 +68,7 @@ The priced twins are *also* in the corpus (`costdb_seed_user_operator_prices*.js
 
 | Approach | priced | within 15 % | within 30 % | time / KCC |
 |---|---|---|---|---|
-| Production matcher (`app/pipeline.py: match_cost_v2`) | 43 | **9** | — | ~2 min |
+| Production matcher (`app/pipeline.py: match_cost_v2`) | 43 | **10** | — | ~2 min |
 | **Twin text** found in another tender/source → median of twins | 21 | **20 (95 %)** | — | ms |
 | No twin → **median of 5 nearest rows by meaning** (bge-m3, gated) | 196 | 42 (21 %) | 99 (51 %) | **~10 s** (GPU) |
 | No twin → bge-m3 shortlist → BgGPT-12B "same work?" → median | 143 | 39 (27 %) | 73 (51 %) | ~220 s |
@@ -133,7 +133,7 @@ python tools/eval_baseline.py            # production matcher, twin present
 python tools/eval_baseline.py --hide-twin
 
 # meaning retrieval (bge-m3, ~2.3 GB download on first use; or set BGE_M3_PATH to a local copy)
-python tools/embed_corpus.py             # one-time, ~1 min GPU / ~20 min CPU
+python tools/embed_corpus.py             # one-time, ~45 s GPU / ~20 min CPU
 python tools/eval_median.py              # twin-or-median rule, prints a k/threshold grid
 python tools/eval_embed.py 0.80 0.03     # consensus commit; add `own` for operator prices only
 
