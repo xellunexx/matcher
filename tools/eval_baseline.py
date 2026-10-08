@@ -31,7 +31,7 @@ report = []
 for ln in lines:
     if a.hide_twin:
         HIDE["ref"] = ln["hide"]
-    cand, score, ev = pipeline.match_cost_v2({"desc": ln["text"], "unit": ln["unit"], "key": "x"}, str(_paths.DB))
+    cand, score, ev = pipeline.match_cost_v2({"desc": ln["text"], "unit": ln["unit"], "header": ln["header"], "key": "x"}, str(_paths.DB))
     t = ln["truth"]
     if cand:
         st["priced"] += 1

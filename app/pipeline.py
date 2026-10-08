@@ -1218,18 +1218,18 @@ def match_cost_v2(row, db_path, limit=40, accept_pending=False):
             continue
         s, method, details = _candidate_score(row, cand)
         (pending_scored if cand.get("status") != "active" else scored).append((s, method, details, cand))
-    # Deterministic ordering — score, then equal-evidence preference for
-    # verified sources, then source priority, then id (stable margin math).
-    scored.sort(key=lambda x: (x[0], x[3].get("status") == "active",
-                               x[3].get("priority", 0), x[3].get("id") or ""), reverse=True)
-    pending_scored.sort(key=lambda x: (x[0], x[3].get("priority", 0),
-                                       x[3].get("id") or ""), reverse=True)
+    _METHOD_RANK = {"exact_code": 3, "exact_description": 2}
+
+    def _rank(x):
+        return (x[0], _METHOD_RANK.get(x[1], 1), x[3].get("status") == "active",
+                x[3].get("priority", 0), x[3].get("id") or "")
+
+    scored.sort(key=_rank, reverse=True)
+    pending_scored.sort(key=_rank, reverse=True)
     if not scored and not pending_scored:
         return None, 0.0, {"method": "no_candidates", "confidence": "none",
                            "score": 0.0, "margin": 0.0, "candidate_count": 0,
                            "pending_count": 0, "top_candidates": [], "features": {}}
-
-    _METHOD_RANK = {"exact_code": 3, "exact_description": 2}
 
     def _judge(pool):
         best = pool[0]
@@ -1319,8 +1319,7 @@ def match_cost_v2(row, db_path, limit=40, accept_pending=False):
                  "specBlind": bool(x[2].get("spec_blind")),
                  "weak": bool(x[2].get("op_mismatch") or x[2].get("spec_blind")),
                  "unitMatch": bool(x[2].get("unit_match", True))}
-                for x in sorted(scored + pending_scored,
-                                key=lambda x: (x[0], x[3].get("priority", 0)), reverse=True)[:5]
+                for x in sorted(scored + pending_scored, key=_rank, reverse=True)[:5]
             ],
         }
 
@@ -1374,6 +1373,32 @@ def match_cost_v2(row, db_path, limit=40, accept_pending=False):
     best, margin, tech_conflict, _acc, confidence, ambiguous, diluted, weak = _judge(scored)
     return None, best[0], _evidence(best, margin, tech_conflict, confidence, False,
                                   ambiguous, diluted, weak)
+
+
+def match_cost_understood(row, db_path, frame_provider, limit=40):
+    """Opt-in Bulgarian work-frame path. No lexical-score fallback.
+
+    frame_provider(items, cached_only=False) returns grounded frames; corpus
+    lookups must be cached-only. Compatible evidence is priced by workframe.
+    """
+    from . import workframe
+
+    query = {"text": row.get("desc") or "", "unit": row.get("unit") or "",
+             "header": row.get("header") or row.get("section") or ""}
+    if _STRUCTURAL_LINE_RE.match(query["text"]):
+        decision = workframe.select_price(workframe.validate({}, query), [])
+        decision["reason"] = "section header, not work"
+        return decision
+    qframe = frame_provider([query])[0]
+    raw = costdb.search_candidates(db_path, query["text"], query["unit"], limit=limit,
+                                   include_pending=False)
+    items = [workframe.corpus_input(r) for r in raw]
+    if not items:
+        return workframe.select_price(qframe, [])
+    frames = frame_provider(items, cached_only=True)
+    if len(frames) != len(items):
+        raise ValueError("corpus frame count does not match retrieved rows")
+    return workframe.select_price(qframe, list(zip(raw, frames)))
 
 
 # ---------------- LLM advisory pass ----------------

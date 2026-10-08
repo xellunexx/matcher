@@ -152,7 +152,45 @@ reasons) — that is where to look first.
 3. Missing evidence stays unresolved — no silent guessed price.
 4. Keep traceability: KCC line → corpus row(s) → price, and label observed vs derived
    (a median of neighbours is *derived*).
-5. Bulgarian and English only.
+5. Bulgarian KCC pipeline only; Latin technical codes remain specifications.
+
+### Grounded Bulgarian work frames (opt-in)
+
+The old scorer remains the default; its lexical confidence is not proof of compatible
+work. `app/workframe.py` validates LLM interpretations and requires agreement on the
+object and role, trade, complete operation bundle, explicit scope, material, technical
+specifications, included/excluded work and unit dimension. Conflicts reject a source;
+unknowns, ambiguities and dropped claims require review. Quotes prove provenance,
+not semantic correctness. Conservative operation/numeric-spec checks also flag common
+omissions; they are not a proof that every construction requirement was captured.
+
+`pipeline.match_cost_understood(row, db_path, client.frames)` exposes the opt-in path.
+Only the query can invoke the model online; corpus frames must already be cached.
+There is no fallback to a lexical price. Output includes the query frame, per-candidate
+reasons, source IDs and `price_kind`: `observed` or `derived_median`. Compatible prices
+with more than 15% dispersion remain unresolved. Model requests contain descriptions,
+units and headers, never corpus prices or evaluation answers.
+
+```powershell
+python -m unittest discover -s tests -v
+python tools/kcc_frame.py --base-url http://127.0.0.1:10011 --model YOUR_MODEL ping
+python tools/kcc_frame.py --base-url http://127.0.0.1:10011 --model YOUR_MODEL line "Доставка и монтаж тоалетна чиния" --unit бр --header "ВиК"
+python tools/kcc_frame.py --base-url http://127.0.0.1:10011 --model YOUR_MODEL index
+python tools/kcc_frame.py --base-url http://127.0.0.1:10011 --model YOUR_MODEL eval --limit-lines 40 --cands 40
+```
+
+`index` is resumable, but the first full run interprets roughly 20,000 corpus rows:
+test small batches with `index --limit 100` before committing that model cost/time.
+Evaluation hides the priced twin and refuses entirely unindexed shortlists. FTS is
+the default retriever; `eval --retrieval embedding` uses the existing bge-m3 corpus
+index instead. Cache identity includes prompt, endpoint, model, text, unit and header;
+changing model weights behind the same name requires clearing/rebuilding the cache.
+
+Verified legacy regression on 331 rows after method-aware ranking and Bulgarian
+linear-metre fixes: twin-present 328 priced / 323 correct / 5 wrong; hidden-twin
+61 priced / 26 within 15% / 35 wrong. These are **not** work-frame results. Bulgarian
+model interpretation accuracy and work-frame price coverage still need live evaluation
+before enabling this path by default.
 
 ## 8. Models
 

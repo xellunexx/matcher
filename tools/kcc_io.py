@@ -25,7 +25,7 @@ def read_kcc(path):
         text = desc.strip() if isinstance(desc, str) else ""
         u = str(unit).strip() if unit not in (None, "") else ""
         if text and u and len(u) <= 14 and isinstance(qty, (int, float)) and not isinstance(qty, bool):
-            rows.append({"i": i, "text": text, "unit": u, "header": header,
+            rows.append({"i": i, "text": text, "unit": u, "qty": qty, "header": header,
                          "price": price if isinstance(price, (int, float)) and price > 0 else None})
         elif text and not u and len(text) < 160:
             header = text
