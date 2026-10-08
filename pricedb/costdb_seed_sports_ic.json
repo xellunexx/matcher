@@ -1,0 +1,4624 @@
+{
+ "rows": [
+  {
+   "id": "sports_ic_kombinirano-detsko-saorazhenie-fitness-1110",
+   "name": "Фитнес уред – FITNESS 1110",
+   "desc": "Фитнес уред – FITNESS 1110",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_kombinirano-detsko-saorazhenie-fitness-1109",
+   "name": "Фитнес уред – FITNESS 1109",
+   "desc": "Фитнес уред – FITNESS 1109",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_kombinirano-detsko-saorazhenie-fitness-1108",
+   "name": "Фитнес уред – FITNESS 1108",
+   "desc": "Фитнес уред – FITNESS 1108",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_kombinirano-detsko-saorazhenie-fitness-1107-1",
+   "name": "Фитнес уред – FITNESS 1107-1",
+   "desc": "Фитнес уред – FITNESS 1107-1",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_kombinirano-detsko-saorazhenie-fitness-1106",
+   "name": "Фитнес уред– FITNESS 1106",
+   "desc": "Фитнес уред– FITNESS 1106",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_kombinirano-detsko-saorazhenie-fitness-1105-1",
+   "name": "Фитнес уред – FITNESS 1105-1",
+   "desc": "Фитнес уред – FITNESS 1105-1",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_kombinirano-detsko-saorazhenie-fitness-1104-1",
+   "name": "Фитнес уред – FITNESS 1104-1",
+   "desc": "Фитнес уред – FITNESS 1104-1",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_kombinirano-detsko-saorazhenie-fitness-1103-1",
+   "name": "Фитнес уред – FITNESS 1103-1",
+   "desc": "Фитнес уред – FITNESS 1103-1",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_kombinirano-detsko-saorazhenie-fitness-1102",
+   "name": "Фитнес уред – 1102",
+   "desc": "Фитнес уред – 1102",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "1102",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_kombinirano-detsko-saorazhenie-fitness-1101",
+   "name": "Фитнес уред – FITNESS 1101",
+   "desc": "Фитнес уред – FITNESS 1101",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_kombinirano-detsko-saorazhenie-fitness-1157",
+   "name": "Фитнес уред – FITNESS 1157",
+   "desc": "Фитнес уред – FITNESS 1157",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_kombinirano-detsko-saorazhenie-fitness-1125",
+   "name": "Фитнес уред – FITNESS 1125",
+   "desc": "Фитнес уред – FITNESS 1125",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_kombinirano-detsko-saorazhenie-fitness-1124",
+   "name": "Фитнес уред – FITNESS 1124",
+   "desc": "Фитнес уред – FITNESS 1124",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_kombinirano-detsko-saorazhenie-fitness-1123",
+   "name": "Фитнес уред – FITNESS 1123",
+   "desc": "Фитнес уред – FITNESS 1123",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_basketbolen-kosh-arena-2423",
+   "name": "Баскетболен кош – ARENA 2423",
+   "desc": "Баскетболен кош – ARENA 2423",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "arenas",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_basketbolen-kosh-arena-2422",
+   "name": "Баскетболен кош – ARENA 2422",
+   "desc": "Баскетболен кош – ARENA 2422",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "arenas",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_basketbolen-kosh-arena-2421",
+   "name": "Баскетболен кош – ARENA 2421",
+   "desc": "Баскетболен кош – ARENA 2421",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "arenas",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_arena-2498",
+   "name": "ARENA 2498",
+   "desc": "ARENA 2498",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "arenas",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_arena-2495",
+   "name": "ARENA 2495",
+   "desc": "ARENA 2495",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "arenas",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_arena-2452",
+   "name": "ARENA 2452",
+   "desc": "ARENA 2452",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "arenas",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_arena-2451",
+   "name": "ARENA 2451",
+   "desc": "ARENA 2451",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "arenas",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_voleibolna-mreja-arena-2441",
+   "name": "Волейболна мрежа – ARENA 2441",
+   "desc": "Волейболна мрежа – ARENA 2441",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "arenas",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_basketbolen-kosh-arena-2432",
+   "name": "Баскетболен кош – ARENA 2432",
+   "desc": "Баскетболен кош – ARENA 2432",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "arenas",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_basketbolen-kosh-arena-2431",
+   "name": "Баскетболен кош – ARENA 2431",
+   "desc": "Баскетболен кош – ARENA 2431",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "arenas",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_arena-242011-015",
+   "name": "ARENA 242011-015",
+   "desc": "ARENA 242011-015",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "arenas",
+   "code": "015",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_arena-241708-001",
+   "name": "ARENA 241708-001",
+   "desc": "ARENA 241708-001",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "arenas",
+   "code": "001",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_arena-240606-002",
+   "name": "ARENA 240606-002",
+   "desc": "ARENA 240606-002",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "arenas",
+   "code": "002",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_arena-242011-001",
+   "name": "ARENA 242011-001",
+   "desc": "ARENA 242011-001",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "arenas",
+   "code": "001",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_arena-241208-004",
+   "name": "ARENA 241208-004",
+   "desc": "ARENA 241208-004",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "arenas",
+   "code": "004",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_arena-240606-001",
+   "name": "ARENA 240606-001",
+   "desc": "ARENA 240606-001",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "arenas",
+   "code": "001",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_arena-242213-008",
+   "name": "ARENA 242213-008",
+   "desc": "ARENA 242213-008",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "arenas",
+   "code": "008",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_arena-242211-003",
+   "name": "ARENA 242211-003",
+   "desc": "ARENA 242211-003",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "arenas",
+   "code": "003",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_fitnes-ured-fitness-rb1109",
+   "name": "Фитнес уред – FITNESS RB1109",
+   "desc": "Фитнес уред – FITNESS RB1109",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_fitnes-ured-fitness-rb1108",
+   "name": "Фитнес уред – FITNESS RB1108",
+   "desc": "Фитнес уред – FITNESS RB1108",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_fitnes-ured-fitness-1108",
+   "name": "Фитнес уред – FITNESS 1108",
+   "desc": "Фитнес уред – FITNESS 1108",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_fitnes-ured-fitness-1107-1",
+   "name": "Фитнес уред – FITNESS 1107-1",
+   "desc": "Фитнес уред – FITNESS 1107-1",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_fitnes-ured-fitness-rb1106",
+   "name": "Фитнес уред – FITNESS RB1106",
+   "desc": "Фитнес уред – FITNESS RB1106",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_fitnes-ured-fitness-1106",
+   "name": "Фитнес уред– FITNESS 1106",
+   "desc": "Фитнес уред– FITNESS 1106",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_fitnes-ured-fitness-1105-1",
+   "name": "Фитнес уред – FITNESS 1105-1",
+   "desc": "Фитнес уред – FITNESS 1105-1",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_fitnes-ured-fitness-1104-1",
+   "name": "Фитнес уред – FITNESS 1104-1",
+   "desc": "Фитнес уред – FITNESS 1104-1",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_fitnes-ured-fitness-1103-1",
+   "name": "Фитнес уред – FITNESS 1103-1",
+   "desc": "Фитнес уред – FITNESS 1103-1",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_fitnes-ured-1102",
+   "name": "Фитнес уред – 1102",
+   "desc": "Фитнес уред – 1102",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "1102",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_fitnes-ured-1101",
+   "name": "Фитнес уред – FITNESS 1101",
+   "desc": "Фитнес уред – FITNESS 1101",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_fitnes-ured-1122",
+   "name": "Фитнес уред – 1122",
+   "desc": "Фитнес уред – 1122",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "1122",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_kombinirano-trase-j5927",
+   "name": "Комбинирано трасе – J5927",
+   "desc": "Комбинирано трасе – J5927",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "parkour",
+   "code": "J5927",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_kombinirano-trase-j5926",
+   "name": "Комбинирано трасе – J5926",
+   "desc": "Комбинирано трасе – J5926",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "parkour",
+   "code": "J5926",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_kombinirano-trase-j5924",
+   "name": "Комбинирано трасе – J5924",
+   "desc": "Комбинирано трасе – J5924",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "parkour",
+   "code": "J5924",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_kombinirano-trase-j5923",
+   "name": "Комбинирано трасе – J5923",
+   "desc": "Комбинирано трасе – J5923",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "parkour",
+   "code": "J5923",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_trase-s-halki-j5921",
+   "name": "Трасе с халки – J5921",
+   "desc": "Трасе с халки – J5921",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "J5921",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_prohodima-stena-j5920",
+   "name": "Проходима стена – J5920",
+   "desc": "Проходима стена – J5920",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "walls",
+   "code": "J5920",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_okacheni-tejki-chovali-j5919",
+   "name": "Окачени тежки чували – J5919",
+   "desc": "Окачени тежки чували – J5919",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "parkour",
+   "code": "J5919",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_visqshti-stupala-j5917",
+   "name": "Висящи стъпала – J5917",
+   "desc": "Висящи стъпала – J5917",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "parkour",
+   "code": "J5917",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_stena-za-katerene-j5916",
+   "name": "Стена за катерене – J5916",
+   "desc": "Стена за катерене – J5916",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "walls",
+   "code": "J5916",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_tabela-s-uprajneniq-j5912",
+   "name": "Табела с упражнения – J5912",
+   "desc": "Табела с упражнения – J5912",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "trim",
+   "code": "J5912",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_2-horizontalni-lostove-l-fitness-j4915",
+   "name": "2 хоризонтални лостове L – FITNESS J4915",
+   "desc": "2 хоризонтални лостове L – FITNESS J4915",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_ured-za-vertikalen-skok-j5907",
+   "name": "Уред за вертикален скок – J5907",
+   "desc": "Уред за вертикален скок – J5907",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J5907",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_stapalovidna-platforma-j5903",
+   "name": "Стъпаловидна платформа – J5903",
+   "desc": "Стъпаловидна платформа – J5903",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J5903",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_kombinirano-trase-j5922",
+   "name": "Комбинирано трасе – J5922",
+   "desc": "Комбинирано трасе – J5922",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "parkour",
+   "code": "J5922",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_kanyon-j5918",
+   "name": "Каньон – J5918",
+   "desc": "Каньон – J5918",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "parkour",
+   "code": "J5918",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_vazdushen-prehod-j5913",
+   "name": "Въздушен преход – J5913",
+   "desc": "Въздушен преход – J5913",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "parkour",
+   "code": "J5913",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_naklon-za-katerene-j5906",
+   "name": "Наклон за катерене – J5906",
+   "desc": "Наклон за катерене – J5906",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "walls",
+   "code": "J5906",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_modul-za-katerene-j5904",
+   "name": "Модул за катерене – J5904",
+   "desc": "Модул за катерене – J5904",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "walls",
+   "code": "J5904",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_tunel-j5902",
+   "name": "Тунел – J5902",
+   "desc": "Тунел – J5902",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "parkour",
+   "code": "J5902",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_trenirovachna-rampa-j5915",
+   "name": "Тренировъчна рампа – J5915",
+   "desc": "Тренировъчна рампа – J5915",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "skate",
+   "code": "J5915",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_balansirasht-most-j5905",
+   "name": "Балансиращ мост – J5905",
+   "desc": "Балансиращ мост – J5905",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J5905",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_kombinirano-trase-j5925",
+   "name": "Комбинирано трасе – J5925",
+   "desc": "Комбинирано трасе – J5925",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "parkour",
+   "code": "J5925",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_vruv-za-balans-j5910",
+   "name": "Връв за баланс – J5910",
+   "desc": "Връв за баланс – J5910",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "parkour",
+   "code": "J5910",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_hronometar-za-trenirovki-j5914",
+   "name": "Хронометър за тренировки – J5914",
+   "desc": "Хронометър за тренировки – J5914",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J5914",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_arka-s-katerushka-j5908",
+   "name": "Арка с катерушка – J5908",
+   "desc": "Арка с катерушка – J5908",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "walls",
+   "code": "J5908",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_visqsht-most-j5909",
+   "name": "Висящ мост – J5909",
+   "desc": "Висящ мост – J5909",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "parkour",
+   "code": "J5909",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_katerushka-s-guvkavi-trabi-j5911",
+   "name": "Катерушка с гъвкави тръби – J5911",
+   "desc": "Катерушка с гъвкави тръби – J5911",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "walls",
+   "code": "J5911",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_nakloneni-stapala-j5901",
+   "name": "Наклонени стъпала – J5901",
+   "desc": "Наклонени стъпала – J5901",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "parkour",
+   "code": "J5901",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_katereshta-machta-altima-j3503",
+   "name": "Катереща мачта Altima – J3503",
+   "desc": "Катереща мачта Altima – J3503",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "walls",
+   "code": "J3503",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_tramplin-j37200",
+   "name": "Трамплин – J37200",
+   "desc": "Трамплин – J37200",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "tramp",
+   "code": "J37200",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_kragal-tramplin-r34-etp-010",
+   "name": "Кръгъл Трамплин – R34-ETP-010",
+   "desc": "Кръгъл Трамплин – R34-ETP-010",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "tramp",
+   "code": "R34-ETP-010",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_golqm-kvadraten-tramplin-r34-etp-500",
+   "name": "Голям квадратен трамплин – R34-ETP-500",
+   "desc": "Голям квадратен трамплин – R34-ETP-500",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "goals",
+   "code": "R34-ETP-500",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_kvadraten-tramplin-r34-etp-000",
+   "name": "Квадратен Трамплин – R34-ETP-000",
+   "desc": "Квадратен Трамплин – R34-ETP-000",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "tramp",
+   "code": "R34-ETP-000",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_pravougulen-tramplin-r34-etp-004",
+   "name": "Правоъгълен Трамплин – R34-ETP-004",
+   "desc": "Правоъгълен Трамплин – R34-ETP-004",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "tramp",
+   "code": "R34-ETP-004",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_2-horizontalni-lostove-m-fitness-j4916",
+   "name": "2 хоризонтални лостове M – FITNESS J4916",
+   "desc": "2 хоризонтални лостове M – FITNESS J4916",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_marker-na-marshruta-na-fitnes-patekata-jps31",
+   "name": "Маркер на маршрута на фитнес пътеката – JPS31",
+   "desc": "Маркер на маршрута на фитнес пътеката – JPS31",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "JPS31",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_darven-tramplin-jps23",
+   "name": "Дървен трамплин – JPS23",
+   "desc": "Дървен трамплин – JPS23",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "tramp",
+   "code": "JPS23",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_darveni-stalbi-za-katerene-jps22",
+   "name": "Дървени стълби за катерене – JPS22",
+   "desc": "Дървени стълби за катерене – JPS22",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "walls",
+   "code": "JPS22",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_starshi-darveni-maymunski-barove-jps21-s",
+   "name": "Старши дървени маймунски барове – JPS21-S",
+   "desc": "Старши дървени маймунски барове – JPS21-S",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "JPS21-S",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_detski-darveni-maymunski-lostove-jps21-j",
+   "name": "Детски дървени маймунски лостове – JPS21-J",
+   "desc": "Детски дървени маймунски лостове – JPS21-J",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "JPS21-J",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_darveni-lostove-za-skachane-za-vazrastni-jps20-s",
+   "name": "Дървени лостове за скачане за възрастни – JPS20-S",
+   "desc": "Дървени лостове за скачане за възрастни – JPS20-S",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "JPS20-S",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_horizontalni-prati-za-vazrastni-ot-darven-material-jps19-s",
+   "name": "Хоризонтални пръти за възрастни от дървен материал – JPS19-S",
+   "desc": "Хоризонтални пръти за възрастни от дървен материал – JPS19-S",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "JPS19-S",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_darveni-lostove-za-litsevi-opori-za-vazrastni-jps18-s",
+   "name": "Дървени лостове за лицеви опори за възрастни – JPS18-S",
+   "desc": "Дървени лостове за лицеви опори за възрастни – JPS18-S",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "JPS18-S",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_skok-za-poddrazhka-na-darven-material-za-vazrastni-jps17-s",
+   "name": "Скок за поддръжка на дървен материал за възрастни – JPS17-S",
+   "desc": "Скок за поддръжка на дървен материал за възрастни – JPS17-S",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "JPS17-S",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_starshi-darven-skok-jps16-s",
+   "name": "Старши дървен скок – JPS16-S",
+   "desc": "Старши дървен скок – JPS16-S",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "JPS16-S",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_detski-darven-skok-jps16-j",
+   "name": "Детски дървен скок – JPS16-J",
+   "desc": "Детски дървен скок – JPS16-J",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "JPS16-J",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_usporedni-shtangi-za-vazrastni-ot-darven-material-jps15-s",
+   "name": "Успоредни щанги за възрастни от дървен материал – JPS15-S",
+   "desc": "Успоредни щанги за възрастни от дървен материал – JPS15-S",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "JPS15-S",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_detski-usporedni-shtangi-ot-darven-material-jps15-j",
+   "name": "Детски успоредни щанги от дървен материал – JPS15-J",
+   "desc": "Детски успоредни щанги от дървен материал – JPS15-J",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "JPS15-J",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_darvena-greda-za-balans-jps14",
+   "name": "Дървена греда за баланс – JPS14",
+   "desc": "Дървена греда за баланс – JPS14",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "JPS14",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_peyka-za-koremni-presi-za-vazrastni-jps13-s",
+   "name": "Пейка за коремни преси за възрастни – JPS13-S",
+   "desc": "Пейка за коремни преси за възрастни – JPS13-S",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "JPS13-S",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_darveni-prepyatstviya-za-vazrastni-jps12-s",
+   "name": "Дървени препятствия за възрастни – JPS12-S",
+   "desc": "Дървени препятствия за възрастни – JPS12-S",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "parkour",
+   "code": "JPS12-S",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_detski-darveni-prepyatstviya-jps12-j",
+   "name": "Детски дървени препятствия – JPS12-J",
+   "desc": "Детски дървени препятствия – JPS12-J",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "parkour",
+   "code": "JPS12-J",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_dvoyni-darveni-stenni-lostove-za-vazr",
+   "name": "Двойни дървени стенни лостове за възрастни – JPS11-S",
+   "desc": "Двойни дървени стенни лостове за възрастни – JPS11-S",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "JPS11-S",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_dzhuniar-darveni-reshetki-s-dvoyna-stena-jps11-j",
+   "name": "Джуниър дървени решетки с двойна стена – JPS11-J",
+   "desc": "Джуниър дървени решетки с двойна стена – JPS11-J",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "walls",
+   "code": "JPS11-J",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_steperi-za-darven-slalom-za-yunoshi-jps10-j",
+   "name": "Степери за дървен слалом за юноши – JPS10-J",
+   "desc": "Степери за дървен слалом за юноши – JPS10-J",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "JPS10-J",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_ukazatelna-tabela-za-zagryavane-jps09",
+   "name": "Указателна табела за загряване – JPS09",
+   "desc": "Указателна табела за загряване – JPS09",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "trim",
+   "code": "JPS09",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_ukazatelna-tabela-za-zagryavane-jps08",
+   "name": "Указателна табела за загряване – JPS08",
+   "desc": "Указателна табела за загряване – JPS08",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "trim",
+   "code": "JPS08",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_ukazatelna-tabela-za-zagryavane-jps07",
+   "name": "Указателна табела за загряване – JPS07",
+   "desc": "Указателна табела за загряване – JPS07",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "trim",
+   "code": "JPS07",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_ukazatelna-tabela-za-peshehodna-pateka-jps05",
+   "name": "Указателна табела за пешеходна пътека – JPS05",
+   "desc": "Указателна табела за пешеходна пътека – JPS05",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "trim",
+   "code": "JPS05",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_tabela-za-byagashta-pateka-jps04",
+   "name": "Табела за бягаща пътека – JPS04",
+   "desc": "Табела за бягаща пътека – JPS04",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "trim",
+   "code": "JPS04",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_znak-za-finala-na-fitnes-patekata-jps03",
+   "name": "Знак за финала на фитнес пътеката – JPS03",
+   "desc": "Знак за финала на фитнес пътеката – JPS03",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "JPS03",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_nachalna-tabela-za-fitnes-pateka-jps02",
+   "name": "Начална табела за фитнес пътека – JPS02",
+   "desc": "Начална табела за фитнес пътека – JPS02",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "JPS02",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_znak-za-fitnes-pateka-jps01",
+   "name": "Знак за фитнес пътека – JPS01",
+   "desc": "Знак за фитнес пътека – JPS01",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "JPS01",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_vertikalna-mrezha-fitness-j4913",
+   "name": "Вертикална мрежа – FITNESS J4913",
+   "desc": "Вертикална мрежа – FITNESS J4913",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_3-horizontalni-lostove-m-fitness-j4912",
+   "name": "3 хоризонтални лостове M – FITNESS J4912",
+   "desc": "3 хоризонтални лостове M – FITNESS J4912",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_okacheni-prasteni-fitness-j4910",
+   "name": "Окачени пръстени – FITNESS J4910",
+   "desc": "Окачени пръстени – FITNESS J4910",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_maymunski-barove-fitness-j4909",
+   "name": "Маймунски барове – FITNESS J4909",
+   "desc": "Маймунски барове – FITNESS J4909",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_daska-za-koremni-uprazhneniya-fitness-j4924",
+   "name": "Дъска за коремни упражнения – FITNESS J4924",
+   "desc": "Дъска за коремни упражнения – FITNESS J4924",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_paralelni-lenti-fitness-j4923",
+   "name": "Паралелни ленти – Fitness J4923",
+   "desc": "Паралелни ленти – Fitness J4923",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_dvoyni-shvedski-steni-fitness-j4922",
+   "name": "Двойни шведски стени – Fitness J4922",
+   "desc": "Двойни шведски стени – Fitness J4922",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_lostove-fitness-j4919",
+   "name": "Лостове – Fitness J4919",
+   "desc": "Лостове – Fitness J4919",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_futbol-na-masa-r37-8000",
+   "name": "Футбол на маса – R37-8000",
+   "desc": "Футбол на маса – R37-8000",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "goals",
+   "code": "R37-8000",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_basketbolen-kosh-r2212",
+   "name": "Баскетболен Кош – R2212",
+   "desc": "Баскетболен Кош – R2212",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "goals",
+   "code": "R2212",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_basketbolen-kosh-r1390",
+   "name": "Баскетболен Кош – R1390",
+   "desc": "Баскетболен Кош – R1390",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "goals",
+   "code": "R1390",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_futbolna-vrata-r1308",
+   "name": "Футболна Врата – R1308",
+   "desc": "Футболна Врата – R1308",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "goals",
+   "code": "R1308",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_handbal-vrata-r1112",
+   "name": "Хандбал Врата – R1112",
+   "desc": "Хандбал Врата – R1112",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "goals",
+   "code": "R1112",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_trenirovachna-stena-j22228",
+   "name": "Тренировачна стена – J22228",
+   "desc": "Тренировачна стена – J22228",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "walls",
+   "code": "J22228",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_lostove-za-skachane-jps20-s-m",
+   "name": "Лостове за скачане – JPS20-S-M",
+   "desc": "Лостове за скачане – JPS20-S-M",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "JPS20-S-M",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_platforma-za-otskok-jps23-m",
+   "name": "Платформа за отскок – JPS23-M",
+   "desc": "Платформа за отскок – JPS23-M",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "JPS23-M",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_stulba-za-katerene-jps22-m",
+   "name": "Стълба за катерене – JPS22-M",
+   "desc": "Стълба за катерене – JPS22-M",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "walls",
+   "code": "JPS22-M",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_lostove-za-katerene-jps21-s-m",
+   "name": "Лостове за катерене – JPS21-S-M",
+   "desc": "Лостове за катерене – JPS21-S-M",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "walls",
+   "code": "JPS21-S-M",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_lostove-za-katerene-jps21-j-m",
+   "name": "Лостове за катерене – JPS21-J-M",
+   "desc": "Лостове за катерене – JPS21-J-M",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "walls",
+   "code": "JPS21-J-M",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_lostove-za-nabirane-jps19-s-m",
+   "name": "Лостове за набиране – JPS19-S-M",
+   "desc": "Лостове за набиране – JPS19-S-M",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "JPS19-S-M",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_lostove-za-licevi-opori-jps18-s-m",
+   "name": "Лостове за лицеви опори – JPS18-S-M",
+   "desc": "Лостове за лицеви опори – JPS18-S-M",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "JPS18-S-M",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_ured-za-skok-s-upora-jps17-s-m",
+   "name": "Уред за скок с упора – JPS17-S-M",
+   "desc": "Уред за скок с упора – JPS17-S-M",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "JPS17-S-M",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_ured-za-jabeshki-skokove-jps16-s-m",
+   "name": "Уред за жабешки скокове – JPS16-S-M",
+   "desc": "Уред за жабешки скокове – JPS16-S-M",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "JPS16-S-M",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_ured-za-jabeshki-skokove-jps16-j-m",
+   "name": "Уред за жабешки скокове – JPS16-J-M",
+   "desc": "Уред за жабешки скокове – JPS16-J-M",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "JPS16-J-M",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_usporedka-jps15-s-m",
+   "name": "Успоредка – JPS15-S-M",
+   "desc": "Успоредка – JPS15-S-M",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "JPS15-S-M",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_usporedka-jps15-j-m",
+   "name": "Успоредка – JPS15-J-M",
+   "desc": "Успоредка – JPS15-J-M",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "JPS15-J-M",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_greda-za-balans-jps14-m",
+   "name": "Греда за баланс – JPS14-M",
+   "desc": "Греда за баланс – JPS14-M",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "JPS14-M",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_lejanka-za-koremni-presi-jps13-s-m",
+   "name": "Лежанка за коремни преси – JPS13-S-M",
+   "desc": "Лежанка за коремни преси – JPS13-S-M",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "JPS13-S-M",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_prepqtstviq-za-preskachane-jps12-s-m",
+   "name": "Препятствия за прескачане – JPS12-S-M",
+   "desc": "Препятствия за прескачане – JPS12-S-M",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "parkour",
+   "code": "JPS12-S-M",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_prepqtstviq-za-preskachane-jps12-j-m",
+   "name": "Препятствия за прескачане – JPS12-J-M",
+   "desc": "Препятствия за прескачане – JPS12-J-M",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "parkour",
+   "code": "JPS12-J-M",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_dvoina-shvedska-stena-jps11-s-m",
+   "name": "Двойна шведска стена – JPS11-S-M",
+   "desc": "Двойна шведска стена – JPS11-S-M",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "JPS11-S-M",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_dvoina-shvedska-stena-jps11-j-m",
+   "name": "Двойна шведска стена – JPS11-J-M",
+   "desc": "Двойна шведска стена – JPS11-J-M",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "JPS11-J-M",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_slalom-stapala-jps10-j-m",
+   "name": "Слалом стъпала – JPS10-J-M",
+   "desc": "Слалом стъпала – JPS10-J-M",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "parkour",
+   "code": "JPS10-J-M",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_tabela-za-zona-za-zagrqvka-j3736",
+   "name": "Табела за зона за загрявка – J3736",
+   "desc": "Табела за зона за загрявка – J3736",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "parkour",
+   "code": "J3736",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_tabela-za-zona-za-zagrqvka-j3735",
+   "name": "Табела за зона за загрявка – J3735",
+   "desc": "Табела за зона за загрявка – J3735",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "parkour",
+   "code": "J3735",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_tabela-za-zona-za-zagrqvka-j3734",
+   "name": "Табела за зона за загрявка – J3734",
+   "desc": "Табела за зона за загрявка – J3734",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "parkour",
+   "code": "J3734",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_tabela-za-trase-za-bqgane-j3733",
+   "name": "Табела за трасе за бягане – J3733",
+   "desc": "Табела за трасе за бягане – J3733",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "parkour",
+   "code": "J3733",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_tabela-za-peshehodno-trase-j3732",
+   "name": "Табела за пешеходно трасе – J3732",
+   "desc": "Табела за пешеходно трасе – J3732",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "parkour",
+   "code": "J3732",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_tabela-start-final-j3722",
+   "name": "Табела Старт – Финал – J3722",
+   "desc": "Табела Старт – Финал – J3722",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "parkour",
+   "code": "J3722",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_ured-za-biceps-j37228",
+   "name": "Уред за бицепс – J37228",
+   "desc": "Уред за бицепс – J37228",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J37228",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_greben-trenajor-j37227",
+   "name": "Гребен тренажор – J37227",
+   "desc": "Гребен тренажор – J37227",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J37227",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_ured-za-kraka-j37226",
+   "name": "Уред за крака – J37226",
+   "desc": "Уред за крака – J37226",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J37226",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_lejanka-j37225",
+   "name": "Лежанка – J37225",
+   "desc": "Лежанка – J37225",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "J37225",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_vartqshto-se-mahalo-j37224",
+   "name": "Въртящо се махало – J37224",
+   "desc": "Въртящо се махало – J37224",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "J37224",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_dvoino-mahalo-j37223",
+   "name": "Двойно Махало – J37223",
+   "desc": "Двойно Махало – J37223",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "J37223",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_stalbichka-j37222",
+   "name": "Стълбичка – J37222",
+   "desc": "Стълбичка – J37222",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J37222",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_panel-za-uprajneniq-j37221",
+   "name": "Панел за упражнения – J37221",
+   "desc": "Панел за упражнения – J37221",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J37221",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_lejanka-j37220",
+   "name": "Лежанка – J37220",
+   "desc": "Лежанка – J37220",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "J37220",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_lejanka-za-koremni-uprajneniq-j37219",
+   "name": "Лежанка за коремни упражнения – J37219",
+   "desc": "Лежанка за коремни упражнения – J37219",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "J37219",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_ured-za-gardi-j37218",
+   "name": "Уред за гърди – J37218",
+   "desc": "Уред за гърди – J37218",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J37218",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_kolelo-j37217",
+   "name": "Колело – J37217",
+   "desc": "Колело – J37217",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J37217",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_steper-j37216",
+   "name": "Степер – J37216",
+   "desc": "Степер – J37216",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J37216",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_krostrenajor-j37215",
+   "name": "Кростренажор – J37215",
+   "desc": "Кростренажор – J37215",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J37215",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_boksova-krusha-j37214",
+   "name": "Боксова круша – J37214",
+   "desc": "Боксова круша – J37214",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "J37214",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_nakloneni-lostove-j37213",
+   "name": "Наклонени лостове – J37213",
+   "desc": "Наклонени лостове – J37213",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "J37213",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_mnogofunkcionalen-ured-j37212",
+   "name": "Многофункционален уред – J37212",
+   "desc": "Многофункционален уред – J37212",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J37212",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_ured-za-ramo-j37211",
+   "name": "Уред за рамо – J37211",
+   "desc": "Уред за рамо – J37211",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J37211",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_ured-za-klekove-j37210",
+   "name": "Уред за клекове – J37210",
+   "desc": "Уред за клекове – J37210",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J37210",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_aeroben-trenajor-j37209",
+   "name": "Аеробен тренажор – J37209",
+   "desc": "Аеробен тренажор – J37209",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J37209",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_dvoina-daska-za-koremni-uprajneniq-i-licevi-opori-j37208",
+   "name": "Двойна дъска за коремни упражнения и лицеви опори – J37208",
+   "desc": "Двойна дъска за коремни упражнения и лицеви опори – J37208",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "J37208",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_daska-za-koremni-uprajneniq-i-licevi-opori-j37207",
+   "name": "Дъска за коремни упражнения и лицеви опори – J37207",
+   "desc": "Дъска за коремни упражнения и лицеви опори – J37207",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "J37207",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_tai-chi-kolela-j37206",
+   "name": "Тай Чи колела – J37206",
+   "desc": "Тай Чи колела – J37206",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J37206",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_veloergometar-za-ruce-j37205",
+   "name": "Велоергометър за ръце – J37205",
+   "desc": "Велоергометър за ръце – J37205",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "J37205",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_disk-za-ramo-j37204",
+   "name": "Диск за рамо – J37204",
+   "desc": "Диск за рамо – J37204",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "J37204",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_daska-za-balans-j37203",
+   "name": "Дъска за баланс – J37203",
+   "desc": "Дъска за баланс – J37203",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "J37203",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_grebna-mashina-j37202",
+   "name": "Гребна машина – J37202",
+   "desc": "Гребна машина – J37202",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J37202",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_pateka-j37201",
+   "name": "Пътека – J37201",
+   "desc": "Пътека – J37201",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J37201",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_sportna-stanciq-j37112",
+   "name": "Спортна станция – J37112",
+   "desc": "Спортна станция – J37112",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J37112",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_sportna-stanciq-j37111",
+   "name": "Спортна станция – J37111",
+   "desc": "Спортна станция – J37111",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J37111",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_sportna-stanciq-j37110",
+   "name": "Спортна станция – J37110",
+   "desc": "Спортна станция – J37110",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J37110",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_sportna-stanciq-j37108",
+   "name": "Спортна станция – J37108",
+   "desc": "Спортна станция – J37108",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J37108",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_sportna-stanciq-j37109",
+   "name": "Спортна станция – J37109",
+   "desc": "Спортна станция – J37109",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J37109",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_sportna-stanciq-j37107",
+   "name": "Спортна станция – J37107",
+   "desc": "Спортна станция – J37107",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J37107",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_sportna-stanciq-j37106",
+   "name": "Спортна станция – J37106",
+   "desc": "Спортна станция – J37106",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J37106",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_sportna-stanciq-j37105",
+   "name": "Спортна станция – J37105",
+   "desc": "Спортна станция – J37105",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J37105",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_sportna-stanciq-j37103",
+   "name": "Спортна станция – J37103",
+   "desc": "Спортна станция – J37103",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J37103",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_sportna-stanciq-j37102",
+   "name": "Спортна станция – J37102",
+   "desc": "Спортна станция – J37102",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J37102",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_vklyuchvashta-zabavno-sportna-stantsiya-j37101",
+   "name": "Спортна станция – J37101",
+   "desc": "Спортна станция – J37101",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J37101",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_sportna-stanciq-j37100",
+   "name": "Спортна станция – J37100",
+   "desc": "Спортна станция – J37100",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J37100",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_ured-za-grab-j37229",
+   "name": "Уред за гръб – J37229",
+   "desc": "Уред за гръб – J37229",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J37229",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_fitnes-steper-fulfit-lft101",
+   "name": "фитнес степер – FULFIT LFT101",
+   "desc": "фитнес степер – FULFIT LFT101",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_fitnes-steper-fulfit-lft121",
+   "name": "фитнес степер – FULFIT LFT121",
+   "desc": "фитнес степер – FULFIT LFT121",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_sportna-stanciq-j5221",
+   "name": "Спортна станция – J5221",
+   "desc": "Спортна станция – J5221",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J5221",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_sportna-stanciq-j5220",
+   "name": "Спортна станция – J5220",
+   "desc": "Спортна станция – J5220",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J5220",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_sportna-stanciq-j5222",
+   "name": "Спортна станция – J5222",
+   "desc": "Спортна станция – J5222",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J5222",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_sportna-stanciq-j5219",
+   "name": "Спортна станция – J5219",
+   "desc": "Спортна станция – J5219",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J5219",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_sportna-stanciq-j5218",
+   "name": "Спортна станция – J5218",
+   "desc": "Спортна станция – J5218",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J5218",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_sportna-stanciq-j5217",
+   "name": "Спортна станция – J5217",
+   "desc": "Спортна станция – J5217",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J5217",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_sportna-stanciq-j5216",
+   "name": "Спортна станция – J5216",
+   "desc": "Спортна станция – J5216",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J5216",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_niska-usporedka-j52150",
+   "name": "Ниска успоредка – J52150",
+   "desc": "Ниска успоредка – J52150",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "J52150",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_dvoini-halki-j5235",
+   "name": "Двойни халки – J5235",
+   "desc": "Двойни халки – J5235",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "J5235",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_sportna-stanciq-za-zagrqvka-j5234",
+   "name": "Спортна станция за загрявка – J5234",
+   "desc": "Спортна станция за загрявка – J5234",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J5234",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_sportna-stanciq-j5233",
+   "name": "Спортна станция – J5233",
+   "desc": "Спортна станция – J5233",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J5233",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_sportna-stanciq-j5229",
+   "name": "Спортна станция – J5229",
+   "desc": "Спортна станция – J5229",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "J5229",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_dvoina-usporedka-j5228",
+   "name": "Двойна успоредка – J5228",
+   "desc": "Двойна успоредка – J5228",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "J5228",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_inkluzivna-usporedka-j5227",
+   "name": "Инклузивна успоредка – J5227",
+   "desc": "Инклузивна успоредка – J5227",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "J5227",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_lostove-za-skokove-jp20-s-m",
+   "name": "Лостове за скокове – JP20-S-M",
+   "desc": "Лостове за скокове – JP20-S-M",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "JP20-S-M",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_ustroistvo-za-stupvane-i-vurtene-na-taliatasg101",
+   "name": "Устройство за стъпване и въртене на талията – SG101",
+   "desc": "Устройство за стъпване и въртене на талията – SG101",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "SG101",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_ustroistvo-za-iztegliane-na-koremni-muskuli",
+   "name": "Устройство за изтегляне на коремни мускули – SG102",
+   "desc": "Устройство за изтегляне на коремни мускули – SG102",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "SG102",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_ustroistvo-za-trenirovka-na-tialoto",
+   "name": "Устройство за тренировка на тялото – SG112",
+   "desc": "Устройство за тренировка на тялото – SG112",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "SG112",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_inkluzivna-kombinatsiya-j5226",
+   "name": "Инклузивна комбинация – J5226",
+   "desc": "Инклузивна комбинация – J5226",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "J5226",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_velotrenajor-sp101",
+   "name": "Велотренажор-SP101",
+   "desc": "Велотренажор-SP101",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "fitness",
+   "code": "SP101",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  },
+  {
+   "id": "sports_ic_inkluzivna-kombinatsiya-1-j5221",
+   "name": "Инклузивна комбинация 1 – J5221",
+   "desc": "Инклузивна комбинация 1 – J5221",
+   "unit": "бр.",
+   "category": "Спортно оборудване",
+   "section": "street",
+   "code": "J5221",
+   "money": {
+    "amount": null,
+    "currency": "EUR",
+    "vatIncluded": true,
+    "asOf": null
+   },
+   "origin": {
+    "kind": "imported_workbook",
+    "ref": "infraconcept catalog.js",
+    "note": "no price evidence — pending"
+   },
+   "validity": {},
+   "status": "pending_review"
+  }
+ ]
+}

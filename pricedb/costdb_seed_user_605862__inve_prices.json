@@ -1,0 +1,19 @@
+[
+ {
+  "desc": "Термопомпeн чилър въздух/вода  60 kW, работни граници до -20 в отопл., монтажна рама",
+  "unit": "бр",
+  "money": {
+   "amount": 21000.0,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-09-05"
+  },
+  "origin": {
+   "kind": "user_upload",
+   "ref": "_inve_prices.xlsx",
+   "note": "качено от потребителя към поръчка 605862 на 2026-09-05"
+  },
+  "source": "user:_inve_prices.xlsx",
+  "status": "active"
+ }
+]

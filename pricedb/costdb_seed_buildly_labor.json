@@ -1,0 +1,1622 @@
+[
+ {
+  "id": "BUILDLY-LABOR-ТРД-001",
+  "code": "ТРД-001",
+  "desc": "РАБОТНИК 01-1",
+  "name": "РАБОТНИК 01-1",
+  "category": "labor/trd-bl01",
+  "categoryLabel": "Изкопи",
+  "unit": "HOUR",
+  "money": {
+   "amount": 4.1,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ01 / Изкопи"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-002",
+  "code": "ТРД-002",
+  "desc": "РАБОТНИК 01-2",
+  "name": "РАБОТНИК 01-2",
+  "category": "labor/trd-bl01",
+  "categoryLabel": "Изкопи",
+  "unit": "HOUR",
+  "money": {
+   "amount": 4.9,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ01 / Изкопи"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-003",
+  "code": "ТРД-003",
+  "desc": "РАБОТНИК 02-1",
+  "name": "РАБОТНИК 02-1",
+  "category": "labor/trd-bl02",
+  "categoryLabel": "Кофражи",
+  "unit": "HOUR",
+  "money": {
+   "amount": 5.11,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ02 / Кофражи"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-004",
+  "code": "ТРД-004",
+  "desc": "РАБОТНИК 02-2",
+  "name": "РАБОТНИК 02-2",
+  "category": "labor/trd-bl02",
+  "categoryLabel": "Кофражи",
+  "unit": "HOUR",
+  "money": {
+   "amount": 6.45,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ02 / Кофражи"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-005",
+  "code": "ТРД-005",
+  "desc": "РАБОТНИК 03-1",
+  "name": "РАБОТНИК 03-1",
+  "category": "labor/trd-bl03",
+  "categoryLabel": "Стом. армировки",
+  "unit": "HOUR",
+  "money": {
+   "amount": 5.11,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ03 / Стом. армировки"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-006",
+  "code": "ТРД-006",
+  "desc": "РАБОТНИК 03-2",
+  "name": "РАБОТНИК 03-2",
+  "category": "labor/trd-bl03",
+  "categoryLabel": "Стом. армировки",
+  "unit": "HOUR",
+  "money": {
+   "amount": 6.2,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ03 / Стом. армировки"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-007",
+  "code": "ТРД-007",
+  "desc": "РАБОТНИК 04-1",
+  "name": "РАБОТНИК 04-1",
+  "category": "labor/trd-bl04",
+  "categoryLabel": "Полагане на бетон",
+  "unit": "HOUR",
+  "money": {
+   "amount": 4.6,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ04 / Полагане на бетон"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-008",
+  "code": "ТРД-008",
+  "desc": "РАБОТНИК 04-2",
+  "name": "РАБОТНИК 04-2",
+  "category": "labor/trd-bl04",
+  "categoryLabel": "Полагане на бетон",
+  "unit": "HOUR",
+  "money": {
+   "amount": 5.45,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ04 / Полагане на бетон"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-009",
+  "code": "ТРД-009",
+  "desc": "РАБОТНИК 05-1",
+  "name": "РАБОТНИК 05-1",
+  "category": "labor/trd-bl05",
+  "categoryLabel": "Зидария",
+  "unit": "HOUR",
+  "money": {
+   "amount": 4.86,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ05 / Зидария"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-010",
+  "code": "ТРД-010",
+  "desc": "РАБОТНИК 05-2",
+  "name": "РАБОТНИК 05-2",
+  "category": "labor/trd-bl05",
+  "categoryLabel": "Зидария",
+  "unit": "HOUR",
+  "money": {
+   "amount": 6.5,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ05 / Зидария"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-011",
+  "code": "ТРД-011",
+  "desc": "РАБОТНИК 06-1",
+  "name": "РАБОТНИК 06-1",
+  "category": "labor/trd-bl06",
+  "categoryLabel": "Покриви",
+  "unit": "HOUR",
+  "money": {
+   "amount": 5.88,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ06 / Покриви"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-012",
+  "code": "ТРД-012",
+  "desc": "РАБОТНИК 06-2",
+  "name": "РАБОТНИК 06-2",
+  "category": "labor/trd-bl06",
+  "categoryLabel": "Покриви",
+  "unit": "HOUR",
+  "money": {
+   "amount": 7.1,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ06 / Покриви"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-013",
+  "code": "ТРД-013",
+  "desc": "РАБОТНИК 07-1",
+  "name": "РАБОТНИК 07-1",
+  "category": "labor/trd-bl07",
+  "categoryLabel": "Покривни обшивки",
+  "unit": "HOUR",
+  "money": {
+   "amount": 5.88,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ07 / Покривни обшивки"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-014",
+  "code": "ТРД-014",
+  "desc": "РАБОТНИК 07-2",
+  "name": "РАБОТНИК 07-2",
+  "category": "labor/trd-bl07",
+  "categoryLabel": "Покривни обшивки",
+  "unit": "HOUR",
+  "money": {
+   "amount": 7.2,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ07 / Покривни обшивки"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-015",
+  "code": "ТРД-015",
+  "desc": "РАБОТНИК 08-1",
+  "name": "РАБОТНИК 08-1",
+  "category": "labor/trd-bl08",
+  "categoryLabel": "Дървени конструкции",
+  "unit": "HOUR",
+  "money": {
+   "amount": 5.62,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ08 / Дървени конструкции"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-016",
+  "code": "ТРД-016",
+  "desc": "РАБОТНИК 08-2",
+  "name": "РАБОТНИК 08-2",
+  "category": "labor/trd-bl08",
+  "categoryLabel": "Дървени конструкции",
+  "unit": "HOUR",
+  "money": {
+   "amount": 7.2,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ08 / Дървени конструкции"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-017",
+  "code": "ТРД-017",
+  "desc": "РАБОТНИК 09-1",
+  "name": "РАБОТНИК 09-1",
+  "category": "labor/trd-bl09",
+  "categoryLabel": "Облицовки",
+  "unit": "HOUR",
+  "money": {
+   "amount": 6.14,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ09 / Облицовки"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-018",
+  "code": "ТРД-018",
+  "desc": "РАБОТНИК 09-2",
+  "name": "РАБОТНИК 09-2",
+  "category": "labor/trd-bl09",
+  "categoryLabel": "Облицовки",
+  "unit": "HOUR",
+  "money": {
+   "amount": 7.5,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ09 / Облицовки"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-019",
+  "code": "ТРД-019",
+  "desc": "РАБОТНИК 10-1",
+  "name": "РАБОТНИК 10-1",
+  "category": "labor/trd-bl10",
+  "categoryLabel": "Мазилки",
+  "unit": "HOUR",
+  "money": {
+   "amount": 5.37,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ10 / Мазилки"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-020",
+  "code": "ТРД-020",
+  "desc": "РАБОТНИК 10-2",
+  "name": "РАБОТНИК 10-2",
+  "category": "labor/trd-bl10",
+  "categoryLabel": "Мазилки",
+  "unit": "HOUR",
+  "money": {
+   "amount": 6.55,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ10 / Мазилки"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-021",
+  "code": "ТРД-021",
+  "desc": "РАБОТНИК 11-1",
+  "name": "РАБОТНИК 11-1",
+  "category": "labor/trd-bl11",
+  "categoryLabel": "Настилки",
+  "unit": "HOUR",
+  "money": {
+   "amount": 4.35,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ11 / Настилки"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-022",
+  "code": "ТРД-022",
+  "desc": "РАБОТНИК 11-2",
+  "name": "РАБОТНИК 11-2",
+  "category": "labor/trd-bl11",
+  "categoryLabel": "Настилки",
+  "unit": "HOUR",
+  "money": {
+   "amount": 5.75,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ11 / Настилки"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-023",
+  "code": "ТРД-023",
+  "desc": "РАБОТНИК 12-1",
+  "name": "РАБОТНИК 12-1",
+  "category": "labor/trd-bl12",
+  "categoryLabel": "Фасади и остъкляване",
+  "unit": "HOUR",
+  "money": {
+   "amount": 5.37,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ12 / Фасади и остъкляване"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-024",
+  "code": "ТРД-024",
+  "desc": "РАБОТНИК 12-2",
+  "name": "РАБОТНИК 12-2",
+  "category": "labor/trd-bl12",
+  "categoryLabel": "Фасади и остъкляване",
+  "unit": "HOUR",
+  "money": {
+   "amount": 7.1,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ12 / Фасади и остъкляване"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-025",
+  "code": "ТРД-025",
+  "desc": "РАБОТНИК 13-1",
+  "name": "РАБОТНИК 13-1",
+  "category": "labor/trd-bl13",
+  "categoryLabel": "Вътрешно бояджийство",
+  "unit": "HOUR",
+  "money": {
+   "amount": 5.62,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ13 / Вътрешно бояджийство"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-026",
+  "code": "ТРД-026",
+  "desc": "РАБОТНИК 13-2",
+  "name": "РАБОТНИК 13-2",
+  "category": "labor/trd-bl13",
+  "categoryLabel": "Вътрешно бояджийство",
+  "unit": "HOUR",
+  "money": {
+   "amount": 6.85,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ13 / Вътрешно бояджийство"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-027",
+  "code": "ТРД-027",
+  "desc": "РАБОТНИК 14-1",
+  "name": "РАБОТНИК 14-1",
+  "category": "labor/trd-bl14",
+  "categoryLabel": "Метални конструкции",
+  "unit": "HOUR",
+  "money": {
+   "amount": 5.62,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ14 / Метални конструкции"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-028",
+  "code": "ТРД-028",
+  "desc": "РАБОТНИК 14-2",
+  "name": "РАБОТНИК 14-2",
+  "category": "labor/trd-bl14",
+  "categoryLabel": "Метални конструкции",
+  "unit": "HOUR",
+  "money": {
+   "amount": 7.15,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ14 / Метални конструкции"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-029",
+  "code": "ТРД-029",
+  "desc": "РАБОТНИК 15-1",
+  "name": "РАБОТНИК 15-1",
+  "category": "labor/trd-bl15",
+  "categoryLabel": "Хидроизолации",
+  "unit": "HOUR",
+  "money": {
+   "amount": 4.9,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ15 / Хидроизолации"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-030",
+  "code": "ТРД-030",
+  "desc": "РАБОТНИК 15-2",
+  "name": "РАБОТНИК 15-2",
+  "category": "labor/trd-bl15",
+  "categoryLabel": "Хидроизолации",
+  "unit": "HOUR",
+  "money": {
+   "amount": 6.25,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ15 / Хидроизолации"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-031",
+  "code": "ТРД-031",
+  "desc": "РАБОТНИК 16-1",
+  "name": "РАБОТНИК 16-1",
+  "category": "labor/trd-bl16",
+  "categoryLabel": "Топлоизолации",
+  "unit": "HOUR",
+  "money": {
+   "amount": 4.9,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ16 / Топлоизолации"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-032",
+  "code": "ТРД-032",
+  "desc": "РАБОТНИК 16-2",
+  "name": "РАБОТНИК 16-2",
+  "category": "labor/trd-bl16",
+  "categoryLabel": "Топлоизолации",
+  "unit": "HOUR",
+  "money": {
+   "amount": 6.25,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ16 / Топлоизолации"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-033",
+  "code": "ТРД-033",
+  "desc": "РАБОТНИК 17-1",
+  "name": "РАБОТНИК 17-1",
+  "category": "labor/trd-bl17",
+  "categoryLabel": "Стр. дърводелство",
+  "unit": "HOUR",
+  "money": {
+   "amount": 5.11,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ17 / Стр. дърводелство"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-034",
+  "code": "ТРД-034",
+  "desc": "РАБОТНИК 17-2",
+  "name": "РАБОТНИК 17-2",
+  "category": "labor/trd-bl17",
+  "categoryLabel": "Стр. дърводелство",
+  "unit": "HOUR",
+  "money": {
+   "amount": 7.1,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ17 / Стр. дърводелство"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-035",
+  "code": "ТРД-035",
+  "desc": "РАБОТНИК 18-1",
+  "name": "РАБОТНИК 18-1",
+  "category": "labor/trd-bl18",
+  "categoryLabel": "Монтажни",
+  "unit": "HOUR",
+  "money": {
+   "amount": 5.7,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ18 / Монтажни"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-036",
+  "code": "ТРД-036",
+  "desc": "РАБОТНИК 18-2",
+  "name": "РАБОТНИК 18-2",
+  "category": "labor/trd-bl18",
+  "categoryLabel": "Монтажни",
+  "unit": "HOUR",
+  "money": {
+   "amount": 7.2,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ18 / Монтажни"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-037",
+  "code": "ТРД-037",
+  "desc": "РАБОТНИК 20-1",
+  "name": "РАБОТНИК 20-1",
+  "category": "labor/trd-bl19",
+  "categoryLabel": "Сухо строителство",
+  "unit": "HOUR",
+  "money": {
+   "amount": 5.7,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ19 / Сухо строителство"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-038",
+  "code": "ТРД-038",
+  "desc": "РАБОТНИК 20-2",
+  "name": "РАБОТНИК 20-2",
+  "category": "labor/trd-bl19",
+  "categoryLabel": "Сухо строителство",
+  "unit": "HOUR",
+  "money": {
+   "amount": 7.0,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ19 / Сухо строителство"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-039",
+  "code": "ТРД-039",
+  "desc": "РАБОТНИК 22-1",
+  "name": "РАБОТНИК 22-1",
+  "category": "labor/trd-bl20",
+  "categoryLabel": "Вик инсталации",
+  "unit": "HOUR",
+  "money": {
+   "amount": 5.62,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ20 / Вик инсталации"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-040",
+  "code": "ТРД-040",
+  "desc": "РАБОТНИК 22-2",
+  "name": "РАБОТНИК 22-2",
+  "category": "labor/trd-bl20",
+  "categoryLabel": "Вик инсталации",
+  "unit": "HOUR",
+  "money": {
+   "amount": 7.0,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ20 / Вик инсталации"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-041",
+  "code": "ТРД-041",
+  "desc": "РАБОТНИК 23-1",
+  "name": "РАБОТНИК 23-1",
+  "category": "labor/trd-bl21",
+  "categoryLabel": "Външни вик",
+  "unit": "HOUR",
+  "money": {
+   "amount": 4.55,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ21 / Външни вик"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-042",
+  "code": "ТРД-042",
+  "desc": "РАБОТНИК 23-2",
+  "name": "РАБОТНИК 23-2",
+  "category": "labor/trd-bl21",
+  "categoryLabel": "Външни вик",
+  "unit": "HOUR",
+  "money": {
+   "amount": 6.05,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ21 / Външни вик"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-043",
+  "code": "ТРД-043",
+  "desc": "РАБОТНИК 26-1",
+  "name": "РАБОТНИК 26-1",
+  "category": "labor/trd-bl22",
+  "categoryLabel": "Пътно строителство",
+  "unit": "HOUR",
+  "money": {
+   "amount": 5.15,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ22 / Пътно строителство"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-044",
+  "code": "ТРД-044",
+  "desc": "РАБОТНИК 26-2",
+  "name": "РАБОТНИК 26-2",
+  "category": "labor/trd-bl22",
+  "categoryLabel": "Пътно строителство",
+  "unit": "HOUR",
+  "money": {
+   "amount": 6.55,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ22 / Пътно строителство"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-045",
+  "code": "ТРД-045",
+  "desc": "РАБОТНИК 27-1",
+  "name": "РАБОТНИК 27-1",
+  "category": "labor/trd-bl23",
+  "categoryLabel": "Хидротехн. съоръжения",
+  "unit": "HOUR",
+  "money": {
+   "amount": 5.15,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ23 / Хидротехн. съоръжения"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-046",
+  "code": "ТРД-046",
+  "desc": "РАБОТНИК 27-2",
+  "name": "РАБОТНИК 27-2",
+  "category": "labor/trd-bl23",
+  "categoryLabel": "Хидротехн. съоръжения",
+  "unit": "HOUR",
+  "money": {
+   "amount": 6.5,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ23 / Хидротехн. съоръжения"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-047",
+  "code": "ТРД-047",
+  "desc": "РАБОТНИК 34-1",
+  "name": "РАБОТНИК 34-1",
+  "category": "labor/trd-bl24",
+  "categoryLabel": "Електрически инсталации",
+  "unit": "HOUR",
+  "money": {
+   "amount": 5.65,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ24 / Електрически инсталации"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-048",
+  "code": "ТРД-048",
+  "desc": "РАБОТНИК 34-2",
+  "name": "РАБОТНИК 34-2",
+  "category": "labor/trd-bl24",
+  "categoryLabel": "Електрически инсталации",
+  "unit": "HOUR",
+  "money": {
+   "amount": 7.6,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ24 / Електрически инсталации"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-049",
+  "code": "ТРД-049",
+  "desc": "РАБОТНИК 49-1",
+  "name": "РАБОТНИК 49-1",
+  "category": "labor/trd-bl25",
+  "categoryLabel": "Разваляне на сгради",
+  "unit": "HOUR",
+  "money": {
+   "amount": 4.6,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ25 / Разваляне на сгради"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-050",
+  "code": "ТРД-050",
+  "desc": "РАБОТНИК 49-2",
+  "name": "РАБОТНИК 49-2",
+  "category": "labor/trd-bl25",
+  "categoryLabel": "Разваляне на сгради",
+  "unit": "HOUR",
+  "money": {
+   "amount": 5.9,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-07-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ25 / Разваляне на сгради"
+  },
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2027-07-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-Z01",
+  "code": "ТРД-Z01",
+  "desc": "ШЛАЙФАЧ 03-1",
+  "name": "ШЛАЙФАЧ 03-1",
+  "category": "labor/trd-bl01",
+  "categoryLabel": "Изкопи",
+  "unit": "HOUR",
+  "money": {
+   "amount": 5.4,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-04-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ01 / Изкопи"
+  },
+  "validity": {
+   "from": "2026-04-01",
+   "to": null,
+   "reviewBy": "2027-04-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-Z02",
+  "code": "ТРД-Z02",
+  "desc": "ЗИДАР СПЕЦИАЛИСТ 04-1",
+  "name": "ЗИДАР СПЕЦИАЛИСТ 04-1",
+  "category": "labor/trd-bl01",
+  "categoryLabel": "Изкопи",
+  "unit": "HOUR",
+  "money": {
+   "amount": 6.1,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-04-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ01 / Изкопи"
+  },
+  "validity": {
+   "from": "2026-04-01",
+   "to": null,
+   "reviewBy": "2027-04-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-Z03",
+  "code": "ТРД-Z03",
+  "desc": "ХИДРОИЗОЛАТОР 07-1",
+  "name": "ХИДРОИЗОЛАТОР 07-1",
+  "category": "labor/trd-bl01",
+  "categoryLabel": "Изкопи",
+  "unit": "HOUR",
+  "money": {
+   "amount": 5.8,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-04-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ01 / Изкопи"
+  },
+  "validity": {
+   "from": "2026-04-01",
+   "to": null,
+   "reviewBy": "2027-04-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ },
+ {
+  "id": "BUILDLY-LABOR-ТРД-Z04",
+  "code": "ТРД-Z04",
+  "desc": "ФАЯНСАДЖИЯ 12-1",
+  "name": "ФАЯНСАДЖИЯ 12-1",
+  "category": "labor/trd-bl01",
+  "categoryLabel": "Изкопи",
+  "unit": "HOUR",
+  "money": {
+   "amount": 6.9,
+   "currency": "EUR",
+   "vatIncluded": null,
+   "asOf": "2026-04-01"
+  },
+  "vatStatus": "unknown",
+  "origin": {
+   "kind": "reference_web",
+   "ref": "buildy-all.json#labor",
+   "note": "Buildly Труд / ТРД-БЛ01 / Изкопи"
+  },
+  "validity": {
+   "from": "2026-04-01",
+   "to": null,
+   "reviewBy": "2027-04-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "approvals": [],
+  "type": "labor"
+ }
+]

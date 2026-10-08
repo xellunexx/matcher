@@ -1,0 +1,1472 @@
+[
+ {
+  "id": "SEK-СЕК12-801",
+  "name": "ОСТЪКЛЯВАНЕ С 3 ММ СТЪКЛА В/У ДЪРВЕНИ РАМКИ ПРИ РЕМОНТИ (М 2 )",
+  "desc": "ОСТЪКЛЯВАНЕ С 3 ММ СТЪКЛА В/У ДЪРВЕНИ РАМКИ ПРИ РЕМОНТИ (М 2 )",
+  "category": "smr/СЕК12",
+  "section": "СЕК12",
+  "unit": "м2",
+  "money": {
+   "amount": 22.775,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 4.493,
+   "materialsEur": 12.516,
+   "equipmentEur": 0,
+   "materialsExtraCostEur": 1.363,
+   "totalExtraCostEur": 5.766
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК12.801",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК12 СЕК12.801 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК12-802",
+  "name": "ОСТЪКЛЯВАНЕ С 4 ММ СТЪКЛА В/У ДЪРВЕНИ РАМКИ ПРИ РЕМОНТИ (М 2 )",
+  "desc": "ОСТЪКЛЯВАНЕ С 4 ММ СТЪКЛА В/У ДЪРВЕНИ РАМКИ ПРИ РЕМОНТИ (М 2 )",
+  "category": "smr/СЕК12",
+  "section": "СЕК12",
+  "unit": "м2",
+  "money": {
+   "amount": 29.015,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 6.332999999999999,
+   "materialsEur": 14.856,
+   "equipmentEur": 0,
+   "materialsExtraCostEur": 1.62,
+   "totalExtraCostEur": 7.826
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК12.802",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК12 СЕК12.802 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК12-803",
+  "name": "ОСТЪКЛЯВАНЕ С 5 ММ СТЪКЛА В/У ДЪРВЕНИ РАМКИ ПРИ РЕМОНТИ (М 2 )",
+  "desc": "ОСТЪКЛЯВАНЕ С 5 ММ СТЪКЛА В/У ДЪРВЕНИ РАМКИ ПРИ РЕМОНТИ (М 2 )",
+  "category": "smr/СЕК12",
+  "section": "СЕК12",
+  "unit": "м2",
+  "money": {
+   "amount": 36.614,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 6.369999999999999,
+   "materialsEur": 21.636,
+   "equipmentEur": 0,
+   "materialsExtraCostEur": 2.366,
+   "totalExtraCostEur": 8.608
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК12.803",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК12 СЕК12.803 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК13-011",
+  "name": "ВАРОСВАНЕ ПО СТЕНИ И ТАВАНИ (М 2 )",
+  "desc": "ВАРОСВАНЕ ПО СТЕНИ И ТАВАНИ (М 2 )",
+  "category": "smr/СЕК13",
+  "section": "СЕК13",
+  "unit": "м2",
+  "money": {
+   "amount": 1.762,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 0.6240000000000001,
+   "materialsEur": 0.476,
+   "equipmentEur": 0,
+   "materialsExtraCostEur": 0.051000000000000004,
+   "totalExtraCostEur": 0.662
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК13.011",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК13 СЕК13.011 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК13-014",
+  "name": "ВАРОВА ШПАКЛОВКА ВЪРХУ СУХА МАЗИЛКА ПО СТЕНИ И ТАВАНИ (М 2 )",
+  "desc": "ВАРОВА ШПАКЛОВКА ВЪРХУ СУХА МАЗИЛКА ПО СТЕНИ И ТАВАНИ (М 2 )",
+  "category": "smr/СЕК13",
+  "section": "СЕК13",
+  "unit": "м2",
+  "money": {
+   "amount": 5.998,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 2.88,
+   "materialsEur": 0.261,
+   "equipmentEur": 0,
+   "materialsExtraCostEur": 0.034,
+   "totalExtraCostEur": 2.8569999999999998
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК13.014",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК13 СЕК13.014 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК13-016",
+  "name": "ГРУНДИРАНЕ ПО ДЪРВЕНИ ПОВЪРХНОСТИ (М 2 )",
+  "desc": "ГРУНДИРАНЕ ПО ДЪРВЕНИ ПОВЪРХНОСТИ (М 2 )",
+  "category": "smr/СЕК13",
+  "section": "СЕК13",
+  "unit": "м2",
+  "money": {
+   "amount": 3.268,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 1.507,
+   "materialsEur": 0.263,
+   "equipmentEur": 0,
+   "materialsExtraCostEur": 0.021,
+   "totalExtraCostEur": 1.498
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК13.016",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК13 СЕК13.016 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК14-001",
+  "name": "МОНТАЖ НА ДОСТАВЕНИ СТОМАНЕНИ РАМКИ С ТЕЛЕНА МРЕЖА ОТ ОГРАДНИ ЕЛЕМЕНТИ (КГ)",
+  "desc": "МОНТАЖ НА ДОСТАВЕНИ СТОМАНЕНИ РАМКИ С ТЕЛЕНА МРЕЖА ОТ ОГРАДНИ ЕЛЕМЕНТИ (КГ)",
+  "category": "smr/СЕК14",
+  "section": "СЕК14",
+  "unit": "кг",
+  "money": {
+   "amount": 1.806,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 0.598,
+   "materialsEur": 0.065,
+   "equipmentEur": 0.41000000000000003,
+   "materialsExtraCostEur": 0.004,
+   "totalExtraCostEur": 0.733
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК14.001",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК14 СЕК14.001 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК14-002",
+  "name": "МОНТАЖ НА ДОСТАВЕНИ СТОМАНЕНИ ВИТРИНИ И ПРОЗОРЦИ (КГ)",
+  "desc": "МОНТАЖ НА ДОСТАВЕНИ СТОМАНЕНИ ВИТРИНИ И ПРОЗОРЦИ (КГ)",
+  "category": "smr/СЕК14",
+  "section": "СЕК14",
+  "unit": "кг",
+  "money": {
+   "amount": 1.551,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 0.467,
+   "materialsEur": 0.068,
+   "equipmentEur": 0.41000000000000003,
+   "materialsExtraCostEur": 0.005,
+   "totalExtraCostEur": 0.6060000000000001
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК14.002",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК14 СЕК14.002 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК14-003",
+  "name": "МОНТАЖ НА СТОМАНЕНИ ВРАТИ (КГ)",
+  "desc": "МОНТАЖ НА СТОМАНЕНИ ВРАТИ (КГ)",
+  "category": "smr/СЕК14",
+  "section": "СЕК14",
+  "unit": "кг",
+  "money": {
+   "amount": 1.848,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 0.657,
+   "materialsEur": 0.062,
+   "equipmentEur": 0.356,
+   "materialsExtraCostEur": 0.004,
+   "totalExtraCostEur": 0.7729999999999999
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК14.003",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК14 СЕК14.003 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК15-401",
+  "name": "ИЗОЛАЦИОННО ПОЛИЕТИЛЕНОВО ПОКРИТИЕ (М 2 )",
+  "desc": "ИЗОЛАЦИОННО ПОЛИЕТИЛЕНОВО ПОКРИТИЕ (М 2 )",
+  "category": "smr/СЕК15",
+  "section": "СЕК15",
+  "unit": "м2",
+  "money": {
+   "amount": 4.422,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 0.892,
+   "materialsEur": 2.4800000000000004,
+   "equipmentEur": 0,
+   "materialsExtraCostEur": 0.176,
+   "totalExtraCostEur": 1.05
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК15.401",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК15 СЕК15.401 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК15-406",
+  "name": "ГРУНДИРАНЕ НА ПЛОСКОСТИ ЗА ХИДРОИЗОЛАЦИЯ (М 2 )",
+  "desc": "ГРУНДИРАНЕ НА ПЛОСКОСТИ ЗА ХИДРОИЗОЛАЦИЯ (М 2 )",
+  "category": "smr/СЕК15",
+  "section": "СЕК15",
+  "unit": "м2",
+  "money": {
+   "amount": 2.799,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 0.781,
+   "materialsEur": 0.704,
+   "equipmentEur": 0.36,
+   "materialsExtraCostEur": 0.063,
+   "totalExtraCostEur": 0.954
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК15.406",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК15 СЕК15.406 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК15-407",
+  "name": "ХИДРОИЗОЛАЦИЯ С БИТУМНА ЕМУЛСИЯ (М 2 )",
+  "desc": "ХИДРОИЗОЛАЦИЯ С БИТУМНА ЕМУЛСИЯ (М 2 )",
+  "category": "smr/СЕК15",
+  "section": "СЕК15",
+  "unit": "м2",
+  "money": {
+   "amount": 2.213,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 0.6379999999999999,
+   "materialsEur": 0.896,
+   "equipmentEur": 0,
+   "materialsExtraCostEur": 0.054,
+   "totalExtraCostEur": 0.679
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК15.407",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК15 СЕК15.407 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК16-011",
+  "name": "ПОЛАГАНЕ НА ТОПЛОИЗОЛАЦИЯ ОТ ПЕРЛИТОБЕТОН М35 (М 3 )",
+  "desc": "ПОЛАГАНЕ НА ТОПЛОИЗОЛАЦИЯ ОТ ПЕРЛИТОБЕТОН М35 (М 3 )",
+  "category": "smr/СЕК16",
+  "section": "СЕК16",
+  "unit": "м3",
+  "money": {
+   "amount": 219.024,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 26.872,
+   "materialsEur": 142.16,
+   "equipmentEur": 7.449999999999999,
+   "materialsExtraCostEur": 13.6,
+   "totalExtraCostEur": 42.542
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК16.011",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК16 СЕК16.011 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК16-012",
+  "name": "ТОПЛОИЗОЛАЦИЯ ОТ ПЕРЛИТБЕТОН 10 СМ (М 2 )",
+  "desc": "ТОПЛОИЗОЛАЦИЯ ОТ ПЕРЛИТБЕТОН 10 СМ (М 2 )",
+  "category": "smr/СЕК16",
+  "section": "СЕК16",
+  "unit": "м2",
+  "money": {
+   "amount": 32.598,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 7.5280000000000005,
+   "materialsEur": 16.139999999999997,
+   "equipmentEur": 0,
+   "materialsExtraCostEur": 1.553,
+   "totalExtraCostEur": 8.93
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК16.012",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК16 СЕК16.012 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК16-013",
+  "name": "ТОПЛОИЗОЛАЦИЯ ОТ ПЕРЛИТБЕТОН 20 СМ (М 2 )",
+  "desc": "ТОПЛОИЗОЛАЦИЯ ОТ ПЕРЛИТБЕТОН 20 СМ (М 2 )",
+  "category": "smr/СЕК16",
+  "section": "СЕК16",
+  "unit": "м2",
+  "money": {
+   "amount": 45.96,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 8.165,
+   "materialsEur": 27.139999999999997,
+   "equipmentEur": 0,
+   "materialsExtraCostEur": 2.653,
+   "totalExtraCostEur": 10.655
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК16.013",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК16 СЕК16.013 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК17-082",
+  "name": "МОНТАЖ НА ЛЕТВЕНА ВРАТА (БР.)",
+  "desc": "МОНТАЖ НА ЛЕТВЕНА ВРАТА (БР.)",
+  "category": "smr/СЕК17",
+  "section": "СЕК17",
+  "unit": "бр",
+  "money": {
+   "amount": 30.011,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 14.272000000000002,
+   "materialsEur": 1.634,
+   "equipmentEur": 0,
+   "materialsExtraCostEur": 0.11900000000000001,
+   "totalExtraCostEur": 14.105
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК17.082",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК17 СЕК17.082 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК17-084",
+  "name": "МОНТАЖ НА КОВАНА ВРАТА (БР.)",
+  "desc": "МОНТАЖ НА КОВАНА ВРАТА (БР.)",
+  "category": "smr/СЕК17",
+  "section": "СЕК17",
+  "unit": "бр",
+  "money": {
+   "amount": 32.693,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 16.019,
+   "materialsEur": 0.907,
+   "equipmentEur": 0,
+   "materialsExtraCostEur": 0.068,
+   "totalExtraCostEur": 15.767000000000003
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК17.084",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК17 СЕК17.084 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК17-086",
+  "name": "МОНТАЖ НА ДВОЙНО КОВАНА ВРАТА (БР.)",
+  "desc": "МОНТАЖ НА ДВОЙНО КОВАНА ВРАТА (БР.)",
+  "category": "smr/СЕК17",
+  "section": "СЕК17",
+  "unit": "бр",
+  "money": {
+   "amount": 25.666,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 12.65,
+   "materialsEur": 0.575,
+   "equipmentEur": 0,
+   "materialsExtraCostEur": 0.044,
+   "totalExtraCostEur": 12.441
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК17.086",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК17 СЕК17.086 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК18-002",
+  "name": "ПОЛАГАНЕ НА ГОФРИРАНИ ТРЪБИ ПО СТОМАНОБЕТОННА ПЛОЧА, РАЗЛИЧНИ ДИАМЕТРИ (М)",
+  "desc": "ПОЛАГАНЕ НА ГОФРИРАНИ ТРЪБИ ПО СТОМАНОБЕТОННА ПЛОЧА, РАЗЛИЧНИ ДИАМЕТРИ (М)",
+  "category": "smr/СЕК18",
+  "section": "СЕК18",
+  "unit": "м",
+  "money": {
+   "amount": 2.734,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 1.296,
+   "materialsEur": 0.15,
+   "equipmentEur": 0,
+   "materialsExtraCostEur": 0.018,
+   "totalExtraCostEur": 1.288
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК18.002",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК18 СЕК18.002 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК18-003",
+  "name": "ПОЛАГАНЕ НА ГОФРИРАНИ ТРЪБИ ПО СТЕНИ И КОЛОНИ, РАЗЛИЧНИ ДИАМЕТРИ (М)",
+  "desc": "ПОЛАГАНЕ НА ГОФРИРАНИ ТРЪБИ ПО СТЕНИ И КОЛОНИ, РАЗЛИЧНИ ДИАМЕТРИ (М)",
+  "category": "smr/СЕК18",
+  "section": "СЕК18",
+  "unit": "м",
+  "money": {
+   "amount": 4.018,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 1.944,
+   "materialsEur": 0.095,
+   "equipmentEur": 0.05,
+   "materialsExtraCostEur": 0.006,
+   "totalExtraCostEur": 1.929
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК18.003",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК18 СЕК18.003 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК18-004",
+  "name": "ПОЛАГАНЕ НА ПЛАСТМАСОВИ ТРЪБИ ЗА ОТОПЛЕНИЕ В СГРАДИ ДО Ф 20, ВКЛ. УКРЕПВАНЕ (М)",
+  "desc": "ПОЛАГАНЕ НА ПЛАСТМАСОВИ ТРЪБИ ЗА ОТОПЛЕНИЕ В СГРАДИ ДО Ф 20, ВКЛ. УКРЕПВАНЕ (М)",
+  "category": "smr/СЕК18",
+  "section": "СЕК18",
+  "unit": "м",
+  "money": {
+   "amount": 7.088,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 2.838,
+   "materialsEur": 1.31,
+   "equipmentEur": 0.05,
+   "materialsExtraCostEur": 0.091,
+   "totalExtraCostEur": 2.8900000000000006
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК18.004",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК18 СЕК18.004 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК20-011",
+  "name": "ОБЛИЦОВКА НА ЗИДАНИ СТЕНИ С ГИПСОКАРТОН НА ЛЕПИЛО (М 2 )",
+  "desc": "ОБЛИЦОВКА НА ЗИДАНИ СТЕНИ С ГИПСОКАРТОН НА ЛЕПИЛО (М 2 )",
+  "category": "smr/СЕК20",
+  "section": "СЕК20",
+  "unit": "м2",
+  "money": {
+   "amount": 12.788,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 3.937,
+   "materialsEur": 4.6240000000000006,
+   "equipmentEur": 0,
+   "materialsExtraCostEur": 0.368,
+   "totalExtraCostEur": 4.227
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК20.011",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК20 СЕК20.011 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК20-013",
+  "name": "ОБЛИЦОВКА С ГИПСОКАРТОН ВЪРХУ ГОТОВА МЕТАЛНА ИЛИ ДЪРВЕНА НОСЕЩА КОНСТРУКЦИЯ (БЕЗ К-ЦИЯТА) (М 2 )",
+  "desc": "ОБЛИЦОВКА С ГИПСОКАРТОН ВЪРХУ ГОТОВА МЕТАЛНА ИЛИ ДЪРВЕНА НОСЕЩА КОНСТРУКЦИЯ (БЕЗ К-ЦИЯТА) (М 2 )",
+  "category": "smr/СЕК20",
+  "section": "СЕК20",
+  "unit": "м2",
+  "money": {
+   "amount": 11.707,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 3.81,
+   "materialsEur": 3.8600000000000003,
+   "equipmentEur": 0,
+   "materialsExtraCostEur": 0.30300000000000005,
+   "totalExtraCostEur": 4.037000000000001
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК20.013",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК20 СЕК20.013 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК20-021",
+  "name": "ОБЛИЦОВКА НА СТЕНИ С ГИПСОФАЗЕР НА ДЮБЕЛИ (М 2 )",
+  "desc": "ОБЛИЦОВКА НА СТЕНИ С ГИПСОФАЗЕР НА ДЮБЕЛИ (М 2 )",
+  "category": "smr/СЕК20",
+  "section": "СЕК20",
+  "unit": "м2",
+  "money": {
+   "amount": 21.486,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 6.096,
+   "materialsEur": 8.644,
+   "equipmentEur": 0.06,
+   "materialsExtraCostEur": 0.6910000000000001,
+   "totalExtraCostEur": 6.686
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК20.021",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК20 СЕК20.021 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК22-082",
+  "name": "ВЪТРЕШНА ВОДОПРОВОДНА ИНСТАЛАЦИЯ ОТ ПОЛИПРОПИЛЕНОВИ ТРЪБИ ЗА СТУДЕНА ВОДА С ДИАМЕТЪР НА ТРЪБАТА 20 ММ (ДОСТ. И МОНТАЖ) (М)",
+  "desc": "ВЪТРЕШНА ВОДОПРОВОДНА ИНСТАЛАЦИЯ ОТ ПОЛИПРОПИЛЕНОВИ ТРЪБИ ЗА СТУДЕНА ВОДА С ДИАМЕТЪР НА ТРЪБАТА 20 ММ (ДОСТ. И МОНТАЖ) (М)",
+  "category": "smr/СЕК22",
+  "section": "СЕК22",
+  "unit": "м",
+  "money": {
+   "amount": 7.684,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 2.776,
+   "materialsEur": 1.9549999999999998,
+   "equipmentEur": 0.056,
+   "materialsExtraCostEur": 0.156,
+   "totalExtraCostEur": 2.897
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК22.082",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК22 СЕК22.082 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК22-083",
+  "name": "ВЪТРЕШНА ВОДОПРОВОДНА ИНСТАЛАЦИЯ ОТ ПОЛИПРОПИЛЕНОВИ ТРЪБИ ЗА СТУДЕНА ВОДА С ДИАМЕТЪР НА ТРЪБАТА 25 ММ (ДОСТ. И МОНТАЖ) (М)",
+  "desc": "ВЪТРЕШНА ВОДОПРОВОДНА ИНСТАЛАЦИЯ ОТ ПОЛИПРОПИЛЕНОВИ ТРЪБИ ЗА СТУДЕНА ВОДА С ДИАМЕТЪР НА ТРЪБАТА 25 ММ (ДОСТ. И МОНТАЖ) (М)",
+  "category": "smr/СЕК22",
+  "section": "СЕК22",
+  "unit": "м",
+  "money": {
+   "amount": 9.239,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 3.1550000000000002,
+   "materialsEur": 2.6919999999999997,
+   "equipmentEur": 0.063,
+   "materialsExtraCostEur": 0.215,
+   "totalExtraCostEur": 3.3289999999999997
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК22.083",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК22 СЕК22.083 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК22-084",
+  "name": "ВЪТРЕШНА ВОДОПРОВОДНА ИНСТАЛАЦИЯ ОТ ПОЛИПРОПИЛЕНОВИ ТРЪБИ ЗА СТУДЕНА ВОДА С ДИАМЕТЪР НА ТРЪБАТА 32 ММ (ДОСТ. И МОНТАЖ) (М)",
+  "desc": "ВЪТРЕШНА ВОДОПРОВОДНА ИНСТАЛАЦИЯ ОТ ПОЛИПРОПИЛЕНОВИ ТРЪБИ ЗА СТУДЕНА ВОДА С ДИАМЕТЪР НА ТРЪБАТА 32 ММ (ДОСТ. И МОНТАЖ) (М)",
+  "category": "smr/СЕК22",
+  "section": "СЕК22",
+  "unit": "м",
+  "money": {
+   "amount": 11.91,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 3.534,
+   "materialsEur": 4.471,
+   "equipmentEur": 0.063,
+   "materialsExtraCostEur": 0.357,
+   "totalExtraCostEur": 3.842
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК22.084",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК22 СЕК22.084 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК23-011",
+  "name": "РАЗКЪРТВАНЕ И ОТСТРАНЯВАНЕ С ТОВАРЕНЕ НА ТРОШЕНОКАМЕННА УЛИЧНА НАСТИЛКА С ОГРАНИЧЕНИ ШИРИНИ И ДЕБ. 15 СМ (М 2 )",
+  "desc": "РАЗКЪРТВАНЕ И ОТСТРАНЯВАНЕ С ТОВАРЕНЕ НА ТРОШЕНОКАМЕННА УЛИЧНА НАСТИЛКА С ОГРАНИЧЕНИ ШИРИНИ И ДЕБ. 15 СМ (М 2 )",
+  "category": "smr/СЕК23",
+  "section": "СЕК23",
+  "unit": "м2",
+  "money": {
+   "amount": 3.588,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 0.455,
+   "materialsEur": 0,
+   "equipmentEur": 1.99,
+   "materialsExtraCostEur": 0,
+   "totalExtraCostEur": 1.143
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК23.011",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК23 СЕК23.011 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК23-012",
+  "name": "РАЗКЪРТВАНЕ И СОРТИРАНЕ НА ПАВАЖНА НАСТИЛКА РЪЧНО, ВКЛ. ПРЕНАСЯНЕ НА 20 М (М 2 )",
+  "desc": "РАЗКЪРТВАНЕ И СОРТИРАНЕ НА ПАВАЖНА НАСТИЛКА РЪЧНО, ВКЛ. ПРЕНАСЯНЕ НА 20 М (М 2 )",
+  "category": "smr/СЕК23",
+  "section": "СЕК23",
+  "unit": "м2",
+  "money": {
+   "amount": 22.073,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 11.148,
+   "materialsEur": 0,
+   "equipmentEur": 0,
+   "materialsExtraCostEur": 0,
+   "totalExtraCostEur": 10.925
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК23.012",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК23 СЕК23.012 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК23-013",
+  "name": "РАЗКЪРТВАНЕ И СОРТИРАНЕ НА ПАВАЖНА НАСТИЛКА, МЕХАНИЗИРАНО И РЪЧНО, ВКЛ. ПРЕНАСЯНЕ НА 20 М (М 2 )",
+  "desc": "РАЗКЪРТВАНЕ И СОРТИРАНЕ НА ПАВАЖНА НАСТИЛКА, МЕХАНИЗИРАНО И РЪЧНО, ВКЛ. ПРЕНАСЯНЕ НА 20 М (М 2 )",
+  "category": "smr/СЕК23",
+  "section": "СЕК23",
+  "unit": "м2",
+  "money": {
+   "amount": 7.976,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 3.731,
+   "materialsEur": 0,
+   "equipmentEur": 0.436,
+   "materialsExtraCostEur": 0,
+   "totalExtraCostEur": 3.809
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК23.013",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК23 СЕК23.013 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК26-011",
+  "name": "ДОСТАВКА И ПОЛАГАНЕ НА ДРЕНИРАЩ ПЯСЪЧЕН СЛОЙ (М 3 )",
+  "desc": "ДОСТАВКА И ПОЛАГАНЕ НА ДРЕНИРАЩ ПЯСЪЧЕН СЛОЙ (М 3 )",
+  "category": "smr/СЕК26",
+  "section": "СЕК26",
+  "unit": "м3",
+  "money": {
+   "amount": 29.256,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 1.5419999999999998,
+   "materialsEur": 15.616,
+   "equipmentEur": 5.312,
+   "materialsExtraCostEur": 3.415,
+   "totalExtraCostEur": 6.786
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК26.011",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК26 СЕК26.011 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК26-012",
+  "name": "ДОСТАВКА И ПОЛАГАНЕ НА ДРЕНИРАЩ ПЯСЪЧЕН СЛОЙ С ДЕБЕЛИНА НА ПЯСЪЧНИЯ СЛОЙ ПЛЪТНО 5 СМ (1000 М 2 )",
+  "desc": "ДОСТАВКА И ПОЛАГАНЕ НА ДРЕНИРАЩ ПЯСЪЧЕН СЛОЙ С ДЕБЕЛИНА НА ПЯСЪЧНИЯ СЛОЙ ПЛЪТНО 5 СМ (1000 М 2 )",
+  "category": "smr/СЕК26",
+  "section": "СЕК26",
+  "unit": "м2",
+  "money": {
+   "amount": 1.7137,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 0.1053,
+   "materialsEur": 0.7815,
+   "equipmentEur": 0.4096,
+   "materialsExtraCostEur": 0.1708,
+   "totalExtraCostEur": 0.4173
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК26.012",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026; нормализирано от цена за 1000 м2 към €/м2"
+  },
+  "source": "SEK СЕК26 СЕК26.012 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК26-013",
+  "name": "ДОСТАВКА И ПОЛАГАНЕ НА ДРЕНИРАЩ ПЯСЪЧЕН СЛОЙ С ДЕБЕЛИНА НА ПЯСЪЧНИЯ СЛОЙ ПЛЪТНО 10 СМ (1000 М 2 )",
+  "desc": "ДОСТАВКА И ПОЛАГАНЕ НА ДРЕНИРАЩ ПЯСЪЧЕН СЛОЙ С ДЕБЕЛИНА НА ПЯСЪЧНИЯ СЛОЙ ПЛЪТНО 10 СМ (1000 М 2 )",
+  "category": "smr/СЕК26",
+  "section": "СЕК26",
+  "unit": "м2",
+  "money": {
+   "amount": 2.9461,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 0.1696,
+   "materialsEur": 1.563,
+   "equipmentEur": 0.5227,
+   "materialsExtraCostEur": 0.3416,
+   "totalExtraCostEur": 0.6908
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК26.013",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026; нормализирано от цена за 1000 м2 към €/м2"
+  },
+  "source": "SEK СЕК26 СЕК26.013 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК27-032",
+  "name": "БЛОКАЖ ОТ ЛОМЕН КАМЪК ПО УКРЕПИТЕЛНИ СЪОРЪЖЕНИЯ - РЪЧНО, НА СУХО (М 3 )",
+  "desc": "БЛОКАЖ ОТ ЛОМЕН КАМЪК ПО УКРЕПИТЕЛНИ СЪОРЪЖЕНИЯ - РЪЧНО, НА СУХО (М 3 )",
+  "category": "smr/СЕК27",
+  "section": "СЕК27",
+  "unit": "м3",
+  "money": {
+   "amount": 41.048,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 14.448,
+   "materialsEur": 9.57,
+   "equipmentEur": 0,
+   "materialsExtraCostEur": 2.871,
+   "totalExtraCostEur": 17.029999999999998
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК27.032",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК27 СЕК27.032 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК27-034",
+  "name": "ЗАЩИТНО ЗАСКАЛЯВАНЕ ОТ СКАЛНИ БЛОКОВЕ 100 - 500 КГ ПРИ ЕСТЕСТВЕН ОТКОС С АВТОКРАН (М 3 )",
+  "desc": "ЗАЩИТНО ЗАСКАЛЯВАНЕ ОТ СКАЛНИ БЛОКОВЕ 100 - 500 КГ ПРИ ЕСТЕСТВЕН ОТКОС С АВТОКРАН (М 3 )",
+  "category": "smr/СЕК27",
+  "section": "СЕК27",
+  "unit": "м3",
+  "money": {
+   "amount": 40.298,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 2.8970000000000002,
+   "materialsEur": 15.4,
+   "equipmentEur": 12.825,
+   "materialsExtraCostEur": 1.848,
+   "totalExtraCostEur": 9.176
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК27.034",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК27 СЕК27.034 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК27-041",
+  "name": "ДОСТАВКА, ПЪЛНЕНЕ И МОНТАЖ НА ЦИЛИНДРИЧНИ ГАБИОНИ Ф 0.70/1.50 М (БР.)",
+  "desc": "ДОСТАВКА, ПЪЛНЕНЕ И МОНТАЖ НА ЦИЛИНДРИЧНИ ГАБИОНИ Ф 0.70/1.50 М (БР.)",
+  "category": "smr/СЕК27",
+  "section": "СЕК27",
+  "unit": "бр",
+  "money": {
+   "amount": 83.885,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 4.704,
+   "materialsEur": 66.78399999999999,
+   "equipmentEur": 0,
+   "materialsExtraCostEur": 7.787,
+   "totalExtraCostEur": 12.397
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК27.041",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК27 СЕК27.041 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК34-011",
+  "name": "ДОСТАВКА И ПОЛАГАНЕ НА СТОМАНЕНИ ТРЪБИ 1/2\" ОТКРИТО ПО СТЕНИ (М)",
+  "desc": "ДОСТАВКА И ПОЛАГАНЕ НА СТОМАНЕНИ ТРЪБИ 1/2\" ОТКРИТО ПО СТЕНИ (М)",
+  "category": "smr/СЕК34",
+  "section": "СЕК34",
+  "unit": "м",
+  "money": {
+   "amount": 10.718,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 3.521,
+   "materialsEur": 3.1020000000000003,
+   "equipmentEur": 0.276,
+   "materialsExtraCostEur": 0.271,
+   "totalExtraCostEur": 3.8189999999999995
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК34.011",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК34 СЕК34.011 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК34-012",
+  "name": "ДОСТАВКА И ПОЛАГАНЕ НА СТОМАНЕНИ ТРЪБИ 3/4\" ОТКРИТО ПО СТЕНИ (М)",
+  "desc": "ДОСТАВКА И ПОЛАГАНЕ НА СТОМАНЕНИ ТРЪБИ 3/4\" ОТКРИТО ПО СТЕНИ (М)",
+  "category": "smr/СЕК34",
+  "section": "СЕК34",
+  "unit": "м",
+  "money": {
+   "amount": 11.469,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 3.521,
+   "materialsEur": 3.791,
+   "equipmentEur": 0.276,
+   "materialsExtraCostEur": 0.33299999999999996,
+   "totalExtraCostEur": 3.881
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК34.012",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК34 СЕК34.012 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК34-013",
+  "name": "ДОСТАВКА И ПОЛАГАНЕ НА СТОМАНЕНИ ТРЪБИ 1\" ОТКРИТО ПО СТЕНИ (М)",
+  "desc": "ДОСТАВКА И ПОЛАГАНЕ НА СТОМАНЕНИ ТРЪБИ 1\" ОТКРИТО ПО СТЕНИ (М)",
+  "category": "smr/СЕК34",
+  "section": "СЕК34",
+  "unit": "м",
+  "money": {
+   "amount": 15.407,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 4.827,
+   "materialsEur": 4.865,
+   "equipmentEur": 0.414,
+   "materialsExtraCostEur": 0.426,
+   "totalExtraCostEur": 5.300999999999999
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК34.013",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК34 СЕК34.013 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК49-021",
+  "name": "ИЗСИЧАНЕ И ИЗКОРЕНЯВАНЕ НА ДЪРВЕТА (БР.)",
+  "desc": "ИЗСИЧАНЕ И ИЗКОРЕНЯВАНЕ НА ДЪРВЕТА (БР.)",
+  "category": "smr/СЕК49",
+  "section": "СЕК49",
+  "unit": "бр",
+  "money": {
+   "amount": 50.185,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 25.346,
+   "materialsEur": 0,
+   "equipmentEur": 0,
+   "materialsExtraCostEur": 0,
+   "totalExtraCostEur": 24.839
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК49.021",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК49 СЕК49.021 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК49-025",
+  "name": "РАЗБИВАНЕ НА АРМИРАНА БЕТОННА НАСТИЛКА - РЪЧНО С ПОЧИСТВАНЕ (М 2 )",
+  "desc": "РАЗБИВАНЕ НА АРМИРАНА БЕТОННА НАСТИЛКА - РЪЧНО С ПОЧИСТВАНЕ (М 2 )",
+  "category": "smr/СЕК49",
+  "section": "СЕК49",
+  "unit": "м2",
+  "money": {
+   "amount": 27.324,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 13.8,
+   "materialsEur": 0,
+   "equipmentEur": 0,
+   "materialsExtraCostEur": 0,
+   "totalExtraCostEur": 13.524
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК49.025",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК49 СЕК49.025 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ },
+ {
+  "id": "SEK-СЕК49-027",
+  "name": "РАЗБИВАНЕ НА НЕАРМИРАНА БЕТОННА НАСТИЛКА - РЪЧНО С ПОЧИСТВАНЕ (М 2 )",
+  "desc": "РАЗБИВАНЕ НА НЕАРМИРАНА БЕТОННА НАСТИЛКА - РЪЧНО С ПОЧИСТВАНЕ (М 2 )",
+  "category": "smr/СЕК49",
+  "section": "СЕК49",
+  "unit": "м2",
+  "money": {
+   "amount": 13.024,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-07-01"
+  },
+  "components": {
+   "laborEur": 6.578,
+   "materialsEur": 0,
+   "equipmentEur": 0,
+   "materialsExtraCostEur": 0,
+   "totalExtraCostEur": 6.446
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "SEK-СЕК49.027",
+   "note": "SEK Online Construction Price Reference; captured 2026-09-04; database basis July 2026"
+  },
+  "source": "SEK СЕК49 СЕК49.027 — база Юли 2026",
+  "validity": {
+   "from": "2026-07-01",
+   "to": null,
+   "reviewBy": "2026-10-01"
+  },
+  "status": "active",
+  "region": "BG",
+  "vatStatus": "not_explicit_in_source"
+ }
+]

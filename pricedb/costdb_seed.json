@@ -1,0 +1,851 @@
+[
+ {
+  "id": "WB-IZV",
+  "name": "Извозване на стр. отпадъци и земни маси",
+  "category": "земни/извоз",
+  "unit": "M3",
+  "money": {
+   "amount": 17.958,
+   "currency": "BGN",
+   "vatIncluded": false,
+   "asOf": "2025-11-27"
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "КСС Юнаците 27.11.2025.xlsx · лист КСС",
+   "note": "G-композитна (пълна)"
+  },
+  "validity": {
+   "from": "2025-11-27",
+   "to": null
+  },
+  "status": "active",
+  "approvals": []
+ },
+ {
+  "id": "WB-IZKOP-BAG",
+  "name": "Изкоп с багер на транспорт",
+  "category": "земни/изкоп",
+  "unit": "M3",
+  "money": {
+   "amount": 11.68,
+   "currency": "BGN",
+   "vatIncluded": false,
+   "asOf": "2025-11-27"
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "КСС Юнаците 27.11.2025.xlsx · лист КСС",
+   "note": "G-композитна"
+  },
+  "validity": {
+   "from": "2025-11-27",
+   "to": null
+  },
+  "status": "active",
+  "approvals": []
+ },
+ {
+  "id": "WB-IZKOP-TESEN",
+  "name": "Тесен изкоп с шир. до 40 см",
+  "category": "земни/изкоп",
+  "unit": "M",
+  "money": {
+   "amount": 36.5,
+   "currency": "BGN",
+   "vatIncluded": false,
+   "asOf": "2025-11-27"
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "КСС Юнаците 27.11.2025.xlsx · лист КСС",
+   "note": "G-композитна (кабелни изкопи)"
+  },
+  "validity": {
+   "from": "2025-11-27",
+   "to": null
+  },
+  "status": "active",
+  "approvals": []
+ },
+ {
+  "id": "WB-TROSH",
+  "name": "Трошенокаменна настилка 15см (материал+доставка)",
+  "category": "настилки/основа",
+  "unit": "M2",
+  "money": {
+   "amount": 3.0935,
+   "currency": "BGN",
+   "vatIncluded": false,
+   "asOf": "2025-11-27"
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "КСС Юнаците 27.11.2025.xlsx · лист КСС",
+   "note": "I+J; за м³ → ×6,6667 при 15см"
+  },
+  "validity": {
+   "from": "2025-11-27",
+   "to": null
+  },
+  "status": "active",
+  "approvals": []
+ },
+ {
+  "id": "WB-BORDUR",
+  "name": "Бордюр 8/16/50 (материал+доставка)",
+  "category": "настилки/бордюри",
+  "unit": "M",
+  "money": {
+   "amount": 7.4,
+   "currency": "BGN",
+   "vatIncluded": false,
+   "asOf": "2025-11-27"
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "КСС Юнаците 27.11.2025.xlsx · лист КСС",
+   "note": "I+J; за други сечения — коеф. по площ"
+  },
+  "validity": {
+   "from": "2025-11-27",
+   "to": null
+  },
+  "status": "active",
+  "approvals": []
+ },
+ {
+  "id": "WB-BETON",
+  "name": "Бетон в основа (доставка и полагане)",
+  "category": "бетон",
+  "unit": "M3",
+  "money": {
+   "amount": 289.5,
+   "currency": "BGN",
+   "vatIncluded": false,
+   "asOf": "2025-11-27"
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "КСС Юнаците 27.11.2025.xlsx · лист КСС",
+   "note": "G-композитна"
+  },
+  "validity": {
+   "from": "2025-11-27",
+   "to": null
+  },
+  "status": "active",
+  "approvals": []
+ },
+ {
+  "id": "WB-KOF",
+  "name": "Кофраж за основа на ограда",
+  "category": "конструкции/кофраж",
+  "unit": "M2",
+  "money": {
+   "amount": 62.5,
+   "currency": "BGN",
+   "vatIncluded": false,
+   "asOf": "2025-11-27"
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "КСС Юнаците 27.11.2025.xlsx · лист КСС",
+   "note": "G-композитна"
+  },
+  "validity": {
+   "from": "2025-11-27",
+   "to": null
+  },
+  "status": "active",
+  "approvals": []
+ },
+ {
+  "id": "WB-ARM",
+  "name": "Армировка за основи (доставка и монтаж)",
+  "category": "конструкции/армировка",
+  "unit": "KG",
+  "money": {
+   "amount": 3.25,
+   "currency": "BGN",
+   "vatIncluded": false,
+   "asOf": "2025-11-27"
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "КСС Юнаците 27.11.2025.xlsx · лист КСС",
+   "note": "G-композитна"
+  },
+  "validity": {
+   "from": "2025-11-27",
+   "to": null
+  },
+  "status": "active",
+  "approvals": []
+ },
+ {
+  "id": "WB-FREZ",
+  "name": "Фрезоване на асфалтова настилка",
+  "category": "настилки/фрезоване",
+  "unit": "M2",
+  "money": {
+   "amount": 11.2,
+   "currency": "BGN",
+   "vatIncluded": false,
+   "asOf": "2025-11-27"
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "КСС Юнаците 27.11.2025.xlsx · лист КСС",
+   "note": "G-композитна (машинна)"
+  },
+  "validity": {
+   "from": "2025-11-27",
+   "to": null
+  },
+  "status": "active",
+  "approvals": []
+ },
+ {
+  "id": "WB-DEK15",
+  "name": "Армирана бетонова настилка 15см (материал)",
+  "category": "настилки/бетон",
+  "unit": "M2",
+  "money": {
+   "amount": 40.25,
+   "currency": "BGN",
+   "vatIncluded": false,
+   "asOf": "2025-11-27"
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "КСС Юнаците 27.11.2025.xlsx · лист КСС",
+   "note": "I+J; за 10см → ×0,667"
+  },
+  "validity": {
+   "from": "2025-11-27",
+   "to": null
+  },
+  "status": "active",
+  "approvals": []
+ },
+ {
+  "id": "WB-SBR",
+  "name": "SBR пласт 10мм (материал)",
+  "category": "настилки/ударопоглъщащи",
+  "unit": "M2",
+  "money": {
+   "amount": 10.43,
+   "currency": "BGN",
+   "vatIncluded": false,
+   "asOf": "2025-11-27"
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "КСС Юнаците 27.11.2025.xlsx · лист КСС",
+   "note": "I+J"
+  },
+  "validity": {
+   "from": "2025-11-27",
+   "to": null
+  },
+  "status": "active",
+  "approvals": []
+ },
+ {
+  "id": "WB-EPDM",
+  "name": "EPDM финишен пласт 10мм (материал)",
+  "category": "настилки/ударопоглъщащи",
+  "unit": "M2",
+  "money": {
+   "amount": 91.21,
+   "currency": "BGN",
+   "vatIncluded": false,
+   "asOf": "2025-11-27"
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "КСС Юнаците 27.11.2025.xlsx · лист КСС",
+   "note": "I+J"
+  },
+  "validity": {
+   "from": "2025-11-27",
+   "to": null
+  },
+  "status": "active",
+  "approvals": []
+ },
+ {
+  "id": "WB-PUGR",
+  "name": "Полиуретанов грунд за адхезия (материал)",
+  "category": "настилки/ударопоглъщащи",
+  "unit": "M2",
+  "money": {
+   "amount": 4.64,
+   "currency": "BGN",
+   "vatIncluded": false,
+   "asOf": "2025-11-27"
+  },
+  "origin": {
+   "kind": "imported_workbook",
+   "ref": "КСС Юнаците 27.11.2025.xlsx · лист КСС",
+   "note": "I+J"
+  },
+  "validity": {
+   "from": "2025-11-27",
+   "to": null
+  },
+  "status": "active",
+  "approvals": []
+ },
+ {
+  "id": "WEB-SVT32",
+  "name": "Кабел СВТ 3х2,5 мм²",
+  "category": "ЕЛ/кабели",
+  "unit": "M",
+  "money": {
+   "amount": 1.99,
+   "currency": "EUR",
+   "vatIncluded": true,
+   "asOf": "2026-08-31"
+  },
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "masterhaus.bg — Силов кабел СВТ 3 х 2.5",
+   "note": "цена/м, дребно"
+  },
+  "validity": {
+   "from": "2026-08-31",
+   "to": null
+  },
+  "status": "pending_review",
+  "approvals": [],
+  "note": "web anchor от разузнаването — при импорт: ÷1,2 → нето; придобива статус active след човешки преглед"
+ },
+ {
+  "id": "WEB-SVT315",
+  "name": "Кабел СВТ 3х1,5 мм²",
+  "category": "ЕЛ/кабели",
+  "unit": "M",
+  "money": {
+   "amount": 1.39,
+   "currency": "EUR",
+   "vatIncluded": true,
+   "asOf": "2026-08-31"
+  },
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "masterhaus.bg — Силов кабел СВТ 3 х 1.5",
+   "note": ""
+  },
+  "validity": {
+   "from": "2026-08-31",
+   "to": null
+  },
+  "status": "pending_review",
+  "approvals": [],
+  "note": "web anchor от разузнаването — при импорт: ÷1,2 → нето; придобива статус active след човешки преглед"
+ },
+ {
+  "id": "WEB-PVC50",
+  "name": "PVC тръба SolidPipe Ф50",
+  "category": "ЕЛ/тръби",
+  "unit": "M",
+  "money": {
+   "amount": 2.25,
+   "currency": "EUR",
+   "vatIncluded": true,
+   "asOf": "2026-08-31"
+  },
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "masterhaus.bg — Ф50 х 1.5мм х 2м (4,49 €/2м)",
+   "note": ""
+  },
+  "validity": {
+   "from": "2026-08-31",
+   "to": null
+  },
+  "status": "pending_review",
+  "approvals": [],
+  "note": "web anchor от разузнаването — при импорт: ÷1,2 → нето; придобива статус active след човешки преглед"
+ },
+ {
+  "id": "WEB-ZAZEM",
+  "name": "Заземителен кол 65/65/5, 1,5м + шина",
+  "category": "ЕЛ/заземяване",
+  "unit": "PIECE",
+  "money": {
+   "amount": 29.48,
+   "currency": "EUR",
+   "vatIncluded": true,
+   "asOf": "2026-08-31"
+  },
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "masterhaus.bg — Заземителен кол 63х6мм х 1.5м + шина",
+   "note": ""
+  },
+  "validity": {
+   "from": "2026-08-31",
+   "to": null
+  },
+  "status": "pending_review",
+  "approvals": [],
+  "note": "web anchor от разузнаването — при импорт: ÷1,2 → нето; придобива статус active след човешки преглед"
+ },
+ {
+  "id": "WEB-MCB6",
+  "name": "Авт. прекъсвач 1P 6A 6KA",
+  "category": "ЕЛ/апарати",
+  "unit": "PIECE",
+  "money": {
+   "amount": 4.69,
+   "currency": "EUR",
+   "vatIncluded": true,
+   "asOf": "2026-08-31"
+  },
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "masterhaus.bg — Е61N+ тип",
+   "note": ""
+  },
+  "validity": {
+   "from": "2026-08-31",
+   "to": null
+  },
+  "status": "pending_review",
+  "approvals": [],
+  "note": "web anchor от разузнаването — при импорт: ÷1,2 → нето; придобива статус active след човешки преглед"
+ },
+ {
+  "id": "WEB-KUTIA",
+  "name": "Кутия IP54/IP65 (тип Indira)",
+  "category": "ЕЛ/кутии",
+  "unit": "PIECE",
+  "money": {
+   "amount": 6.39,
+   "currency": "EUR",
+   "vatIncluded": true,
+   "asOf": "2026-08-31"
+  },
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "masterhaus.bg — VIVALUX",
+   "note": ""
+  },
+  "validity": {
+   "from": "2026-08-31",
+   "to": null
+  },
+  "status": "pending_review",
+  "approvals": [],
+  "note": "web anchor от разузнаването — при импорт: ÷1,2 → нето; придобива статус active след човешки преглед"
+ },
+ {
+  "id": "WEB-LED40",
+  "name": "LED лампа Turbo 40W E27",
+  "category": "ЕЛ/осветление",
+  "unit": "PIECE",
+  "money": {
+   "amount": 8.95,
+   "currency": "EUR",
+   "vatIncluded": true,
+   "asOf": "2026-08-31"
+  },
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "masterhaus.bg — 4000K 25000h",
+   "note": ""
+  },
+  "validity": {
+   "from": "2026-08-31",
+   "to": null
+  },
+  "status": "pending_review",
+  "approvals": [],
+  "note": "web anchor от разузнаването — при импорт: ÷1,2 → нето; придобива статус active след човешки преглед"
+ },
+ {
+  "id": "WEB-PARKLIGHT",
+  "name": "Парково осветление Сфера Ф300 опал",
+  "category": "ЕЛ/осветление",
+  "unit": "PIECE",
+  "money": {
+   "amount": 17.53,
+   "currency": "EUR",
+   "vatIncluded": true,
+   "asOf": "2026-08-31"
+  },
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "masterhaus.bg — LIGHTEX",
+   "note": ""
+  },
+  "validity": {
+   "from": "2026-08-31",
+   "to": null
+  },
+  "status": "pending_review",
+  "approvals": [],
+  "note": "web anchor от разузнаването — при импорт: ÷1,2 → нето; придобива статус active след човешки преглед"
+ },
+ {
+  "id": "WEB-VODOMER",
+  "name": "Водомер електронен AMR 3/4\", 4 м³/ч",
+  "category": "поливна/измерване",
+  "unit": "PIECE",
+  "money": {
+   "amount": 81.9,
+   "currency": "EUR",
+   "vatIncluded": true,
+   "asOf": "2026-08-31"
+  },
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "masterhaus.bg — SIEMENS с дистанционно отчитане",
+   "note": ""
+  },
+  "validity": {
+   "from": "2026-08-31",
+   "to": null
+  },
+  "status": "pending_review",
+  "approvals": [],
+  "note": "web anchor от разузнаването — при импорт: ÷1,2 → нето; придобива статус active след човешки преглед"
+ },
+ {
+  "id": "WEB-TREVA-SUN",
+  "name": "Тревна смеска слънце, 1 кг",
+  "category": "озеленяване/трева",
+  "unit": "KG",
+  "money": {
+   "amount": 7.72,
+   "currency": "EUR",
+   "vatIncluded": true,
+   "asOf": "2026-08-31"
+  },
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "masterhaus.bg — „Паркова музика\"/слънчеви",
+   "note": ""
+  },
+  "validity": {
+   "from": "2026-08-31",
+   "to": null
+  },
+  "status": "pending_review",
+  "approvals": [],
+  "note": "web anchor от разузнаването — при импорт: ÷1,2 → нето; придобива статус active след човешки преглед"
+ },
+ {
+  "id": "WEB-TREVA-SH",
+  "name": "Тревна смеска сянка, 1 кг",
+  "category": "озеленяване/трева",
+  "unit": "KG",
+  "money": {
+   "amount": 6.99,
+   "currency": "EUR",
+   "vatIncluded": true,
+   "asOf": "2026-08-31"
+  },
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "masterhaus.bg — сенчести терени",
+   "note": ""
+  },
+  "validity": {
+   "from": "2026-08-31",
+   "to": null
+  },
+  "status": "pending_review",
+  "approvals": [],
+  "note": "web anchor от разузнаването — при импорт: ÷1,2 → нето; придобива статус active след човешки преглед"
+ },
+ {
+  "id": "WEB-TOR-NPK",
+  "name": "Комплексен тор за трева, 1 кг",
+  "category": "озеленяване/торове",
+  "unit": "KG",
+  "money": {
+   "amount": 6.89,
+   "currency": "EUR",
+   "vatIncluded": true,
+   "asOf": "2026-08-31"
+  },
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "masterhaus.bg",
+   "note": ""
+  },
+  "validity": {
+   "from": "2026-08-31",
+   "to": null
+  },
+  "status": "pending_review",
+  "approvals": [],
+  "note": "web anchor от разузнаването — при импорт: ÷1,2 → нето; придобива статус active след човешки преглед"
+ },
+ {
+  "id": "WEB-UPS600",
+  "name": "UPS 600VA/360W off-line (FSP Nano 600)",
+  "category": "видеонаблюдение/захранване",
+  "unit": "PIECE",
+  "money": {
+   "amount": 61.0,
+   "currency": "EUR",
+   "vatIncluded": true,
+   "asOf": "2026-08-31"
+  },
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "desktop.bg",
+   "note": "PowerWalker 65 € също наличен"
+  },
+  "validity": {
+   "from": "2026-08-31",
+   "to": null
+  },
+  "status": "pending_review",
+  "approvals": [],
+  "note": "web anchor от разузнаването — при импорт: ÷1,2 → нето; придобива статус active след човешки преглед"
+ },
+ {
+  "id": "WEB-POE16",
+  "name": "PoE суич 16×GE PoE+ + 2 SFP (TL-SG1218MP, 250W)",
+  "category": "видеонаблюдение/мрежа",
+  "unit": "PIECE",
+  "money": {
+   "amount": 229.0,
+   "currency": "EUR",
+   "vatIncluded": true,
+   "asOf": "2026-08-31"
+  },
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "desktop.bg",
+   "note": "TP-Link TL-SL1218P = 169 € (FastEth вариант)"
+  },
+  "validity": {
+   "from": "2026-08-31",
+   "to": null
+  },
+  "status": "pending_review",
+  "approvals": [],
+  "note": "web anchor от разузнаването — при импорт: ÷1,2 → нето; придобива статус active след човешки преглед"
+ },
+ {
+  "id": "WEB-LTE-OUT",
+  "name": "4G LTE външен рутер (TP-Link TL-MR100-Outdoor)",
+  "category": "видеонаблюдение/свързаност",
+  "unit": "PIECE",
+  "money": {
+   "amount": 99.0,
+   "currency": "EUR",
+   "vatIncluded": true,
+   "asOf": "2026-08-31"
+  },
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "desktop.bg",
+   "note": "еквивалент на 4G модула по проект"
+  },
+  "validity": {
+   "from": "2026-08-31",
+   "to": null
+  },
+  "status": "pending_review",
+  "approvals": [],
+  "note": "web anchor от разузнаването — при импорт: ÷1,2 → нето; придобива статус active след човешки преглед"
+ },
+ {
+  "id": "WEB-NVR8",
+  "name": "Регистратор HikVision DS-7108NI-Q1/M (8ch)",
+  "category": "видеонаблюдение/запис",
+  "unit": "PIECE",
+  "money": {
+   "amount": 139.0,
+   "currency": "EUR",
+   "vatIncluded": true,
+   "asOf": "2026-08-31"
+  },
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "desktop.bg",
+   "note": "реф. за 16ch клас — не са уловени публични цени на 16ch 4K в сесията"
+  },
+  "validity": {
+   "from": "2026-08-31",
+   "to": null
+  },
+  "status": "pending_review",
+  "approvals": [],
+  "note": "web anchor от разузнаването — при импорт: ÷1,2 → нето; придобива статус active след човешки преглед"
+ },
+ {
+  "id": "WEB-IPCAM",
+  "name": "IP камера IP67 4MP PoE (HikVision HWI-T240H)",
+  "category": "видеонаблюдение/камери",
+  "unit": "PIECE",
+  "money": {
+   "amount": 70.0,
+   "currency": "EUR",
+   "vatIncluded": true,
+   "asOf": "2026-08-31"
+  },
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "desktop.bg",
+   "note": "базов клас; ANPR whitelist функцията на проекта е по-висок клас — ФЛАГ към доставчик"
+  },
+  "validity": {
+   "from": "2026-08-31",
+   "to": null
+  },
+  "status": "pending_review",
+  "approvals": [],
+  "note": "web anchor от разузнаването — при импорт: ÷1,2 → нето; придобива статус active след човешки преглед"
+ },
+ {
+  "id": "WEB-LIGUSTRUM",
+  "name": "Лигуструм (Ligustrum ovalifolium), саксия",
+  "category": "озеленяване/растителност",
+  "unit": "PIECE",
+  "money": {
+   "amount": 2.05,
+   "currency": "EUR",
+   "vatIncluded": true,
+   "asOf": "2026-08-31"
+  },
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "razsadnikmarti.bg",
+   "note": "ПРОДАДЕНО при проверката — наличност за потвърждаване"
+  },
+  "validity": {
+   "from": "2026-08-31",
+   "to": null
+  },
+  "status": "pending_review",
+  "approvals": [],
+  "note": "web anchor от разузнаването — при импорт: ÷1,2 → нето; придобива статус active след човешки преглед"
+ },
+ {
+  "id": "WEB-THUJA-SM",
+  "name": "Туя Смарагд (Thuja occidentalis 'Smaragd')",
+  "category": "озеленяване/растителност",
+  "unit": "PIECE",
+  "money": {
+   "amount": 6.14,
+   "currency": "EUR",
+   "vatIncluded": true,
+   "asOf": "2026-08-31"
+  },
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "razsadnikmarti.bg",
+   "note": ""
+  },
+  "validity": {
+   "from": "2026-08-31",
+   "to": null
+  },
+  "status": "pending_review",
+  "approvals": [],
+  "note": "web anchor от разузнаването — при импорт: ÷1,2 → нето; придобива статус active след човешки преглед"
+ },
+ {
+  "id": "WEB-THUJA-DAN",
+  "name": "Thuja occidentalis 'Danica'",
+  "category": "озеленяване/растителност",
+  "unit": "PIECE",
+  "money": {
+   "amount": 9.2,
+   "currency": "EUR",
+   "vatIncluded": true,
+   "asOf": "2026-08-31"
+  },
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "razsadnikmarti.bg",
+   "note": ""
+  },
+  "validity": {
+   "from": "2026-08-31",
+   "to": null
+  },
+  "status": "pending_review",
+  "approvals": [],
+  "note": "web anchor от разузнаването — при импорт: ÷1,2 → нето; придобива статус active след човешки преглед"
+ },
+ {
+  "id": "WEB-ROSA",
+  "name": "Роза в 2л контейнер",
+  "category": "озеленяване/растителност",
+  "unit": "PIECE",
+  "money": {
+   "amount": 11.25,
+   "currency": "EUR",
+   "vatIncluded": true,
+   "asOf": "2026-08-31"
+  },
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "razsadnikmarti.bg",
+   "note": ""
+  },
+  "validity": {
+   "from": "2026-08-31",
+   "to": null
+  },
+  "status": "pending_review",
+  "approvals": [],
+  "note": "web anchor от разузнаването — при импорт: ÷1,2 → нето; придобива статус active след човешки преглед"
+ },
+ {
+  "id": "DIR-BAND482",
+  "name": "Лентова директива за част „ОБЗАВЕЖДАНЕ“ (детски съоръжения, фитнес уреди, термопластики, кошове, пейки, ограда, чешма)",
+  "category": "обзавеждане/директива",
+  "unit": "PIECE",
+  "money": {
+   "amount": 482.0,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-08-31"
+  },
+  "origin": {
+   "kind": "client_directive",
+   "ref": "указание на клиента в сесия 31.08.2026 — лента 482–1 062 €/бр",
+   "note": "се прилага 482; преразгледа се при редовната актуализация"
+  },
+  "validity": {
+   "from": "2026-08-31",
+   "to": "2026-11-30"
+  },
+  "status": "active",
+  "approvals": []
+ },
+ {
+  "id": "LAB-STD",
+  "name": "Труд — строителни и монтажни работи",
+  "category": "труд",
+  "unit": "HOUR",
+  "money": {
+   "amount": 30.0,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-08-31"
+  },
+  "origin": {
+   "kind": "client_directive",
+   "ref": "указание на клиента — 30 €/ч",
+   "note": ""
+  },
+  "validity": {
+   "from": "2026-08-31",
+   "to": null
+  },
+  "status": "active",
+  "approvals": []
+ }
+]

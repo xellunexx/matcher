@@ -1,0 +1,19 @@
+[
+ {
+  "desc": "Монтаж на ПВЦ ъглов профил по ръбове страници дограма отвън",
+  "unit": "бр",
+  "money": {
+   "amount": 1.0,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026-10-02"
+  },
+  "origin": {
+   "kind": "manual_entry",
+   "ref": "estimation resolve",
+   "note": "ръчно въведена цена от оператор на 2026-10-02"
+  },
+  "source": "manual:estimation",
+  "status": "active"
+ }
+]

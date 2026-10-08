@@ -1,0 +1,5122 @@
+[
+ {
+  "desc": "Машинен изкоп в обикновен терен",
+  "unit": "м3",
+  "money": {
+   "amount": 11.0,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 8–14 EUR",
+  "rangeTxt": "8–14 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/maxbuild23",
+   "note": "Depends on depth and site access"
+  },
+  "source": "web/maxbuild23 · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Машинен изкоп в скален терен",
+  "unit": "м3",
+  "money": {
+   "amount": 24.0,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 18–30 EUR",
+  "rangeTxt": "18–30 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/maxbuild23",
+   "note": "Hydraulic breaker required"
+  },
+  "source": "web/maxbuild23 · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Извозване на земни маси",
+  "unit": "м3",
+  "money": {
+   "amount": 7.0,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 6–8 EUR",
+  "rangeTxt": "6–8 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/maxbuild23",
+   "note": "Depends on dump distance"
+  },
+  "source": "web/maxbuild23 · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Обратен насип с уплътняване",
+  "unit": "м3",
+  "money": {
+   "amount": 8.5,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 5–12 EUR",
+  "rangeTxt": "5–12 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/maxbuild23",
+   "note": ""
+  },
+  "source": "web/maxbuild23 · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Кофраж за плочи",
+  "unit": "м2",
+  "money": {
+   "amount": 28,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/maxbuild23",
+   "note": ""
+  },
+  "source": "web/maxbuild23 · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Кофраж за колони",
+  "unit": "м2",
+  "money": {
+   "amount": 32.5,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 30–35 EUR",
+  "rangeTxt": "30–35 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/maxbuild23",
+   "note": ""
+  },
+  "source": "web/maxbuild23 · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Кофраж за греди",
+  "unit": "м2",
+  "money": {
+   "amount": 30.0,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 28–32 EUR",
+  "rangeTxt": "28–32 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/maxbuild23",
+   "note": ""
+  },
+  "source": "web/maxbuild23 · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Кофраж за шайби/стени",
+  "unit": "м2",
+  "money": {
+   "amount": 28.0,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 26–30 EUR",
+  "rangeTxt": "26–30 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/maxbuild23",
+   "note": ""
+  },
+  "source": "web/maxbuild23 · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Кофраж за стълбища",
+  "unit": "м2",
+  "money": {
+   "amount": 40.0,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 35–45 EUR",
+  "rangeTxt": "35–45 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/maxbuild23",
+   "note": ""
+  },
+  "source": "web/maxbuild23 · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Доставка и монтаж на армировка",
+  "unit": "кг",
+  "money": {
+   "amount": 1.85,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/maxbuild23",
+   "note": ""
+  },
+  "source": "web/maxbuild23 · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Армировъчна заготовка (само огъване)",
+  "unit": "кг",
+  "money": {
+   "amount": 0.17,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 0.15–0.2 EUR",
+  "rangeTxt": "0.15–0.2 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/maxbuild23",
+   "note": ""
+  },
+  "source": "web/maxbuild23 · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Армировъчна мрежа (доставка и монтаж)",
+  "unit": "кг",
+  "money": {
+   "amount": 2.1,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 2.0–2.2 EUR",
+  "rangeTxt": "2.0–2.2 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/maxbuild23",
+   "note": ""
+  },
+  "source": "web/maxbuild23 · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Бетон C20/25 (доставка и полагане)",
+  "unit": "м3",
+  "money": {
+   "amount": 116,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/maxbuild23",
+   "note": ""
+  },
+  "source": "web/maxbuild23 · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Бетон C25/30",
+  "unit": "м3",
+  "money": {
+   "amount": 122.5,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 120–125 EUR",
+  "rangeTxt": "120–125 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/maxbuild23",
+   "note": ""
+  },
+  "source": "web/maxbuild23 · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Бетон C30/37",
+  "unit": "м3",
+  "money": {
+   "amount": 135.0,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 130–140 EUR",
+  "rangeTxt": "130–140 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/maxbuild23",
+   "note": ""
+  },
+  "source": "web/maxbuild23 · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Бетон помпа",
+  "unit": "service",
+  "money": {
+   "amount": 375.0,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 250–500 EUR",
+  "rangeTxt": "250–500 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/maxbuild23",
+   "note": "Depends on height and distance"
+  },
+  "source": "web/maxbuild23 · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Зидария с тухла 25 см",
+  "unit": "м2",
+  "money": {
+   "amount": 20.0,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 18–22 EUR",
+  "rangeTxt": "18–22 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/maxbuild23",
+   "note": ""
+  },
+  "source": "web/maxbuild23 · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Зидария с тухла 12 см",
+  "unit": "м2",
+  "money": {
+   "amount": 14.0,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 12–16 EUR",
+  "rangeTxt": "12–16 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/maxbuild23",
+   "note": ""
+  },
+  "source": "web/maxbuild23 · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Зидария с газобетон (Ytong) 25 см",
+  "unit": "м2",
+  "money": {
+   "amount": 25.0,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 22–28 EUR",
+  "rangeTxt": "22–28 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/maxbuild23",
+   "note": ""
+  },
+  "source": "web/maxbuild23 · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Зидария с газобетон 10 см",
+  "unit": "м2",
+  "money": {
+   "amount": 16.0,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 14–18 EUR",
+  "rangeTxt": "14–18 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/maxbuild23",
+   "note": ""
+  },
+  "source": "web/maxbuild23 · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Груб строеж – малки еднофамилни обекти",
+  "unit": "м2",
+  "money": {
+   "amount": 260.0,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 200–320 EUR",
+  "rangeTxt": "200–320 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/maxbuild23",
+   "note": "Article says 100–300 m² houses; labor + materials"
+  },
+  "source": "web/maxbuild23 · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Жилищна сграда 5–6 етажа, София",
+  "unit": "м2",
+  "money": {
+   "amount": 220.0,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 180–260 EUR",
+  "rangeTxt": "180–260 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/maxbuild23",
+   "note": "Article's later budgeting guideline; labor + materials, excludes design/supervision/fees"
+  },
+  "source": "web/maxbuild23 · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Геоложки доклад",
+  "unit": "service",
+  "money": {
+   "amount": 2500.0,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 1500–3500 EUR",
+  "rangeTxt": "1500–3500 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/maxbuild23",
+   "note": ""
+  },
+  "source": "web/maxbuild23 · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Временно водоснабдяване/електрозахранване",
+  "unit": "service",
+  "money": {
+   "amount": 3500.0,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 2000–5000 EUR",
+  "rangeTxt": "2000–5000 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/maxbuild23",
+   "note": ""
+  },
+  "source": "web/maxbuild23 · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Ограда и организация на площадката",
+  "unit": "service",
+  "money": {
+   "amount": 5500.0,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 3000–8000 EUR",
+  "rangeTxt": "3000–8000 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/maxbuild23",
+   "note": ""
+  },
+  "source": "web/maxbuild23 · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Икономичен груб строеж",
+  "unit": "м2",
+  "money": {
+   "amount": 325.0,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 300–350 EUR",
+  "rangeTxt": "300–350 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/vemk",
+   "note": "120 m² example; excludes VAT"
+  },
+  "source": "web/vemk · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Стандартен груб строеж",
+  "unit": "м2",
+  "money": {
+   "amount": 400.0,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 350–450 EUR",
+  "rangeTxt": "350–450 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/vemk",
+   "note": "120 m² example; excludes VAT"
+  },
+  "source": "web/vemk · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Премиум груб строеж",
+  "unit": "м2",
+  "money": {
+   "amount": 525.0,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 450–600 EUR",
+  "rangeTxt": "450–600 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/vemk",
+   "note": "120 m² example; excludes VAT"
+  },
+  "source": "web/vemk · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Едноетажна къща",
+  "unit": "м2",
+  "money": {
+   "amount": 350.0,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 320–380 EUR",
+  "rangeTxt": "320–380 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/vemk",
+   "note": "Indicative"
+  },
+  "source": "web/vemk · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Двуетажна къща",
+  "unit": "м2",
+  "money": {
+   "amount": 405.0,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 360–450 EUR",
+  "rangeTxt": "360–450 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/vemk",
+   "note": "Indicative"
+  },
+  "source": "web/vemk · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Модерна архитектура",
+  "unit": "м2",
+  "money": {
+   "amount": 525.0,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 450–600 EUR",
+  "rangeTxt": "450–600 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/vemk",
+   "note": ""
+  },
+  "source": "web/vemk · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Традиционна къща",
+  "unit": "м2",
+  "money": {
+   "amount": 360.0,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 320–400 EUR",
+  "rangeTxt": "320–400 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/vemk",
+   "note": ""
+  },
+  "source": "web/vemk · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Изкоп и фундамент",
+  "unit": "м2",
+  "money": {
+   "amount": 55.0,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 40–70 EUR",
+  "rangeTxt": "40–70 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/vemk",
+   "note": ""
+  },
+  "source": "web/vemk · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Армировка и кофраж",
+  "unit": "м2",
+  "money": {
+   "amount": 75.0,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 60–90 EUR",
+  "rangeTxt": "60–90 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/vemk",
+   "note": ""
+  },
+  "source": "web/vemk · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Бетон и изливане",
+  "unit": "м2",
+  "money": {
+   "amount": 90.0,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 80–100 EUR",
+  "rangeTxt": "80–100 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/vemk",
+   "note": ""
+  },
+  "source": "web/vemk · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Зидария",
+  "unit": "м2",
+  "money": {
+   "amount": 70.0,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 60–80 EUR",
+  "rangeTxt": "60–80 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/vemk",
+   "note": ""
+  },
+  "source": "web/vemk · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Покривна конструкция",
+  "unit": "м2",
+  "money": {
+   "amount": 100.0,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 80–120 EUR",
+  "rangeTxt": "80–120 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/vemk",
+   "note": ""
+  },
+  "source": "web/vemk · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Комини и отдушници",
+  "unit": "м2",
+  "money": {
+   "amount": 22.5,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "диапазон 15–30 EUR",
+  "rangeTxt": "15–30 EUR",
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/vemk",
+   "note": ""
+  },
+  "source": "web/vemk · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Стандартен груб строеж – VEMK",
+  "unit": "м2",
+  "money": {
+   "amount": 360,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/vemk",
+   "note": "Advertised 'от 360 €'; excludes VAT; labor + materials"
+  },
+  "source": "web/vemk · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Премиум вариант – VEMK",
+  "unit": "м2",
+  "money": {
+   "amount": 420,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/vemk",
+   "note": "Advertised 'от 420 €'; excludes VAT; labor + materials"
+  },
+  "source": "web/vemk · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Боядисване едноцветно",
+  "unit": "м2",
+  "money": {
+   "amount": 3.83,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": "Labor-only price explicitly surfaced; materials price says according to colors"
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Боядисване с два цвята в помещение",
+  "unit": "м2",
+  "money": {
+   "amount": 5.04,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": ""
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Грундиране",
+  "unit": "м2",
+  "money": {
+   "amount": 1.25,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": ""
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Гипсова шпакловка",
+  "unit": "м2",
+  "money": {
+   "amount": 4.09,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": ""
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Грундиране със запечатващ грунд преди шпакловка",
+  "unit": "м2",
+  "money": {
+   "amount": 1.25,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": ""
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Фина шпакловка Super finish",
+  "unit": "м2",
+  "money": {
+   "amount": 3.58,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": ""
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Шлайфане",
+  "unit": "м2",
+  "money": {
+   "amount": 2.99,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": ""
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Влагане на мрежа",
+  "unit": "м2",
+  "money": {
+   "amount": 3.58,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": ""
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Поставяне на ръбохранители",
+  "unit": "м",
+  "money": {
+   "amount": 4.6,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": ""
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Фаянс, теракота, гранитогрес до 60х60 см",
+  "unit": "м2",
+  "money": {
+   "amount": 34.77,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": "Labor-only surfaced; materials+labor not shown"
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Фаянс, теракота, гранитогрес до 60х120 см",
+  "unit": "м2",
+  "money": {
+   "amount": 38.86,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": ""
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Фугиране",
+  "unit": "м2",
+  "money": {
+   "amount": 6.14,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": ""
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Цокъл",
+  "unit": "м",
+  "money": {
+   "amount": 18.41,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": ""
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Фриз",
+  "unit": "м",
+  "money": {
+   "amount": 23.52,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": ""
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Монтаж на лайсна",
+  "unit": "м",
+  "money": {
+   "amount": 18.41,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": ""
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Хастарна мазилка за бани",
+  "unit": "м2",
+  "money": {
+   "amount": 24.54,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": ""
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Предстенна обшивка от гипсокартон",
+  "unit": "м2",
+  "money": {
+   "amount": 16.36,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": ""
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Окачен таван от гипсокартон",
+  "unit": "м2",
+  "money": {
+   "amount": 19.43,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": ""
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Преградна стена от гипсокартон 10 см, еднопластова",
+  "unit": "м2",
+  "money": {
+   "amount": 23.01,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": ""
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Преградна стена от гипсокартон 12.5 см, двупластова",
+  "unit": "м2",
+  "money": {
+   "amount": 28.12,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": ""
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Демонтаж на PVC дограма",
+  "unit": "м2",
+  "money": {
+   "amount": 15.34,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": ""
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Демонтаж на алуминиева дограма",
+  "unit": "м2",
+  "money": {
+   "amount": 17.9,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": ""
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Демонтаж на дървена дограма",
+  "unit": "м2",
+  "money": {
+   "amount": 20.45,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": ""
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Монтаж на PVC дограма",
+  "unit": "м2",
+  "money": {
+   "amount": 25.56,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": ""
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Монтаж на алуминиева дограма",
+  "unit": "м2",
+  "money": {
+   "amount": 30.67,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": ""
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Монтаж на дървена дограма",
+  "unit": "м2",
+  "money": {
+   "amount": 35.78,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": ""
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "PVC перваз",
+  "unit": "м",
+  "money": {
+   "amount": 10.23,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": ""
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Каменен перваз",
+  "unit": "м",
+  "money": {
+   "amount": 25.56,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": ""
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Монтаж на лайсни",
+  "unit": "м",
+  "money": {
+   "amount": 7.67,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": ""
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Монтаж на капаци",
+  "unit": "м",
+  "money": {
+   "amount": 15.34,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": ""
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Изолация с пяна",
+  "unit": "м2",
+  "money": {
+   "amount": 2.56,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": ""
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Уплътнителни ленти",
+  "unit": "м",
+  "money": {
+   "amount": 4.09,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": ""
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Реглаж на врати и прозорци",
+  "unit": "service",
+  "money": {
+   "amount": 15.34,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": ""
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Подмяна на уплътнения",
+  "unit": "service",
+  "money": {
+   "amount": 10.23,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": ""
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Смяна на панти или обков",
+  "unit": "service",
+  "money": {
+   "amount": 20.45,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/remonti_me",
+   "note": ""
+  },
+  "source": "web/remonti_me · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Вертикален щранг / над ф32 /",
+  "unit": "floor",
+  "money": {
+   "amount": 178.95,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Вертикален мръсен канал ф110 + баня и кухня ф50",
+  "unit": "floor",
+  "money": {
+   "amount": 194.29,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Хоризонтален водопровод / баня, кухня и др.",
+  "unit": "point",
+  "money": {
+   "amount": 17.9,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Монтаж на водомер",
+  "unit": "бр",
+  "money": {
+   "amount": 17.9,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Полагане на захранващ водопровод ф32, без изкоп",
+  "unit": "м",
+  "money": {
+   "amount": 3.58,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Подмяна на тръби за водопровод в баня",
+  "unit": "м",
+  "money": {
+   "amount": 40.9,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Отстраняване на течове",
+  "unit": "hour",
+  "money": {
+   "amount": 38.35,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Прочистване на канали",
+  "unit": "бр",
+  "money": {
+   "amount": 58.8,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Хидроизолация на баня",
+  "unit": "м2",
+  "money": {
+   "amount": 5.11,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Тоалетна чиния",
+  "unit": "бр",
+  "money": {
+   "amount": 25.56,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Конзолна тоалетна чиния",
+  "unit": "бр",
+  "money": {
+   "amount": 28.12,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Моноблок",
+  "unit": "бр",
+  "money": {
+   "amount": 30.68,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Тоалетно казанче",
+  "unit": "бр",
+  "money": {
+   "amount": 17.9,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Вградено казанче",
+  "unit": "бр",
+  "money": {
+   "amount": 84.36,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Умивалник",
+  "unit": "бр",
+  "money": {
+   "amount": 12.78,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Ботуш",
+  "unit": "бр",
+  "money": {
+   "amount": 15.34,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Обикновенна батерия",
+  "unit": "бр",
+  "money": {
+   "amount": 10.23,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Стояща батерия",
+  "unit": "бр",
+  "money": {
+   "amount": 12.78,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Душ батерия",
+  "unit": "бр",
+  "money": {
+   "amount": 17.9,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Вана",
+  "unit": "бр",
+  "money": {
+   "amount": 76.7,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Душ корито",
+  "unit": "бр",
+  "money": {
+   "amount": 40.9,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Душ кабина комплект",
+  "unit": "бр",
+  "money": {
+   "amount": 84.33,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Водомер",
+  "unit": "бр",
+  "money": {
+   "amount": 10.23,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Бойлер",
+  "unit": "бр",
+  "money": {
+   "amount": 35.79,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Вентилатор",
+  "unit": "бр",
+  "money": {
+   "amount": 15.34,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Шкаф мивка",
+  "unit": "бр",
+  "money": {
+   "amount": 12.78,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Пералня / съдомиялна",
+  "unit": "бр",
+  "money": {
+   "amount": 15.34,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Монтаж на интериорни врати",
+  "unit": "бр",
+  "money": {
+   "amount": 40.9,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Къртене на канал за ел. инсталация в тухла",
+  "unit": "м",
+  "money": {
+   "amount": 0.77,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Къртене на канал за ел. инсталация в бетон",
+  "unit": "м",
+  "money": {
+   "amount": 1.28,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Дупка за конзолна кутия (бетон)",
+  "unit": "бр",
+  "money": {
+   "amount": 1.53,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Дупка за конзолна кутия (тухла)",
+  "unit": "бр",
+  "money": {
+   "amount": 0.77,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Електроинсталация (точка – бетон/тухла)",
+  "unit": "point",
+  "money": {
+   "amount": 15.33,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Монтаж на предпазител",
+  "unit": "бр",
+  "money": {
+   "amount": 3.07,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Монтаж на контакт",
+  "unit": "бр",
+  "money": {
+   "amount": 1.53,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Монтаж на ключ",
+  "unit": "бр",
+  "money": {
+   "amount": 1.53,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Полагане на кабел",
+  "unit": "м",
+  "money": {
+   "amount": 1.02,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Монтаж на ел. табло с 4 предпазителя",
+  "unit": "бр",
+  "money": {
+   "amount": 61.33,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Газобетон до 10 см",
+  "unit": "м2",
+  "money": {
+   "amount": 15.33,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Газобетон над 10 см",
+  "unit": "м2",
+  "money": {
+   "amount": 19.42,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Зидане на балкон (стандартен размер)",
+  "unit": "бр",
+  "money": {
+   "amount": 178.83,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Монтаж на щурц до 3 м/л.",
+  "unit": "бр",
+  "money": {
+   "amount": 10.22,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Зидане на колони и куфари",
+  "unit": "м",
+  "money": {
+   "amount": 12.78,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Комин до 3 м",
+  "unit": "м",
+  "money": {
+   "amount": 30.67,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Циментова замазка",
+  "unit": "м2",
+  "money": {
+   "amount": 15.33,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Саморазливна замазка",
+  "unit": "м2",
+  "money": {
+   "amount": 12.78,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Армирана замазка с мрежа",
+  "unit": "м2",
+  "money": {
+   "amount": 17.89,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Замазка за наклони (тераси, покриви)",
+  "unit": "м2",
+  "money": {
+   "amount": 20.45,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Топлоизолационна замазка",
+  "unit": "м2",
+  "money": {
+   "amount": 25.56,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Замазка с фибри (фибробетон)",
+  "unit": "м2",
+  "money": {
+   "amount": 17.89,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Гипсова замазка",
+  "unit": "м2",
+  "money": {
+   "amount": 12.27,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Замазка върху подово отопление",
+  "unit": "м2",
+  "money": {
+   "amount": 25.56,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Гипсова мазилка",
+  "unit": "м2",
+  "money": {
+   "amount": 12.78,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Циментова мазилка",
+  "unit": "м2",
+  "money": {
+   "amount": 9.2,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Фина шпакловка",
+  "unit": "м2",
+  "money": {
+   "amount": 8.18,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Минерална мазилка",
+  "unit": "м2",
+  "money": {
+   "amount": 12.78,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Силиконова мазилка",
+  "unit": "м2",
+  "money": {
+   "amount": 16.87,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Силикатна мазилка",
+  "unit": "м2",
+  "money": {
+   "amount": 15.33,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Венецианска мазилка",
+  "unit": "м2",
+  "money": {
+   "amount": 35.78,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Травертин мазилка",
+  "unit": "м2",
+  "money": {
+   "amount": 28.12,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Ремонт на напукани стени",
+  "unit": "м2",
+  "money": {
+   "amount": 7.67,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Изравняване на повърхности",
+  "unit": "м2",
+  "money": {
+   "amount": 10.22,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Грундиране",
+  "unit": "м2",
+  "money": {
+   "amount": 3.07,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Варо-циментова мазилка",
+  "unit": "м2",
+  "money": {
+   "amount": 8.69,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Обръщане на врати и прозорци",
+  "unit": "м",
+  "money": {
+   "amount": 11.25,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Турбозолна мазилка",
+  "unit": "м2",
+  "money": {
+   "amount": 6.13,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Базова шпакловка",
+  "unit": "м2",
+  "money": {
+   "amount": 3.58,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Финна шпакловка",
+  "unit": "м2",
+  "money": {
+   "amount": 7.93,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Ремонтно шпакловане",
+  "unit": "м2",
+  "money": {
+   "amount": 6.13,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Шпакловка с мрежа за подсилване",
+  "unit": "м2",
+  "money": {
+   "amount": 7.66,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Шпакловка върху гипсокартон",
+  "unit": "м2",
+  "money": {
+   "amount": 6.13,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Машинна шпакловка",
+  "unit": "м2",
+  "money": {
+   "amount": 4.09,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Шпакловка със сухи смеси",
+  "unit": "м2",
+  "money": {
+   "amount": 7.16,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Декоративно шпакловане",
+  "unit": "м2",
+  "money": {
+   "amount": 15.33,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Грундиране преди шпакловка",
+  "unit": "м2",
+  "money": {
+   "amount": 2.05,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Грундиране с дълбокопроникващ грунд",
+  "unit": "м2",
+  "money": {
+   "amount": 1.53,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Шпакловка с теракол",
+  "unit": "м2",
+  "money": {
+   "amount": 4.6,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Шпакловка с теракол и мрежа",
+  "unit": "м2",
+  "money": {
+   "amount": 5.37,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Гипсова шпакловка",
+  "unit": "м2",
+  "money": {
+   "amount": 3.58,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Фина шпакловка шитрок/колоркит, 2 ръце",
+  "unit": "м2",
+  "money": {
+   "amount": 8.44,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Монтаж на ъглопротекторна лайсна",
+  "unit": "м",
+  "money": {
+   "amount": 2.3,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Шпакловка с фугопълнител за гипсокартон",
+  "unit": "м",
+  "money": {
+   "amount": 3.07,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Шкурене след шпакловка",
+  "unit": "м2",
+  "money": {
+   "amount": 1.53,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Премахване на стари покрития",
+  "unit": "м2",
+  "money": {
+   "amount": 3.07,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Шпакловка на сложни повърхности",
+  "unit": "м2",
+  "money": {
+   "amount": 12.78,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Боядисване след шпакловка",
+  "unit": "м2",
+  "money": {
+   "amount": 5.11,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Боядисване на стени с латекс",
+  "unit": "м2",
+  "money": {
+   "amount": 5.11,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Боядисване на тавани",
+  "unit": "м2",
+  "money": {
+   "amount": 6.13,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Боядисване на дървени повърхности",
+  "unit": "м2",
+  "money": {
+   "amount": 7.16,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Боядисване на метални повърхности",
+  "unit": "м2",
+  "money": {
+   "amount": 7.66,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Декоративно боядисване",
+  "unit": "м2",
+  "money": {
+   "amount": 10.22,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Боядисване на фасади",
+  "unit": "м2",
+  "money": {
+   "amount": 6.64,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Премахване на стари слоеве боя",
+  "unit": "м2",
+  "money": {
+   "amount": 2.56,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Грундиране",
+  "unit": "м2",
+  "money": {
+   "amount": 2.05,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Шпакловане и изравняване на стени",
+  "unit": "м2",
+  "money": {
+   "amount": 4.09,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Поправка на малки дефекти",
+  "unit": "м2",
+  "money": {
+   "amount": 5.11,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Нанасяне на текстурни покрития",
+  "unit": "м2",
+  "money": {
+   "amount": 7.66,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Лепене на кокалчета",
+  "unit": "м2",
+  "money": {
+   "amount": 33.23,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Неокраичен камък",
+  "unit": "м2",
+  "money": {
+   "amount": 37.32,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Къртене бетон",
+  "unit": "м3",
+  "money": {
+   "amount": 117.56,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Къртене на тухла",
+  "unit": "м3",
+  "money": {
+   "amount": 30.68,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Къртене фаянс, теракот",
+  "unit": "м2",
+  "money": {
+   "amount": 3.58,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Къртене замазка до 5 см",
+  "unit": "м2",
+  "money": {
+   "amount": 5.11,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Къртене на мозайка",
+  "unit": "м2",
+  "money": {
+   "amount": 12.78,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Къртене мазилка",
+  "unit": "м2",
+  "money": {
+   "amount": 35.76,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Извозване на отпадъци (4 м3)",
+  "unit": "service",
+  "money": {
+   "amount": 89.47,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Къртене/чистене/извозване – баня до 20 м2",
+  "unit": "service",
+  "money": {
+   "amount": 163.51,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Хидроизолация на покриви",
+  "unit": "м2",
+  "money": {
+   "amount": 28.57,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Монтаж на водосточни тръби",
+  "unit": "м",
+  "money": {
+   "amount": 12.78,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Окачен таван (гипсокартон)",
+  "unit": "м2",
+  "money": {
+   "amount": 15.34,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Растер таван стандартен",
+  "unit": "м2",
+  "money": {
+   "amount": 16.38,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Гипсокартон – конструкция",
+  "unit": "м2",
+  "money": {
+   "amount": 13.3,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Гипсокартон – лепене",
+  "unit": "м2",
+  "money": {
+   "amount": 9.2,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Преградна стена",
+  "unit": "м2",
+  "money": {
+   "amount": 19.95,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Полагане на вата",
+  "unit": "м2",
+  "money": {
+   "amount": 2.3,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Монтаж на алуминиева лайсна",
+  "unit": "м",
+  "money": {
+   "amount": 1.79,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Монтаж на пластмасови лайсни",
+  "unit": "м",
+  "money": {
+   "amount": 2.81,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Окачени тавани с LED осветление",
+  "unit": "м2",
+  "money": {
+   "amount": 28.11,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Топлоизолация EPS 5 см + вароциментова мазилка",
+  "unit": "м2",
+  "money": {
+   "amount": 34.26,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Топлоизолация EPS 8 см + вароциментова мазилка",
+  "unit": "м2",
+  "money": {
+   "amount": 36.8,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Топлоизолация EPS 10 см + вароциментова мазилка",
+  "unit": "м2",
+  "money": {
+   "amount": 39.36,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Топлоизолация EPS 5 см + силиконова мазилка",
+  "unit": "м2",
+  "money": {
+   "amount": 41.43,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Топлоизолация EPS 8 см + силиконова мазилка",
+  "unit": "м2",
+  "money": {
+   "amount": 44.0,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Топлоизолация EPS 10 см + силиконова мазилка",
+  "unit": "м2",
+  "money": {
+   "amount": 46.54,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "само труд",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/stroitelni_remonti",
+   "note": ""
+  },
+  "source": "web/stroitelni_remonti · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Саморазливна замазка до 5 мм",
+  "unit": "м2",
+  "money": {
+   "amount": 26,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Циментова замазка до 4 см",
+  "unit": "м2",
+  "money": {
+   "amount": 32,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Армирана циментова замазка до 4 см",
+  "unit": "м2",
+  "money": {
+   "amount": 35,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Контактен грунд преди замазка",
+  "unit": "м2",
+  "money": {
+   "amount": 4.5,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Полагане на XPS-фибран 5 см",
+  "unit": "м2",
+  "money": {
+   "amount": 25,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Варо-циментова мазилка до 2 см",
+  "unit": "м2",
+  "money": {
+   "amount": 28,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Гипсова мазилка до 2 см",
+  "unit": "м2",
+  "money": {
+   "amount": 30,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Гипсова мазилка до 2 см с мрежа",
+  "unit": "м2",
+  "money": {
+   "amount": 31,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Дълбокопроникващ грунд преди шпакловка",
+  "unit": "м2",
+  "money": {
+   "amount": 3,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Гипсова шпакловка",
+  "unit": "м2",
+  "money": {
+   "amount": 7.5,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Гипсова шпакловка с мрежа",
+  "unit": "м2",
+  "money": {
+   "amount": 8.5,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Фина бояджийска шпакловка",
+  "unit": "м2",
+  "money": {
+   "amount": 7.5,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Лепене на тапети над 50 м2 с лепило",
+  "unit": "м2",
+  "money": {
+   "amount": 9,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Лепене на тапети под 50 м2 с лепило",
+  "unit": "м2",
+  "money": {
+   "amount": 11.5,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Поставяне на фриз за тапет с лепило",
+  "unit": "м",
+  "money": {
+   "amount": 12,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Лепене на фототапет над 14 м2",
+  "unit": "м2",
+  "money": {
+   "amount": 14,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Лепене на фототапет под 14 м2",
+  "unit": "бр",
+  "money": {
+   "amount": 280,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Облепване с найлон и тиксо",
+  "unit": "м2",
+  "money": {
+   "amount": 1.9,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Боядисване с блажна боя – 1 цвят / труд",
+  "unit": "м2",
+  "money": {
+   "amount": 10,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Боядисване с блажна боя – 1 цвят",
+  "unit": "м2",
+  "money": {
+   "amount": 11.5,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Монтаж на рогов сифон",
+  "unit": "бр",
+  "money": {
+   "amount": 45,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Монтаж на линеен сифон",
+  "unit": "бр",
+  "money": {
+   "amount": 100,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Монтаж на мивка с батерия",
+  "unit": "бр",
+  "money": {
+   "amount": 45,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Монтаж на шкаф-мивка с батерия",
+  "unit": "бр",
+  "money": {
+   "amount": 55,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Монтаж на огледало",
+  "unit": "бр",
+  "money": {
+   "amount": 45,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Монтаж на LED огледало",
+  "unit": "бр",
+  "money": {
+   "amount": 60,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Монтаж на обикновен моноблок",
+  "unit": "бр",
+  "money": {
+   "amount": 55,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Монтаж на вградена структура за моноблок",
+  "unit": "бр",
+  "money": {
+   "amount": 145,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Монтаж на биде",
+  "unit": "бр",
+  "money": {
+   "amount": 55,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Монтаж на душ панел/душ система със стойка",
+  "unit": "бр",
+  "money": {
+   "amount": 55,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Монтаж на душ система за вграждане",
+  "unit": "бр",
+  "money": {
+   "amount": 135,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Окабеляване за осветителни тела",
+  "unit": "point",
+  "money": {
+   "amount": 38,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Окабеляване за токови излази",
+  "unit": "point",
+  "money": {
+   "amount": 38,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Монтаж на ключове и контакти",
+  "unit": "бр",
+  "money": {
+   "amount": 8.5,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Монтаж на осветителни тела тип луна",
+  "unit": "бр",
+  "money": {
+   "amount": 12,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Преработка на ВИК инсталация (точка)",
+  "unit": "point",
+  "money": {
+   "amount": 65,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Почистване на жилище до 100 м2 след ремонт",
+  "unit": "service",
+  "money": {
+   "amount": 150,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Зидария с YTONG 50/600/250",
+  "unit": "м2",
+  "money": {
+   "amount": 33.5,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Зидария с YTONG 75/600/250",
+  "unit": "м2",
+  "money": {
+   "amount": 38,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Зидария с YTONG 100/600/250",
+  "unit": "м2",
+  "money": {
+   "amount": 42,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Щурц 65/120 над отвор до 150 см",
+  "unit": "бр",
+  "money": {
+   "amount": 30,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Зидане на комин с керамични тела ф18",
+  "unit": "м",
+  "money": {
+   "amount": 65,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Зидане на комин с керамични тела ф25",
+  "unit": "м",
+  "money": {
+   "amount": 80,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "EPS 50 мм с лепило и дюбели",
+  "unit": "м2",
+  "money": {
+   "amount": 23,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "EPS 80 мм с лепило и дюбели",
+  "unit": "м2",
+  "money": {
+   "amount": 25,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "EPS 100 мм с лепило и дюбели",
+  "unit": "м2",
+  "money": {
+   "amount": 26.5,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "NEOPOR 50 мм с лепило и дюбели",
+  "unit": "м2",
+  "money": {
+   "amount": 25,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "NEOPOR 80 мм с лепило и дюбели",
+  "unit": "м2",
+  "money": {
+   "amount": 27,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "NEOPOR 100 мм с лепило и дюбели",
+  "unit": "м2",
+  "money": {
+   "amount": 29,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Каменна минерална вата 50 мм",
+  "unit": "м2",
+  "money": {
+   "amount": 40,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Каменна минерална вата 100 мм",
+  "unit": "м2",
+  "money": {
+   "amount": 49,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Паропропусклива и водонепроницаема мембрана",
+  "unit": "м2",
+  "money": {
+   "amount": 9.5,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Направа на двойна скара",
+  "unit": "м",
+  "money": {
+   "amount": 4,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Обшиване на комин с поцинкована ламарина",
+  "unit": "бр",
+  "money": {
+   "amount": 190,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Дъсчена обшивка",
+  "unit": "м2",
+  "money": {
+   "amount": 29,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Билна лента вентилационна",
+  "unit": "м",
+  "money": {
+   "amount": 10,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ },
+ {
+  "desc": "Керамични капаци за било",
+  "unit": "м",
+  "money": {
+   "amount": 16,
+   "currency": "EUR",
+   "vatIncluded": false,
+   "asOf": "2026"
+  },
+  "note": "единична цена",
+  "rangeTxt": null,
+  "origin": {
+   "kind": "supplier_web_anchor",
+   "ref": "web/npn",
+   "note": "NPN 2026 published price list; prices stated without VAT"
+  },
+  "source": "web/npn · 2026",
+  "status": "pending_review",
+  "advisory": true
+ }
+]

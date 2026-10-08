@@ -1,0 +1,8 @@
+# core app/ is stdlib-only (Python 3.12). These are for the KCC readers and the eval tools.
+openpyxl>=3.1
+xlrd>=2.0
+numpy>=1.26
+sentence-transformers>=3.0
+# torch: install the CUDA build matching your driver first, e.g.
+#   pip install torch --index-url https://download.pytorch.org/whl/cu130
+torch>=2.4
