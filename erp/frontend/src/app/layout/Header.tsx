@@ -1,0 +1,2088 @@
+// DDC-CWICR-OE: DataDrivenConstruction · OpenConstructionERP
+// Copyright (c) 2026 Artem Boiko / DataDrivenConstruction
+import { useState, useRef, useEffect, useCallback, useId } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { Search, ChevronDown, ChevronRight, LogOut, User, Settings, Menu, MessageSquarePlus, FolderOpen, CheckCircle2, XCircle, Bug, BookOpen, Loader2, Upload, HelpCircle, GraduationCap, Mail, ExternalLink, Github, Sun, Moon, Monitor, Globe } from 'lucide-react';
+import clsx from 'clsx';
+import { SUPPORTED_LANGUAGES, getLanguageByCode, changeLanguage } from '../i18n';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { useUploadQueueStore } from '@/stores/useUploadQueueStore';
+import { useProjectContextStore } from '@/stores/useProjectContextStore';
+import { useThemeStore } from '@/stores/useThemeStore';
+import { ActivePackChip, CountryFlag, ModuleInfoButton, PartnerLogoBadge } from '@/shared/ui';
+import { usePartnerPack } from '@/shared/hooks/usePartnerPack';
+import { NotificationBell } from '@/shared/ui/NotificationBell';
+import { LearnTopBarButton } from './LearnTopBarButton';
+import { HeaderNewsButton } from '@/shared/ui/HeaderNewsButton';
+import { ModuleBuilderButton } from '@/features/module-builder';
+import { fetchProjectList } from '@/shared/lib/projectList';
+import { copyToClipboard } from '@/shared/lib/browser';
+import {
+  exportErrorReport,
+  getErrorCount,
+  getLastError,
+  isLastErrorNetworkOnly,
+} from '@/shared/lib/errorLogger';
+import { APP_VERSION, APP_BUILD_FINGERPRINT } from '@/shared/lib/version';
+import { useToastStore } from '@/stores/useToastStore';
+import { useI18nReady } from '@/shared/lib/useI18nReady';
+import { isTauri, openAppInBrowser, openLink } from '@/shared/lib/desktop';
+// TenderOps skin: SupportUsButton and SubscribeButton imports removed with
+// the marketing CTAs; the components remain for upstream reuse.
+import { ProjectJourneyButton } from './ProjectJourney';
+import { PresenceAvatarStack } from '@/features/global_presence';
+import { getRouteIcon } from './routeIcons';
+import { isModuleI18nKey } from '@/modules/_i18n';
+
+/**
+ * Map the English page titles passed from App.tsx routes to i18n keys.
+ *
+ * An entry must name the same key the screen's own `<h1>` uses, so the top bar,
+ * the browser tab title and the page heading say one word. `titleKeyAgreement`
+ * in `Header.titleKeys.test.ts` checks every route and fails on a disagreement,
+ * on a route neither map knows, and on a stale exemption.
+ *
+ * This paragraph used to assert the three "can never disagree" and nothing
+ * measured it. Nine of them did: the top bar read "Site Mobilisation" over a
+ * page whose heading said "Site prep", and "PDF Takeoff" over "PDF
+ * Measurements". Because the h1 is `sr-only`, that shipped as one product for a
+ * sighted reader and a different one for a screen reader, and no reader saw
+ * both halves to notice. An invariant worth stating in prose is worth a test;
+ * without one this comment reads as verified and stops the next person looking.
+ *
+ * When a title has no entry here the heading falls back to the English
+ * `defaultValue`, so adding a route without a mapping degrades gracefully
+ * rather than showing a raw key. The test is what stops it staying that way.
+ */
+export const TITLE_I18N_MAP: Record<string, string> = {
+  // Overview
+  'Dashboard': 'nav.dashboard',
+  'Projects': 'nav.projects',
+  'New Project': 'projects.new_project',
+  'Project': 'nav.projects',
+  'Project Settings': 'nav.settings',
+  // Legacy title of the module now called Documents. Kept so a page still
+  // emitting the old title resolves to the current name rather than the old one.
+  'Project Files': 'nav.documents',
+  'Project Intelligence': 'nav.estimation_dashboard',
+  // Estimation
+  'Match Elements': 'match_elements.title',
+  'AI Quick Estimate': 'nav.ai_estimate',
+  'New BOQ': 'boq.new_estimate',
+  'Bill of Quantities': 'boq.title',
+  'BOQ Editor': 'boq.editor',
+  'BOQ Templates': 'nav.templates',
+  // Catalogues
+  'Cost Database': 'costs.title',
+  'Cost Explorer': 'nav.cost_explorer',
+  'Import Cost Database': 'costs.import_title',
+  // First-party module routes now state their title as a key, so these entries
+  // only catch a module that still ships the English literal.
+  'GAEB Exchange': 'nav.gaeb_exchange',
+  'Resource Catalog': 'catalog.title',
+  'Assemblies': 'nav.assemblies',
+  'New Assembly': 'assemblies.new_assembly',
+  // No locale names the single-assembly editor, so it takes the module's own
+  // name. The keys these two used to point at, assemblies.new and
+  // assemblies.editor, exist in no locale at all, which the defaultValue
+  // fallback turned into a silently English heading.
+  'Assembly Editor': 'assemblies.title',
+  // Takeoff & CAD/BIM
+  'Quantity Takeoff': 'nav.takeoff_overview',
+  'PDF Takeoff': 'nav.pdf_measurements',
+  'DWG Takeoff': 'nav.dwg_takeoff',
+  'CAD/BIM Takeoff': 'nav.cad_takeoff',
+  // #149: keyed on the <P title> App.tsx passes for /data-explorer. Both sides
+  // renamed together; a miss here falls back to the raw English title.
+  'CAD-BIM BI Explorer': 'nav.cad_bim_explorer',
+  'BIM Viewer': 'nav.bim_viewer',
+  'BIM Federations': 'nav.bim_federations',
+  'BIM Rules': 'nav.bim_rules',
+  'Clash Detection': 'nav.clash_detection',
+  'Model Coordination': 'nav.coordination_hub',
+  'EIR Matrix': 'nav.eir_matrix',
+  'Geo Hub': 'sidebar.geo_hub',
+  // AI
+  'AI Agents': 'nav.ai_agents',
+  'AI Cost Advisor': 'nav.ai_advisor',
+  'AI Chat': 'nav.erp_chat',
+  // Commercial
+  'CRM': 'nav.crm',
+  'Contracts': 'nav.contracts',
+  'Subcontractors': 'nav.subcontractors',
+  'Bid Management': 'nav.bid_management',
+  'Tendering': 'nav.tendering',
+  'Variations': 'nav.variations',
+  'Supplier Catalogs': 'nav.supplier_catalogs',
+  'Change Orders': 'nav.change_orders',
+  // Property development
+  'Property Development': 'nav.property_dev',
+  'Property Development Dashboards': 'nav.property_dev_dashboards',
+  'House Type Catalogue': 'nav.property_dev_house_types',
+  'Document Templates': 'nav.property_dev_doc_templates',
+  'Bulk Operations': 'nav.property_dev_bulk_operations',
+  'Pricing Engine': 'nav.property_dev_pricing_engine',
+  'Inventory Map': 'nav.property_dev_inventory_map',
+  'Compliance dashboard': 'propdev.compliance.title',
+  'Compliance Rule Builder': 'nav.compliance_rule_builder',
+  'Accommodation': 'nav.accommodation',
+  'Accommodation Calendar': 'nav.accommodation',
+  // Planning
+  '4D Schedule': 'nav.schedule',
+  'Advanced Schedule': 'nav.schedule_advanced',
+  'Tasks': 'tasks.title',
+  '5D Cost Model': 'nav.5d_cost_model',
+  'Risk Register': 'nav.risk_register',
+  // Operations
+  'Daily Diary': 'nav.daily_diary',
+  'Field Reports': 'nav.field_reports',
+  'Equipment & Fleet': 'nav.equipment',
+  'Resources & Crew': 'nav.resources',
+  'Service & Maintenance': 'nav.service',
+  'Client & Partner Portal': 'nav.portal',
+  'Asset Register': 'nav.assets',
+  // Quality & safety
+  'Validation': 'nav.validation',
+  'Inspections': 'inspections.title',
+  'NCR': 'ncr.title',
+  'Punch List': 'nav.punchlist',
+  'Quality Management': 'nav.qms',
+  'Safety': 'safety.title',
+  'HSE Management': 'nav.hse_advanced',
+  'Carbon & ESG': 'nav.carbon',
+  // Communication & documentation
+  'Contacts': 'contacts.title',
+  'Meetings': 'meetings.title',
+  'RFI': 'rfi.title',
+  'Submittals': 'submittals.title',
+  'Transmittals': 'transmittals.title',
+  'Correspondence': 'correspondence.title',
+  'CDE': 'cde.title',
+  'Project Photos': 'nav.photos',
+  'Markups': 'nav.markups',
+  'Documents': 'nav.documents',
+  // Finance
+  'Finance': 'finance.title',
+  'Procurement': 'procurement.title',
+  // Analytics
+  'Reports': 'nav.reports',
+  'Project Controls': 'nav.project_controls',
+  'BI Dashboards': 'nav.bi_dashboards',
+  'Dashboards': 'nav.snapshots',
+  'Reporting Dashboards': 'nav.reporting_dashboards',
+  'Analytics': 'nav.analytics',
+  'Architecture Map': 'nav.architecture_map',
+  'Sustainability': 'nav.sustainability',
+  // Admin
+  'User Management': 'sidebar.admin_grid.users',
+  'Audit Log': 'sidebar.admin_grid.audit',
+  'Governance': 'sidebar.admin_grid.governance',
+  'Modules': 'nav.modules',
+  // A module installed from the catalogue renders under a route that titles
+  // every one of them "Module". The word was translated everywhere already, as
+  // a filter label over in quantities, but a page heading has no business
+  // reading its name out of another module's namespace, so the modules
+  // namespace now carries it too.
+  'Module': 'modules.module_title',
+  'E-invoice Clearance': 'nav.einvoice_clearance',
+  'Settings': 'nav.settings',
+  'About': 'nav.about',
+  'Not Found': 'error.not_found',
+
+  /* The map had grown to cover about half the routes, and the half it missed
+     included the opening screen of most modules: the heading and the browser
+     tab printed English on an otherwise German session. Everything below is a
+     route whose words are already translated under some key, so these are
+     mappings and not new strings. Where the sidebar names the destination a
+     little differently - "Allowances & Contingency" for the route titled
+     "Allowances" - the sidebar wins, because the point of this map is that the
+     two can never disagree. */
+
+  // Estimation
+  'AI Estimate Builder': 'nav.ai_estimator',
+  'Assembly Library': 'nav.assembly_library',
+  'Basis of Estimate': 'nav.estimate_basis',
+  'Conceptual Estimate': 'nav.rom_estimate',
+  'Estimate Copilot': 'nav.estimate_copilot',
+  'Allowances': 'nav.allowances',
+  'Preliminaries': 'nav.preliminaries',
+  'Waste Factors': 'nav.waste_factors',
+  'Production Norms': 'nav.norm_expansion',
+  'Resource Summary': 'nav.resource_summary',
+  'Cost Match': 'nav.cost_match',
+  'Price Index': 'nav.price_index',
+  'Source Data': 'source_data.title',
+  'Databases & Resources': 'nav.setup_databases',
+  'Currencies': 'nav.fx',
+  // Takeoff & CAD/BIM
+  'Point Cloud': 'nav.point_cloud',
+  'Model Review': 'nav.model_review',
+  'Model Issues': 'nav.model_issues',
+  'Issues': 'nav.issues',
+  'Clash Profiles': 'clash.profiles.title',
+  'Design Options': 'nav.design_options',
+  'Drawing Sheets': 'sheets.page_title',
+  'Plan Room': 'nav.plan_room',
+  'Project map': 'geo_hub.project_title',
+  'Development map': 'geo_hub.development_title',
+  // Commercial
+  'Change Intelligence': 'nav.change_intelligence',
+  'Claims Evidence': 'nav.claims_evidence',
+  'Progress Claim': 'contracts.claim',
+  'Withholding Tax': 'nav.tax_withholding',
+  'Tax Rates': 'nav.tax_rates',
+  'Authority Submissions': 'authority_submission.title',
+  'Review Authority': 'review_authority.title',
+  'Interface Register': 'interface_management.title',
+  'Management of Change': 'moc.title',
+  'Event Reconciliation': 'nav.reconciliation',
+  // Planning
+  'Takt Planning': 'nav.takt',
+  'Capacity Planning': 'nav.capacity_planning',
+  'Resource Leveling': 'nav.resource_leveling',
+  'Progress': 'nav.progress',
+  'Construction Control': 'construction_control.title',
+  // Field & site
+  'Field Time': 'nav.field_time',
+  'Labor Rates': 'nav.labor_rates',
+  'Payroll': 'nav.payroll',
+  'Certified Payroll': 'nav.certified_payroll',
+  'Site Supervision': 'site_supervision.title',
+  'Site Mobilisation': 'site_prep.title',
+  'Site Logistics': 'nav.site_logistics',
+  'Site Inventory': 'site_inventory.title',
+  'Temporary Works': 'temporary_works.title',
+  'Formwork': 'formwork.title',
+  'Off-site / Prefab': 'nav.prefab',
+  'Forms & checklists': 'nav.forms',
+  // Quality, handover & sustainability
+  'Commissioning': 'nav.commissioning',
+  'Handover & Closeout': 'closeout.title',
+  'Defects Liability': 'defects_liability.title',
+  'ESG Site Performance': 'nav.esg',
+  // Communication & documentation
+  'Inbox': 'inbox.title',
+  'Timeline': 'nav.timeline',
+  'Project Timeline': 'nav.timeline',
+  'Notifications': 'nav.notifications',
+  'Deadlines': 'deadlines.title',
+  'Phone Log': 'nav.phone_log',
+  'Inbound Capture': 'nav.inbound_capture',
+  'Email Delay Scan': 'nav.inbound_email',
+  'Document Connectors': 'nav.connectors',
+  'Approvals register': 'files.approvals.register_title',
+  'Recycle Bin': 'files.trash.title',
+  'Find Records': 'nav.find_records',
+  'E-Signatures': 'signing.title',
+  // Finance & analytics
+  'Payment Clock': 'nav.payment_clock',
+  'Cost-Value Reconciliation': 'nav.cvr',
+  'Earned Value': 'nav.full_evm',
+  'EAC Block Editor': 'eac.editor.title',
+  'Value Realized': 'nav.value',
+  'Portfolio': 'portfolio.title',
+  'Route Classifier': 'project_route.title',
+  'Post-calculation': 'postcalc.title',
+  'Public Funding': 'funding.title',
+  // Learning & admin
+  'Cases': 'nav.cases',
+  'Videos': 'nav.videos',
+  'How it works': 'howto.page_title',
+  'Inside track': 'inside.page_title',
+  'Module Builder': 'nav.module_builder',
+  'Pipelines': 'nav.pipelines',
+  'Integrations': 'nav.integrations',
+  'Background Jobs': 'jobs.page_title',
+  'Saved Views': 'saved_views.page_title',
+  'Approval Workflows': 'enterprise_workflows.title',
+  'Rebar Schedule': 'rebar_schedule.title',
+  'RFQ Bidding': 'rfq_bidding.title',
+  'Credentials': 'nav.credentials',
+  'Teams and Visibility': 'teams.title',
+};
+
+/**
+ * Resolve the i18n key for a page title (or `null` when there is no mapping).
+ * Shared with AppLayout so the browser-tab `document.title` translates the
+ * same way the on-screen heading does.
+ *
+ * A module route states its title as a key already (`ModuleRoute.title`), so
+ * such a title is its own answer. Without this the map would miss it, the tab
+ * would print the raw key, and the heading and the tab would disagree about
+ * the same page.
+ */
+export function resolvePageTitleKey(title: string | undefined): string | null {
+  if (!title) return null;
+  return TITLE_I18N_MAP[title] ?? (isModuleI18nKey(title) ? title : null);
+}
+
+interface HeaderProps {
+  title?: string;
+  onMenuClick?: () => void;
+}
+
+export function Header({ title, onMenuClick }: HeaderProps) {
+  const { t, i18n } = useTranslation();
+  // Header mounts at app boot, before lazy-loaded locale chunks arrive.
+  // ``useTranslation`` doesn't always pick up bundle-added events under
+  // React StrictMode (subscription gets churned by double-mount), so we
+  // attach an external-store subscription that survives the remount and
+  // forces a re-render whenever a new resource bundle is merged in. The
+  // returned version number is unused — its role is to invalidate the
+  // memoization React applies to this render.
+  useI18nReady();
+  // A partner pack drives the centered co-brand chip only. The secondary
+  // header actions (search, Support, Subscribe) keep their full labelled
+  // form whether or not a pack is active, so the top bar looks the same for
+  // every operator. The chip sits in a flex-1 column that yields space, so it
+  // never has to push the action buttons into icon-only mode to fit.
+  // The co-brand strip is a partner's mark, so it belongs to a partner pack and
+  // to nothing else. Measured against the packs this deployment ships: fourteen
+  // country, four industry, zero partner - so on a stock install the header now
+  // carries the pack readout and no co-brand, which is the intent rather than a
+  // regression. The readout itself is `ActivePackChip` and is deliberately not
+  // this component; see the note there on why a dismissible badge cannot be the
+  // answer to "which pack am I on".
+  const packData = usePartnerPack().data;
+  const showCoBrand = packData?.active === true && packData.manifest?.type === 'partner';
+  const location = useLocation();
+  const translatedTitle = title
+    ? t(resolvePageTitleKey(title) ?? title, { defaultValue: title })
+    : undefined;
+  // Icon for the active module, mirroring the matching sidebar row. Shown as
+  // a small chip before the top-bar title so each module is identifiable at
+  // the very top. `null` when the route has no sidebar entry (then nothing
+  // renders and the layout is unchanged).
+  const RouteIcon = getRouteIcon(location.pathname);
+  const currentLang = getLanguageByCode(i18n.language) ?? { code: 'en', name: 'English', flag: '', country: 'xx' };
+  const openCommandPalette = useCallback(() => {
+    // Dispatch Ctrl+K to open the CommandPalette managed by App.tsx
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true }));
+  }, []);
+
+  return (
+    <header
+      className={clsx(
+        'sticky z-30',
+        'flex h-header items-center justify-between gap-3 px-4 sm:px-6 lg:px-8',
+        'bg-surface-primary/80 backdrop-blur-xl',
+      )}
+      // In the desktop shell the browser-style toolbar (h-9 = 36px) sits above
+      // the header, so the header pins just below it instead of under it. In the
+      // normal web build there is no toolbar and it pins to the true top.
+      style={{ top: isTauri ? '36px' : 0 }}
+    >
+      {/* Soft hairline at the bottom — replaces a hard 1px border for
+          a calmer modern-SaaS-style separation from the page below. */}
+      <div className="absolute bottom-0 start-0 end-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+
+      {/* ── Zone 1 (Workspace): mobile menu + project breadcrumb + title ── */}
+      <div className="flex items-center gap-3 min-w-0 shrink">
+        {onMenuClick && (
+          <button
+            onClick={onMenuClick}
+            aria-label={t('common.open_menu', { defaultValue: 'Open menu' })}
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-content-secondary hover:bg-surface-secondary lg:hidden"
+          >
+            <Menu size={20} />
+          </button>
+        )}
+
+        {/* Active project switcher (rendered first so the breadcrumb
+            reads left-to-right as ProjectName › PageTitle). */}
+        <ProjectSwitcher />
+
+        {translatedTitle && (
+          <>
+            {/* Breadcrumb separator — only shown on lg+ where the page
+                title is visible. Subtle chevron so it reads as
+                "ProjectName › PageTitle" hierarchy. */}
+            <ChevronRight
+              size={14}
+              strokeWidth={1.75}
+              className="hidden lg:block shrink-0 text-content-quaternary/60"
+              aria-hidden
+            />
+            {/* text-base until xl: at lg widths the right cluster + project
+                pill left too little room and module names truncated to
+                "Estima..." (uniformity sweep S5 follow-up). */}
+            <h1 className="hidden lg:flex items-center gap-2 min-w-0 text-base font-semibold text-content-primary xl:text-lg">
+              {/* Module icon — mirrors the active route's sidebar icon so the
+                  top title is visually tied to the module. Decorative
+                  (aria-hidden); absent (no layout shift) when the route has
+                  no sidebar entry. */}
+              {RouteIcon && (
+                <RouteIcon
+                  size={18}
+                  strokeWidth={1.75}
+                  className="shrink-0 text-content-secondary"
+                  aria-hidden
+                />
+              )}
+              <span className="truncate" title={translatedTitle}>{translatedTitle}</span>
+            </h1>
+          </>
+        )}
+
+        {/* Collapsed module-info re-opener. When a page's info block is
+            collapsed it vanishes from the page entirely (founder decision
+            2026-06-06) and registers here: project pill › module name › THIS
+            icon. One click re-expands it in the page.
+
+            This is the ONLY re-open control in the product (founder
+            2026-08-07). It sits outside the `translatedTitle` block on
+            purpose: the title is `hidden lg:flex`, and below lg the icon is
+            the sole way back, so gating it on the title would strand a
+            collapsed block on every narrow screen. */}
+        <ModuleInfoButton />
+      </div>
+
+      {/* ── Partner co-brand chip (center column) ───────────────────────
+          Sits in a flexible column between the workspace zone (left) and the
+          action cluster (right), centered within the clear space. The
+          header's true midpoint is occupied by the search box and action
+          buttons, so a chip pinned to the exact center lands on top of the
+          search field (the "slides under search" bug). Centering it in the
+          open gap keeps it fully visible and collision-free at every width,
+          which is what an absolute overlay cannot guarantee on a busy header.
+          Shown lg+; min-w-0 lets the column yield space instead of pushing
+          the zones, and the chip's own name truncation keeps it from
+          overflowing. Below lg the co-brand still shows in the dashboard
+          banner. */}
+      <div
+        className="hidden lg:flex flex-1 min-w-[2.5rem] items-center justify-center gap-2 overflow-hidden px-2"
+        data-testid="header-pack-column"
+      >
+        {/* min-w-0 on the chip and overflow-hidden on the column: at 125% and
+            150% text size the column is squeezed below the chip's width, and
+            without both the chip kept its full width and was painted over the
+            project picker instead of truncating its name. The column keeps
+            room for the globe, so the readout shrinks to its icon and tooltip
+            rather than vanishing, which is the one thing it must not do. */}
+        <ActivePackChip className="min-w-0" />
+        {showCoBrand && <PartnerLogoBadge variant="nav" />}
+      </div>
+
+      {/* Right side — three zones separated by hairline dividers.
+          Zone 2: Search · Zone 3: Notifications + Help · Zone 4: Account
+          (Upload + Language + User). Each zone has internal `gap-1`,
+          dividers between zones are 1px hairlines.
+
+          SubscribeButton lives in Zone 3 next to HelpMenu as an icon-only
+          square with the Help footprint. It used to sit absolutely
+          centred across the header but that created awkward visual
+          tension with the project switcher on the left; planted next
+          to Support/Help, the two CTAs read as a coherent cluster. */}
+      <div className="flex items-center gap-2 shrink-0">
+        {/* ── Journey (orientation) ─────────────────────────────────
+            Names the lifecycle phase the current screen belongs to and
+            opens the whole-platform journey map. First in the cluster so it
+            reads as "where am I" ahead of the action buttons. */}
+        <ProjectJourneyButton />
+        <PresenceAvatarStack />
+        <div className="hidden sm:block h-4 w-px bg-border-light/70" aria-hidden />
+
+        {/* ── Zone 2 (Search) ──────────────────────────────────────── */}
+        <button
+          onClick={openCommandPalette}
+          className={clsx(
+            'hidden sm:flex',
+            'h-8 items-center gap-2 rounded-lg px-3',
+            // Solid-ish white background so the field doesn't dissolve into
+            // the translucent header background; falls back to a dark tint
+            // in dark mode so the chip stays readable on the dark blurred
+            // topbar.
+            'border border-border-light bg-white/85 backdrop-blur-sm dark:bg-surface-primary/70',
+            'text-sm text-content-tertiary shadow-sm',
+            'transition-colors duration-fast ease-oe',
+            'hover:border-content-quaternary/40 hover:bg-white dark:hover:bg-surface-primary hover:text-content-secondary',
+            // w-56 only at xl: at lg the wide search box squeezed the left
+            // workspace zone and truncated the module title.
+            'w-40 md:w-44 xl:w-56',
+          )}
+        >
+          <Search size={14} strokeWidth={1.75} className="shrink-0" />
+          <span className="truncate">{t('common.search')}</span>
+          <kbd className="ml-auto inline-flex items-center gap-0.5 rounded border border-border-light bg-surface-primary px-1 py-px text-[9px] font-medium text-content-quaternary">
+            ⌘K
+          </kbd>
+        </button>
+
+        {/* Mobile search icon — collapses the search bar on tiny screens. */}
+        <button
+          onClick={openCommandPalette}
+          aria-label={t('common.search', { defaultValue: 'Search' })}
+          className={clsx(
+            'flex sm:hidden',
+            'h-8 w-8 items-center justify-center rounded-lg text-content-secondary hover:bg-surface-secondary transition-colors',
+          )}
+        >
+          <Search size={16} />
+        </button>
+
+        {/* Hairline divider between Zone 2 and Zone 3. */}
+        <div className="hidden sm:block h-4 w-px bg-border-light/70" aria-hidden />
+
+        {/* ── Zone 3 (Notifications + Subscribe + Bug + Help) ──────
+            Order: NotificationBell · What's new · SupportUs · Subscribe · BugReport · Help.
+            The "ask the user for something" CTAs (Support / Subscribe) stay
+            adjacent; Bug + Help sit on the right edge so a user filing a
+            report doesn't have to scan past the marketing CTAs. */}
+        {/* Only while the Learn card is hidden from the menu: its way back,
+            at every width. */}
+        <LearnTopBarButton />
+        <NotificationBell />
+        <HeaderNewsButton />
+        {/* Building a module is something you do from wherever you noticed the
+            platform was missing one, so it lives here rather than in the
+            sidebar. Renders nothing for anyone who may not install one.
+            Hidden below xl to reduce crowding on narrower screens. */}
+        {/* Shown from 2xl only: at 125% and 150% text size a 1280-1440px bar
+            had no room for these three next to the project picker, and the
+            right cluster ran off screen. */}
+        <div className="hidden 2xl:block"><ModuleBuilderButton /></div>
+        {/* TenderOps skin: SupportUs and Subscribe marketing CTAs removed —
+            the header stays for work controls only. */}
+        <BugReportMenu />
+        <HelpMenu />
+
+        {/* Hairline divider between Zone 3 and Zone 4. */}
+        <div className="hidden sm:block h-4 w-px bg-border-light/70" aria-hidden />
+
+        {/* ── Zone 4 (Account) ─────────────────────────────────────── */}
+        <UploadQueueIndicator />
+        <LanguageSwitcher
+          currentLang={currentLang}
+          // Load the target locale's lazy chunk BEFORE switching so every
+          // string flips to the new language immediately, with no English
+          // flash and no reload. See ``changeLanguage`` in app/i18n.
+          onSelect={(code) => void changeLanguage(code)}
+        />
+        <ThemeToggle />
+        <UserMenu />
+      </div>
+    </header>
+  );
+}
+
+/* ── Theme Toggle ──────────────────────────────────────────────────────── */
+
+/** Single icon-button that cycles light → dark → system. The icon swaps
+ *  to mirror the *current* theme, not the *next* one (modern-SaaS
+ *  convention) — users glance at it to see what mode they're in,
+ *  click to advance. Lives in Zone 4 next to the avatar so theme +
+ *  identity sit together. */
+function ThemeToggle() {
+  const { t } = useTranslation();
+  const theme = useThemeStore((s) => s.theme);
+  const setTheme = useThemeStore((s) => s.setTheme);
+
+  const cycle = () => {
+    if (theme === 'light') setTheme('dark');
+    else if (theme === 'dark') setTheme('system');
+    else setTheme('light');
+  };
+
+  const Icon = theme === 'light' ? Sun : theme === 'dark' ? Moon : Monitor;
+  const label =
+    theme === 'light'
+      ? t('settings.theme_light', { defaultValue: 'Light theme' })
+      : theme === 'dark'
+        ? t('settings.theme_dark', { defaultValue: 'Dark theme' })
+        : t('settings.theme_system', { defaultValue: 'System theme' });
+
+  return (
+    <button
+      type="button"
+      onClick={cycle}
+      aria-label={label}
+      title={label}
+      data-testid="theme-toggle"
+      data-theme={theme}
+      className="hidden sm:flex h-8 w-8 items-center justify-center rounded-lg text-content-tertiary hover:bg-surface-secondary hover:text-content-secondary transition-colors"
+    >
+      <Icon size={16} strokeWidth={1.75} />
+    </button>
+  );
+}
+
+/* ── Bug Report Menu (standalone, prominent) ─────────────────────────
+   Dedicated header button so reporting an issue is one obvious click,
+   not a multi-step "open help → scroll → click bug". The popover lets
+   the user pick the channel:
+
+     - GitHub Issue (pre-filled with last error + env)
+     - Email the team (mailto: with the same payload)
+     - Web feedback form (richer fields, captures attachments server-side)
+     - Download log JSON (for manual sharing)
+
+   A red dot on the icon flags that errors were captured this session,
+   so the user notices the entry point is relevant to them. */
+
+/**
+ * Shortest description we will file a report with, in trimmed characters.
+ *
+ * The two channels that transmit a report body (GitHub, e-mail) are disabled
+ * below this, and the requirement is stated above the field before anyone
+ * types rather than discovered on the way out. Roughly four words: enough to
+ * name what was clicked and what happened, which is exactly the question we
+ * would otherwise have to ask in a reply a day later, and low enough that a
+ * reporter writing in a language with long compounds is not fighting it.
+ */
+export const MIN_DESCRIPTION_LENGTH = 20;
+
+export function BugReportMenu() {
+  const { t } = useTranslation();
+  const addToast = useToastStore((s) => s.addToast);
+  const [open, setOpen] = useState(false);
+  // Once the user clicks "report anyway" we stop nagging them with the
+  // network-only banner for the rest of the popover lifetime.
+  const [overrodeNetworkWarning, setOverrodeNetworkWarning] = useState(false);
+  // What the reporter is telling us. Held here rather than prefilled into the
+  // issue body so there is nothing to accidentally send: an untouched field is
+  // empty, and empty cannot be filed.
+  const [description, setDescription] = useState('');
+  const ref = useRef<HTMLDivElement>(null);
+  const descriptionId = useId();
+  const descriptionHintId = `${descriptionId}-hint`;
+  const errorCount = getErrorCount();
+  const trimmedDescription = description.trim();
+  const descriptionTooShort = trimmedDescription.length < MIN_DESCRIPTION_LENGTH;
+  // Re-evaluated each open of the popover. ``isLastErrorNetworkOnly``
+  // returns true when every recent level=error entry is a transport
+  // blip (Failed to fetch, AbortError, 502/503/504, …) — i.e. nothing
+  // actionable for a GitHub issue. See errorLogger#155.
+  const networkOnly = open && !overrodeNetworkWarning && isLastErrorNetworkOnly();
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [open]);
+
+  // Reset the network-only override each time the popover is dismissed
+  // so the next open shows the banner again if nothing new has happened.
+  //
+  // `description` is deliberately NOT reset here. The popover closes on any
+  // click outside it, and throwing away a paragraph somebody just typed
+  // because they reached for the scrollbar is the same disrespect for their
+  // effort as making them file an empty report. It is cleared once a channel
+  // actually fires.
+  useEffect(() => {
+    if (!open) setOverrodeNetworkWarning(false);
+  }, [open]);
+
+  // Open this menu when any component dispatches ``oe:open-bug-report``.
+  // The v6 PostgreSQL-migration notice strip points its "Report a problem"
+  // action here: the community build ships without SMTP, so routing people
+  // to this menu (whose first channel opens a pre-filled GitHub issue) is
+  // the path that can actually deliver a report, unlike the e-mail form.
+  useEffect(() => {
+    const openMenu = () => setOpen(true);
+    window.addEventListener('oe:open-bug-report', openMenu);
+    return () => window.removeEventListener('oe:open-bug-report', openMenu);
+  }, []);
+
+  const handleGithub = () => {
+    if (descriptionTooShort) return;
+    setOpen(false);
+    setDescription('');
+    const { url, body } = buildBugReportUrl(trimmedDescription);
+    if (url) {
+      openLink(url);
+      return;
+    }
+    void copyToClipboard(body).then((ok) => {
+      if (ok) {
+        addToast({
+          type: 'info',
+          title: t('app.report_bug_not_configured', { defaultValue: 'GitHub repo not configured' }),
+          message: t('app.report_bug_copied', { defaultValue: 'Report copied to clipboard' }),
+        });
+      } else {
+        addToast({
+          type: 'warning',
+          title: t('app.report_bug_not_configured', { defaultValue: 'GitHub repo not configured' }),
+        });
+      }
+    });
+  };
+
+  const handleEmail = () => {
+    if (descriptionTooShort) return;
+    setOpen(false);
+    setDescription('');
+    const { body, title } = buildBugReportUrl(trimmedDescription);
+    const subject = `TenderOps ERP Issue - ${title}`;
+    // mailto bodies are also length-limited (~2000 chars in Chrome),
+    // so we trim aggressively. The downloaded log JSON is the long form.
+    const safeBody = body.length > 1500 ? `${body.slice(0, 1500)}\n\n_[truncated - attach the JSON log if needed]_` : body;
+    const href = `mailto:info@datadrivenconstruction.io?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(safeBody)}`;
+    window.location.href = href;
+  };
+
+  const handleFeedbackForm = () => {
+    setOpen(false);
+    if (errorCount > 0) {
+      const blob = exportErrorReport();
+      const blobUrl = URL.createObjectURL(blob);
+      const dl = document.createElement('a');
+      dl.href = blobUrl;
+      dl.download = `tenderops-erp-log-${new Date().toISOString().slice(0, 10)}.json`;
+      dl.click();
+      URL.revokeObjectURL(blobUrl);
+    }
+    const params = new URLSearchParams({
+      report: 'true',
+      app_version: APP_VERSION,
+      platform: navigator.userAgent.includes('Win') ? 'Windows' : navigator.userAgent.includes('Mac') ? 'macOS' : 'Linux',
+    });
+    openLink(`https://openconstructionerp.com/contact.html?${params}`);
+  };
+
+  const handleDownloadLog = () => {
+    setOpen(false);
+    const blob = exportErrorReport();
+    const blobUrl = URL.createObjectURL(blob);
+    const dl = document.createElement('a');
+    dl.href = blobUrl;
+    dl.download = `tenderops-erp-log-${new Date().toISOString().slice(0, 10)}.json`;
+    dl.click();
+    URL.revokeObjectURL(blobUrl);
+    addToast({
+      type: 'success',
+      title: t('app.bug_log_downloaded', { defaultValue: 'Log downloaded' }),
+      message: t('app.bug_log_downloaded_desc', { defaultValue: 'Attach this JSON to your report.' }),
+    });
+  };
+
+  type Channel = {
+    icon: typeof Github;
+    iconColor: string;
+    title: string;
+    desc: string;
+    onClick: () => void;
+    /**
+     * True for the channels that file a written report and therefore need the
+     * description. The other two are not reports: the web form asks for the
+     * story again in its own fields, and downloading the log is usually the
+     * step BEFORE writing anything. Gating those would block a user from
+     * getting the JSON they were about to attach.
+     */
+    requiresDescription: boolean;
+  };
+
+  const channels: Channel[] = [
+    {
+      icon: Github,
+      iconColor: 'text-content-primary',
+      // Labelled "Report a bug (with logs)" so the primary action people knew
+      // from the Help menu lives here, in the dedicated bug menu. It opens a
+      // GitHub issue pre-filled with the last error and environment.
+      title: t('app.report_bug', { defaultValue: 'Report a bug (with logs)' }),
+      desc: t('bug.channel_github_desc', { defaultValue: 'Pre-filled with the last error and environment. Public.' }),
+      onClick: handleGithub,
+      requiresDescription: true,
+    },
+    {
+      icon: Mail,
+      iconColor: 'text-oe-blue',
+      title: t('bug.channel_email', { defaultValue: 'Email the team' }),
+      desc: t('bug.channel_email_desc', { defaultValue: 'Opens your mail client with the report attached.' }),
+      onClick: handleEmail,
+      requiresDescription: true,
+    },
+    {
+      icon: MessageSquarePlus,
+      iconColor: 'text-emerald-500',
+      title: t('bug.channel_form', { defaultValue: 'Web feedback form' }),
+      desc: t('bug.channel_form_desc', { defaultValue: 'Richer fields and screenshots on openconstructionerp.com.' }),
+      onClick: handleFeedbackForm,
+      requiresDescription: false,
+    },
+    {
+      icon: Upload,
+      iconColor: 'text-violet-500',
+      title: t('bug.channel_download', { defaultValue: 'Download log only' }),
+      desc: t('bug.channel_download_desc', { defaultValue: 'Save the JSON to share manually with support.' }),
+      onClick: handleDownloadLog,
+      requiresDescription: false,
+    },
+  ];
+
+  return (
+    <div className="relative hidden sm:block" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        className={clsx(
+          'relative flex h-8 w-8 items-center justify-center rounded-lg transition-colors',
+          'text-content-tertiary hover:bg-surface-secondary hover:text-content-secondary',
+          open && 'bg-surface-secondary text-content-secondary',
+        )}
+        title={t('bug.menu_title', { defaultValue: 'Report a bug or send feedback' })}
+        aria-label={t('bug.menu_title', { defaultValue: 'Report a bug or send feedback' })}
+      >
+        <Bug size={16} strokeWidth={1.75} />
+        {errorCount > 0 && (
+          <span
+            className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-red-500 ring-2 ring-surface-primary"
+            aria-label={t('bug.errors_captured', {
+              defaultValue: '{{count}} errors captured this session',
+              count: errorCount,
+            })}
+          />
+        )}
+      </button>
+
+      {open && (
+        // A non-modal dialog rather than a menu: it holds a text field now,
+        // and a textarea is not a valid child of `role="menu"` - a screen
+        // reader in menu mode cannot reach it to type into.
+        <div
+          role="dialog"
+          aria-label={t('bug.menu_heading', { defaultValue: 'Report a bug' })}
+          className="absolute right-0 top-full mt-1.5 w-80 rounded-xl border border-border-light bg-surface-elevated shadow-lg animate-scale-in py-2 z-40"
+        >
+          <div className="px-3 pb-2 border-b border-border-light">
+            <div className="flex items-center gap-2">
+              <Bug size={14} className="text-content-tertiary" />
+              <span className="text-sm font-semibold text-content-primary">
+                {t('bug.menu_heading', { defaultValue: 'Report a bug' })}
+              </span>
+              {errorCount > 0 && (
+                <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2 py-0.5 text-2xs font-semibold text-red-500">
+                  <span className="h-1 w-1 rounded-full bg-red-500" />
+                  {t('bug.errors_chip', {
+                    defaultValue: '{{count}} captured',
+                    count: errorCount,
+                  })}
+                </span>
+              )}
+            </div>
+            <p className="mt-1 text-2xs text-content-tertiary leading-snug">
+              {t('bug.menu_subheading', {
+                defaultValue: 'Pick where to send it - every channel includes the same diagnostic payload.',
+              })}
+            </p>
+          </div>
+
+          {/* What happened, in the reporter's own words. Nothing is prefilled:
+              the placeholder is a real placeholder attribute, so an untouched
+              field is empty and the two channels that file a written report
+              stay disabled until it is not. The minimum is stated here, above
+              the field, so nobody learns it on the way out. */}
+          <div className="px-3 pt-2.5">
+            <label
+              htmlFor={descriptionId}
+              className="block text-2xs font-medium text-content-secondary"
+            >
+              {t('bug.description_label', { defaultValue: 'What happened?' })}
+              <span className="text-semantic-error ml-0.5" aria-hidden="true">*</span>
+            </label>
+            <p id={descriptionHintId} className="mt-0.5 text-2xs text-content-tertiary leading-snug">
+              {t('bug.description_hint', {
+                defaultValue:
+                  'What you clicked and what happened instead, in at least {{min}} characters. Sent exactly as written, so leave out anything private.',
+                min: MIN_DESCRIPTION_LENGTH,
+              })}
+            </p>
+            <textarea
+              id={descriptionId}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder={t('bug.description_placeholder', {
+                defaultValue: 'I clicked Install on a module and the page stayed empty...',
+              })}
+              rows={3}
+              maxLength={2000}
+              required
+              aria-required="true"
+              aria-describedby={descriptionHintId}
+              className={clsx(
+                'mt-1.5 w-full rounded-lg border border-border-light bg-surface-primary px-2.5 py-1.5',
+                'text-xs text-content-primary placeholder:text-content-quaternary',
+                'focus:outline-none focus:ring-2 focus:ring-oe-blue/30 focus:border-oe-blue',
+                'transition-colors resize-none',
+              )}
+            />
+          </div>
+
+          {networkOnly && (
+            <div
+              role="alert"
+              className="mx-3 my-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2"
+            >
+              <p className="text-2xs font-semibold text-amber-600 dark:text-amber-400">
+                {t('bug.network_only_title', {
+                  defaultValue: 'Looks like a network issue, not a bug',
+                })}
+              </p>
+              <p className="mt-1 text-2xs text-amber-700/90 dark:text-amber-300/90 leading-snug">
+                {t('bug.network_only_desc', {
+                  defaultValue:
+                    'Recent errors look like the backend was unreachable (offline, restarting, or VPN dropped). Check your connection and reload - if the problem persists, you can still file a report.',
+                })}
+              </p>
+              <button
+                type="button"
+                onClick={() => setOverrodeNetworkWarning(true)}
+                className="mt-1.5 text-2xs font-medium text-amber-700 dark:text-amber-300 underline-offset-2 hover:underline"
+              >
+                {t('bug.network_only_override', {
+                  defaultValue: 'Report anyway →',
+                })}
+              </button>
+            </div>
+          )}
+
+          <div className={clsx('py-1', networkOnly && 'opacity-40 pointer-events-none')}>
+            {channels.map((ch, idx) => {
+              const Icon = ch.icon;
+              // Disabled for real, not dimmed: a `pointer-events-none` wrapper
+              // (the trick used for the network banner above) still lets a
+              // keyboard reach the control, and tells nobody why it is grey.
+              const blocked = ch.requiresDescription && descriptionTooShort;
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={ch.onClick}
+                  disabled={blocked}
+                  className={clsx(
+                    'flex w-full items-start gap-3 px-3 py-2 text-left transition-colors',
+                    blocked ? 'cursor-not-allowed opacity-60' : 'hover:bg-surface-secondary',
+                  )}
+                >
+                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-secondary">
+                    <Icon size={14} className={ch.iconColor} />
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-[13px] font-medium text-content-primary">
+                      {ch.title}
+                    </span>
+                    <span
+                      className={clsx(
+                        'block text-2xs leading-snug mt-0.5',
+                        blocked ? 'text-amber-600 dark:text-amber-400' : 'text-content-tertiary',
+                      )}
+                    >
+                      {blocked
+                        ? t('bug.description_required', {
+                            defaultValue: 'Describe what happened above before sending this.',
+                          })
+                        : ch.desc}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Help Menu (consolidated docs / GitHub / feedback / bug-report) ─── */
+
+/** Single `?` icon button at top-right that opens a popover with every
+ *  help / feedback / external-link action consolidated. Replaces what
+ *  was previously six separate header buttons (GitHub, Docs, Report
+ *  Issue, More, Feedback, Email Issues). One discoverable menu reads
+ *  cleaner than six visually competing buttons. */
+function HelpMenu() {
+  const { t } = useTranslation();
+  const addToast = useToastStore((s) => s.addToast);
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [open]);
+
+  // Open the contact form pre-tagged as "Send Feedback". Mirrors the
+  // pre-consolidation amber-Feedback button (which used to live in the
+  // header). Downloads the in-session error log if there are any
+  // errors so the user can attach it.
+  const handleFeedback = () => {
+    setOpen(false);
+    if (getErrorCount() > 0) {
+      const blob = exportErrorReport();
+      const blobUrl = URL.createObjectURL(blob);
+      const dl = document.createElement('a');
+      dl.href = blobUrl;
+      dl.download = `tenderops-erp-log-${new Date().toISOString().slice(0, 10)}.json`;
+      dl.click();
+      URL.revokeObjectURL(blobUrl);
+    }
+    const params = new URLSearchParams({
+      feedback: 'true',
+      app_version: APP_VERSION,
+    });
+    openLink(`https://openconstructionerp.com/contact.html?${params}`);
+  };
+
+  return (
+    <div className="relative hidden sm:block" ref={ref} data-testid="header-help-menu">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className={clsx(
+          'flex h-8 w-8 items-center justify-center rounded-lg transition-colors',
+          'text-content-tertiary hover:bg-surface-secondary hover:text-content-secondary',
+          open && 'bg-surface-secondary text-content-secondary',
+        )}
+        title={t('nav.help', { defaultValue: 'Help & feedback' })}
+        aria-label={t('nav.help', { defaultValue: 'Help & feedback' })}
+      >
+        <HelpCircle size={16} strokeWidth={1.75} />
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          className="absolute right-0 top-full mt-1.5 w-60 rounded-xl border border-border-light bg-surface-elevated shadow-lg animate-scale-in py-1 z-40"
+        >
+          {/* In-app guided explanation of every module - the "How it works"
+              hub. Lives first so it is the most discoverable help action. */}
+          <button data-nav-url={'/how-it-works'}
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              navigate('/how-it-works');
+            }}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-content-primary hover:bg-surface-secondary transition-colors"
+          >
+            <GraduationCap size={14} className="text-oe-blue shrink-0" />
+            <span className="flex-1 text-left">{t('howto.menu_item', { defaultValue: 'How it works' })}</span>
+          </button>
+          <div className="my-1 border-t border-border-light" role="separator" />
+
+          {/* External resources. Documentation points at the official docs
+              site so users land on the maintained guides, not the raw repo. */}
+          <a
+            role="menuitem"
+            href="https://openconstructionerp.com/docs"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setOpen(false)}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-content-primary hover:bg-surface-secondary transition-colors"
+          >
+            <BookOpen size={14} className="text-content-tertiary shrink-0" />
+            <span className="flex-1">{t('nav.docs', { defaultValue: 'Documentation' })}</span>
+            <ExternalLink size={11} className="text-content-quaternary shrink-0" />
+          </a>
+          <a
+            role="menuitem"
+            href="https://github.com/datadrivenconstruction/OpenConstructionERP"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setOpen(false)}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-content-primary hover:bg-surface-secondary transition-colors"
+          >
+            <Github size={14} className="text-content-tertiary shrink-0" />
+            <span className="flex-1">{t('nav.github', { defaultValue: 'GitHub repository' })}</span>
+            <ExternalLink size={11} className="text-content-quaternary shrink-0" />
+          </a>
+
+          {/* Desktop only: open the same app in the user's normal web browser.
+              The app window stays open; this just gives people who prefer
+              browser tabs the local address in one click. */}
+          {isTauri && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                void openAppInBrowser().then((result) => {
+                  if (!result.ok) {
+                    addToast({
+                      type: 'warning',
+                      title: t('desktop.open_in_browser_failed', {
+                        defaultValue: 'Could not open your browser',
+                      }),
+                      message: result.reason,
+                    });
+                  }
+                });
+              }}
+              className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-content-primary hover:bg-surface-secondary transition-colors"
+            >
+              <Globe size={14} className="text-content-tertiary shrink-0" />
+              <span className="flex-1 text-left">
+                {t('desktop.open_in_browser', { defaultValue: 'Open in your browser' })}
+              </span>
+              <ExternalLink size={11} className="text-content-quaternary shrink-0" />
+            </button>
+          )}
+
+          <div className="my-1 border-t border-border-light" role="separator" />
+
+          {/* Feedback / report flows */}
+          <button
+            type="button"
+            role="menuitem"
+            onClick={handleFeedback}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-content-primary hover:bg-surface-secondary transition-colors"
+          >
+            <MessageSquarePlus size={14} className="text-content-tertiary shrink-0" />
+            <span>{t('feedback.title', { defaultValue: 'Send feedback' })}</span>
+          </button>
+          {/* Bug-reporting lives in the dedicated Bug menu (the bug-icon button
+              next to this one), which already offers a pre-filled GitHub issue,
+              the web form, an email channel and a log download. Keeping those
+              flows out of here leaves Help for docs and general feedback and
+              gives bug reporting a single, obvious home. */}
+          <a
+            role="menuitem"
+            href="mailto:info@datadrivenconstruction.io?subject=TenderOps ERP%20Issue%20Report"
+            onClick={() => setOpen(false)}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-content-primary hover:bg-surface-secondary transition-colors"
+          >
+            <Mail size={14} className="text-content-tertiary shrink-0" />
+            <span>{t('header.email_issues', { defaultValue: 'Email the team' })}</span>
+          </a>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Language Switcher Dropdown ─────────────────────────────────────────── */
+
+function LanguageSwitcher({
+  currentLang,
+  onSelect,
+}: {
+  currentLang: (typeof SUPPORTED_LANGUAGES)[number] | undefined;
+  onSelect: (code: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [open]);
+
+  // Guard AFTER all hooks so hook order stays stable across renders (Rules of
+  // Hooks) - a conditional return before the hooks would crash the header the
+  // moment currentLang is ever undefined.
+  if (!currentLang) return null;
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        aria-haspopup="true"
+        aria-label={`Language: ${currentLang.name}`}
+        title={currentLang.name}
+        className={clsx(
+          'flex h-8 items-center gap-1.5 rounded-lg px-2',
+          'text-xs font-medium text-content-secondary',
+          'transition-all duration-fast ease-oe',
+          'hover:bg-surface-secondary',
+          open && 'bg-surface-secondary',
+        )}
+      >
+        <CountryFlag code={currentLang.country} size={16} />
+        <ChevronDown size={11} className={clsx('transition-transform duration-fast', open && 'rotate-180')} aria-hidden="true" />
+      </button>
+
+      {open && (
+        <div role="menu" className="absolute right-0 top-full mt-1.5 w-48 max-h-72 overflow-y-auto rounded-xl border border-border-light bg-surface-elevated shadow-lg animate-scale-in py-1">
+          {SUPPORTED_LANGUAGES.map((lang) => (
+            <button
+              key={lang.code}
+              role="menuitem"
+              onClick={() => { onSelect(lang.code); setOpen(false); }}
+              className={clsx(
+                'flex w-full items-center gap-2.5 px-3 py-1.5 text-sm transition-colors',
+                lang.code === currentLang.code
+                  ? 'bg-oe-blue-subtle text-oe-blue-text font-medium'
+                  : 'text-content-primary hover:bg-surface-secondary',
+              )}
+            >
+              <CountryFlag code={lang.country} size={16} />
+              <span className="truncate text-xs">{lang.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── User Menu ─────────────────────────────────────────────────────────── */
+
+/** GitHub repo slug for "Report a bug". Empty string = clipboard fallback. */
+const GITHUB_REPO = 'datadrivenconstruction/OpenConstructionERP';
+/** Hard ceiling for the GitHub issue body inside a URL. ~8KB is safe across browsers. */
+const MAX_BODY_BYTES = 7800;
+
+/**
+ * Route prefix → human component name, longest-prefix-wins.
+ *
+ * The bug report previously derived the "component" from a raw pathname,
+ * which named the wrong screen (e.g. a deep-linked `/bim/<uuid>` reported as
+ * the root). This table maps the current route to the screen the user is
+ * actually on so a filed report points the maintainer at the right surface
+ * (#168). Order does not matter — ``deriveComponentFromRoute`` picks the
+ * longest matching prefix, so `/bim/federations` beats `/bim`.
+ */
+const ROUTE_COMPONENT_MAP: ReadonlyArray<readonly [string, string]> = [
+  ['/bim/federations', 'BIM Federations'],
+  ['/bim/rules', 'BIM Rules'],
+  ['/bim', 'BIM Viewer'],
+  ['/clash', 'Clash Detection'],
+  ['/coordination', 'Model Coordination'],
+  ['/assets', 'Asset Register'],
+  ['/data-explorer', 'CAD-BIM BI Explorer'],
+  ['/match-elements', 'CAD-BIM Match to Cost'],
+  ['/boq', 'BOQ'],
+  ['/templates', 'BOQ Templates'],
+  ['/costs', 'Cost Database'],
+  ['/catalog', 'Resource Catalog'],
+  ['/assemblies', 'Assemblies'],
+  ['/validation', 'Validation'],
+  // `/compliance` itself mounts nothing; it is the prefix the Rule Builder
+  // hangs off. Name the builder explicitly so a bug report from that screen
+  // says which screen it came from rather than the bare prefix.
+  ['/compliance/builder', 'Compliance Rule Builder'],
+  ['/compliance', 'Compliance'],
+  ['/quantities', 'Quantity Takeoff'],
+  ['/takeoff', 'PDF Takeoff'],
+  ['/dwg-takeoff', 'DWG Takeoff'],
+  ['/schedule', 'Schedule'],
+  ['/5d', '5D Cost Model'],
+  ['/analytics', 'Analytics'],
+  ['/dashboards', 'Dashboards'],
+  ['/reporting', 'Reporting'],
+  ['/reports', 'Reports'],
+  ['/tendering', 'Tendering'],
+  ['/changeorders', 'Change Orders'],
+  ['/photos', 'Project Photos'],
+  ['/files', 'Documents'],
+  ['/risks', 'Risk Register'],
+  ['/markups', 'Markups'],
+  ['/punchlist', 'Punch List'],
+  ['/field-reports', 'Field Reports'],
+  ['/finance', 'Finance'],
+  ['/procurement', 'Procurement'],
+  ['/safety', 'Safety'],
+  ['/contacts', 'Contacts'],
+  ['/tasks', 'Tasks'],
+  ['/rfi', 'RFI'],
+  ['/submittals', 'Submittals'],
+  ['/correspondence', 'Correspondence'],
+  ['/cde', 'CDE'],
+  ['/transmittals', 'Transmittals'],
+  ['/meetings', 'Meetings'],
+  ['/inspections', 'Inspections'],
+  ['/ncr', 'NCR'],
+  ['/users', 'User Management'],
+  ['/admin', 'Admin'],
+  ['/approval-routes', 'Approval Routes'],
+  ['/modules', 'Modules'],
+  ['/setup', 'Setup'],
+  ['/settings', 'Settings'],
+  ['/integrations', 'Integrations'],
+  ['/about', 'About'],
+  ['/project-intelligence', 'Project Intelligence'],
+  ['/service', 'Service & Maintenance'],
+  ['/equipment', 'Equipment & Fleet'],
+  ['/daily-diary', 'Daily Diary'],
+  ['/portal', 'Client & Partner Portal'],
+  ['/resources', 'Resources & Crew'],
+  ['/contracts', 'Contracts'],
+  ['/payment-clock', 'Payment Clock'],
+  ['/tax-withholding', 'Withholding Tax'],
+  ['/einvoice-clearance', 'E-invoice Clearance'],
+  ['/inbound-email', 'Email Delay Scan'],
+  ['/cost-match', 'Cost Match'],
+  ['/full-evm', 'Earned Value'],
+  ['/fx', 'Currencies'],
+  ['/ai-estimate', 'AI Quick Estimate'],
+  ['/ai-agents', 'AI Agents'],
+  ['/advisor', 'AI Cost Advisor'],
+  ['/chat', 'AI Chat'],
+  ['/projects', 'Projects'],
+];
+
+/**
+ * Resolve the human-readable component/screen name for a pathname.
+ *
+ * Picks the longest matching prefix from ``ROUTE_COMPONENT_MAP`` so nested
+ * routes resolve to the most specific screen. A pathname inside a project
+ * (``/projects/<id>/finance``) is matched by stripping the project prefix
+ * first, then falling back to the project route. ``/`` (root) and anything
+ * unknown resolve to a sensible generic ("Dashboard").
+ */
+export function deriveComponentFromRoute(pathname: string): string {
+  if (!pathname || pathname === '/') return 'Dashboard';
+  // Nested project routes carry the feature after /projects/<id>/. Match the
+  // feature segment first so /projects/<id>/finance reports as "Finance"
+  // rather than "Projects".
+  const projectNested = pathname.match(/^\/projects\/[^/]+\/(.+)$/);
+  const candidate = projectNested ? `/${projectNested[1]}` : pathname;
+  let best: string | null = null;
+  let bestLen = -1;
+  for (const [prefix, name] of ROUTE_COMPONENT_MAP) {
+    if (
+      (candidate === prefix || candidate.startsWith(prefix + '/')) &&
+      prefix.length > bestLen
+    ) {
+      best = name;
+      bestLen = prefix.length;
+    }
+  }
+  return best ?? 'Dashboard';
+}
+
+/**
+ * Build the GitHub "new issue" URL pre-filled with the reporter's own
+ * description, the environment and the last captured error.
+ *
+ * Returns `{ url, body }` so callers can fall back to clipboard when the
+ * repo is not configured.
+ *
+ * `description` is what the reporter typed in the bug menu, embedded verbatim.
+ * It is deliberately NOT passed through `errorLogger.anonymize()`: that
+ * scrubber rewrites "invoice 1234567 failed" as "invoice [ID] failed" and
+ * would eat the detail the report exists to carry. The diagnostic half is
+ * still anonymized at capture time — `getLastError()` returns strings that
+ * already went through `anonymize()` — so the only text that can carry PII is
+ * text the reporter chose to write, on a field that says the issue is public
+ * before they type into it.
+ *
+ * The description comes first because the size guard below keeps the head and
+ * trims the tail, so a long stack is never what the guard reaches for. It is
+ * not an absolute guarantee: the field allows 2000 characters, and in a script
+ * that encodes to three bytes each that alone can pass `MAX_BODY_BYTES`, at
+ * which point the proportional slice cuts inside the description. Ordering
+ * buys the common case, not every case. This
+ * slot used to hold the literal placeholder `<!-- describe what you were
+ * doing -->`, which renders as nothing on GitHub: a reporter who pressed
+ * submit without editing filed a visibly empty issue and only learned it was
+ * useless a day later, when we wrote back to ask what they had clicked. The
+ * caller now requires the text (see `MIN_DESCRIPTION_LENGTH`) rather than
+ * inviting it, so there is no longer a version of this body that travels
+ * looking filled in while saying nothing.
+ *
+ * Everything this function writes itself is an English literal, and that is
+ * why it takes no `t`. The audience for the payload is not the person in
+ * front of the screen: it is a public tracker and an inbox we read in
+ * English, so the title, the section headings and the "no error captured"
+ * marker are ours to word, not the UI language's. Two of them used to go
+ * through `t()` and travelled in whatever language the app was running in,
+ * which put a title nobody could scan the issue list by, in one of forty
+ * odd spellings, on every automatically filed report. Passing the function
+ * a translator is what made that possible, so the parameter is gone rather
+ * than merely unused: there is no longer a call shape that can localize the
+ * payload by accident. The reporter's own words are the exception and stay
+ * exactly as typed, in their own language, because they are the report.
+ */
+function buildBugReportUrl(description: string): {
+  url: string;
+  body: string;
+  title: string;
+} {
+  const last = getLastError();
+  const stackLines = last?.stack ? last.stack.split('\n').slice(0, 30).join('\n') : '';
+  const errorBlock = last
+    ? `\`\`\`\n${last.message}\n${stackLines}\n\`\`\``
+    : '_No error captured during this session._';
+
+  const component = deriveComponentFromRoute(window.location.pathname);
+  // The language the app was running in, which a report written in one we do
+  // not read otherwise leaves us to infer from the prose. App.tsx keeps this
+  // attribute in step with the active UI language, so that is normally what
+  // this names: the bundle that rendered the screen being described. If it is
+  // ever unset the browser's own locale stands in, which is a near neighbour
+  // rather than the same fact, and a named fallback beats a blank line that
+  // reads as though the question was never asked.
+  const uiLocale =
+    document.documentElement.lang ||
+    (typeof navigator !== 'undefined' ? navigator.language : '') ||
+    'unknown';
+
+  const body = [
+    '### Description',
+    description.trim(),
+    '',
+    '### Environment',
+    `- App version: ${APP_VERSION}`,
+    `- Component: ${component}`,
+    `- Page: ${window.location.pathname}${window.location.search}`,
+    `- UI locale: ${uiLocale}`,
+    `- User agent: ${navigator.userAgent}`,
+    `- Build: ${APP_BUILD_FINGERPRINT}`,
+    last ? `- Captured at: ${last.at}` : '',
+    // The page the error happened on, which is not always the page the user
+    // is filing from. Component/Page above name the current route and drive
+    // the title, so when the two disagree triage needs to see it rather than
+    // assume the stack belongs to the named surface (#391).
+    last ? `- Error page: ${last.url}` : '',
+    '',
+    '### Last error captured',
+    errorBlock,
+  ].filter(Boolean).join('\n');
+
+  // URL-encode and trim if the body would push us past the safe size.
+  let safeBody = body;
+  let encoded = encodeURIComponent(safeBody);
+  if (encoded.length > MAX_BODY_BYTES) {
+    // Keep the head; truncation marker tells the maintainer to ask for the
+    // full JSON via "Report Issue" if they need more.
+    const trimmed = safeBody.slice(0, Math.floor(safeBody.length * (MAX_BODY_BYTES / encoded.length)) - 64);
+    safeBody = trimmed + '\n\n_[truncated - attach the full JSON via the Report Issue button if needed]_';
+    encoded = encodeURIComponent(safeBody);
+  }
+
+  // Name the screen in the title so triage knows the affected surface at a
+  // glance (#168), and keep the rest of the line fixed so the same report
+  // filed from two installs reads as the same report.
+  const title = `[${component}] Bug report from in-app menu`;
+  const encodedTitle = encodeURIComponent(title);
+  const url = GITHUB_REPO
+    ? `https://github.com/${GITHUB_REPO}/issues/new?title=${encodedTitle}&body=${encoded}`
+    : '';
+  return { url, body: safeBody, title };
+}
+
+function UserMenu() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const logout = useAuthStore((s) => s.logout);
+  const userEmail = useAuthStore((s) => s.userEmail);
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const userInitial = userEmail ? userEmail.charAt(0).toUpperCase() : 'U';
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [open]);
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        aria-haspopup="true"
+        className={clsx(
+          'relative flex h-8 w-8 items-center justify-center rounded-full',
+          'bg-gradient-to-br from-oe-blue to-[#38bdf8] text-xs font-semibold text-white',
+          'shadow-[0_1px_3px_rgba(0,122,255,0.25)]',
+          'transition-all duration-fast ease-oe',
+          'hover:opacity-90 hover:shadow-[0_2px_6px_rgba(0,122,255,0.35)]',
+        )}
+        title={userEmail ?? undefined}
+        aria-label={t('auth.account', { defaultValue: 'Account menu' })}
+      >
+        {userInitial}
+        {/* Online status dot — bottom-right of the avatar. Matches the
+            UserBadge in the sidebar so the two surfaces feel coherent.
+            `overflow-hidden` clips the `animate-ping` ring to this badge's
+            own box: the avatar is the last element in the header, which at
+            desktop widths sits flush against the viewport's right edge, so
+            the ring's `scale(2)` keyframe (unclipped) painted past the
+            window edge and made `document.documentElement.scrollWidth`
+            exceed `innerWidth` by up to 7px — a real, continuously
+            repeating horizontal-scroll bug, not just a test artifact. */}
+        <span
+          aria-hidden
+          className="absolute -bottom-0.5 right-0 flex h-2.5 w-2.5 items-center justify-center overflow-hidden"
+        >
+          <span className="absolute inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400/70 animate-ping" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-surface-primary" />
+        </span>
+      </button>
+
+      {open && (
+        <div role="menu" className="absolute right-0 top-full mt-1.5 w-48 rounded-xl border border-border-light bg-surface-elevated shadow-lg animate-scale-in py-1">
+          {userEmail && (
+            <>
+              <div className="px-3 py-1.5 text-2xs text-content-tertiary truncate" title={userEmail}>
+                {userEmail}
+              </div>
+              <div className="my-1 border-t border-border-light" role="separator" />
+            </>
+          )}
+          <button data-nav-url={'/settings'}
+            role="menuitem"
+            onClick={() => { setOpen(false); navigate('/settings'); }}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-content-primary hover:bg-surface-secondary transition-colors"
+          >
+            <User size={14} className="text-content-tertiary" />
+            {t('auth.profile', 'Profile')}
+          </button>
+          <button data-nav-url={'/settings'}
+            role="menuitem"
+            onClick={() => { setOpen(false); navigate('/settings'); }}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-content-primary hover:bg-surface-secondary transition-colors"
+          >
+            <Settings size={14} className="text-content-tertiary" />
+            {t('nav.settings', 'Settings')}
+          </button>
+          <div className="my-1 border-t border-border-light" role="separator" />
+          <button data-nav-url={'/login'}
+            role="menuitem"
+            onClick={() => { logout(); navigate('/login'); setOpen(false); }}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-semantic-error hover:bg-semantic-error-bg transition-colors"
+          >
+            <LogOut size={14} />
+            {t('auth.logout', 'Sign out')}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Project Switcher (global dropdown in header) ─────────────────────── */
+
+/**
+ * Compute where to navigate after switching projects in the global picker.
+ *
+ * We stay on the same module but never keep a URL that points at an
+ * entity (BOQ / BIM model / assembly / transmittal / …) owned by the
+ * *previous* project — that entity doesn't belong to the new project,
+ * so the page would either 404 or silently show stale data.
+ *
+ * Rules:
+ *   `/projects/:oldId` or `/projects/:oldId/sub` → swap in the new id
+ *       (e.g. /projects/AAA/finance → /projects/BBB/finance)
+ *   `/<module>/:entityId` where `<module>` is one of the entity-scoped
+ *       list-plus-detail modules → redirect to the module list `/<module>`
+ *   everything else → stay on the same URL
+ */
+export function resolveRouteAfterProjectSwitch(
+  pathname: string,
+  newProjectId: string,
+): string | null {
+  const projectSub = pathname.match(/^\/projects\/[^/]+(\/.*)?$/);
+  if (projectSub) {
+    const suffix = projectSub[1] ?? '';
+    return `/projects/${newProjectId}${suffix}`;
+  }
+  // Module-scoped detail routes.  The list lives at /<module>.
+  const entityRoutes: Array<[RegExp, string]> = [
+    [/^\/boq\/[^/]+/, '/boq'],
+    [/^\/bim\/[^/]+/, '/bim'],
+    [/^\/assemblies\/[^/]+/, '/assemblies'],
+    [/^\/takeoff\/[^/]+/, '/takeoff'],
+    [/^\/documents\/[^/]+/, '/documents'],
+    [/^\/transmittals\/[^/]+/, '/transmittals'],
+    [/^\/rfi\/[^/]+/, '/rfi'],
+    [/^\/submittals\/[^/]+/, '/submittals'],
+    [/^\/contacts\/[^/]+/, '/contacts'],
+    [/^\/tasks\/[^/]+/, '/tasks'],
+    [/^\/markups\/[^/]+/, '/markups'],
+    [/^\/reports\/[^/]+/, '/reports'],
+  ];
+  for (const [re, list] of entityRoutes) {
+    if (re.test(pathname)) return list;
+  }
+  return null;
+}
+
+function ProjectSwitcher() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const activeProjectId = useProjectContextStore((s) => s.activeProjectId);
+  const activeProjectName = useProjectContextStore((s) => s.activeProjectName);
+  const setActiveProject = useProjectContextStore((s) => s.setActiveProject);
+  const clearProject = useProjectContextStore((s) => s.clearProject);
+  const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  // "Show all" toggle — collapsed by default to keep the dropdown tidy
+  // when the user has dozens of projects; explicit opt-in to expand.
+  const [expanded, setExpanded] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  // Pre-fetch so the dropdown renders an instant list when the user opens
+  // it (no race between open → fetch → render that used to flash
+  // "No projects yet" for half a second). The same entry every page's project
+  // picker reads, so a page and the header share one request. The purge
+  // below trusts this list to be complete, which is why nothing reading
+  // ['projects'] may cache a partial list or an empty one on error.
+  const { data: projects, isLoading, isError, isFetching, refetch } = useQuery({
+    queryKey: ['projects'],
+    queryFn: () => fetchProjectList<Array<{ id: string; name: string }>>(),
+    staleTime: 60_000,
+    // Enabled as soon as the component mounts — the Header is always on
+    // screen after login, so the list is warm by the time the user clicks.
+    enabled: true,
+  });
+
+  const MAX_VISIBLE = 20;
+  // The type argument on apiGet is a compile-time claim, not a runtime check —
+  // the response body arrives exactly as the server sent it. A 200 carrying an
+  // object where this expects a list (a proxy envelope, a paginated wrapper)
+  // used to reach `.filter` as-is, because `?? []` answers for null and
+  // undefined and says nothing about the wrong type, and threw "is not a
+  // function" out of the header. Degrade to an empty picker: an unreadable list
+  // is a list we can't show, not a reason to stop rendering. Same reasoning for
+  // the name — `.toLowerCase()` on a missing field is the identical throw.
+  const projectList = Array.isArray(projects) ? projects : [];
+  const filteredProjects = projectList.filter((p) =>
+    String(p?.name ?? '').toLowerCase().includes(searchQuery.toLowerCase()),
+  );
+  // When the user is actively searching, show every hit — typing is an
+  // implicit "show all that match". The collapse/expand affordance only
+  // applies to the default, unfiltered listing.
+  const showEverything = expanded || searchQuery.trim().length > 0;
+  const visibleProjects = showEverything
+    ? filteredProjects
+    : filteredProjects.slice(0, MAX_VISIBLE);
+  const remainingCount = filteredProjects.length - visibleProjects.length;
+
+  useEffect(() => {
+    if (!open) {
+      setSearchQuery('');
+      setExpanded(false);
+      return;
+    }
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [open]);
+
+  useEffect(() => {
+    if (open && searchRef.current) {
+      searchRef.current.focus();
+    }
+  }, [open, projects]);
+
+  // Auto-clear a stale ``activeProjectId`` whose project no longer exists
+  // on the server (hard-deleted by another session / admin cleanup). A
+  // stale id kept pinging 404 on every module that accepts a project
+  // context — the most visible one being BIM upload, which failed with
+  // "Project not found" because the persisted id in localStorage had
+  // been wiped from the DB. We only run the purge once the list has
+  // actually loaded (``projects`` defined, even if empty) to avoid
+  // blowing away the selection during the first render before data
+  // arrives.
+  useEffect(() => {
+    if (!projects) return;
+    if (!activeProjectId) return;
+    // A list refetch may be in flight (e.g. right after creating a project,
+    // which activates the new id before the switcher list knows about it).
+    // Deciding on the stale cache here would clear a perfectly valid
+    // selection - wait for the fresh list.
+    if (isFetching) return;
+    // A failed refetch leaves ``projects`` pointing at stale cached data -
+    // deciding on it could clear a perfectly valid selection. Bail until a
+    // successful fetch lands.
+    if (isError) return;
+    // Second reader of the same untrusted body, and `.some` throws on a
+    // non-array exactly like `.filter` above did — fixing only the render path
+    // would have moved the crash one line down. A shape we don't recognise
+    // tells us nothing about whether the stored selection still exists, so
+    // decline to purge rather than guess.
+    if (!Array.isArray(projects)) return;
+    const stillExists = projects.some((p) => p.id === activeProjectId);
+    if (!stillExists) {
+      clearProject();
+    }
+  }, [projects, activeProjectId, clearProject, isFetching, isError]);
+
+  return (
+    <div className="relative hidden sm:block min-w-0" ref={ref} data-testid="header-project-picker">
+      {/* Split-button — visibly the most-used surface in the app. Left half
+          opens the active project's detail; right half (chevron) opens
+          the switcher dropdown. Two distinct visual modes:
+            • No project active → dashed pill + pulsing dot + clear CTA
+            • Project active   → solid blue-subtle bg + folder square +
+                                 bold project name
+          Taller h-9 hit-target, always tinted, never blends into the
+          chrome — this is the breadcrumb root, it should anchor the eye. */}
+      <div
+        className={clsx(
+          // Audit fix S5 (2026-06-06): cap the pill tighter on lg so the
+          // MODULE NAME next to it stops truncating to "Carbo…"/"Takt Pl…"
+          // at 1280-1440px; the pill gets its full 260px back on xl+.
+          // OC-12: widened lg to 220px so names like "Landshut" stay readable
+          // at 125% zoom (180px rendered as ~144px, cutting anything > 10 chars).
+          'flex items-stretch rounded-lg border transition-all max-w-[220px] xl:max-w-[280px] overflow-hidden',
+          activeProjectId
+            ? 'bg-oe-blue-subtle border-oe-blue/30 hover:bg-oe-blue/10 hover:border-oe-blue/50 shadow-[0_1px_2px_rgba(0,122,255,0.05)]'
+            : 'border-dashed border-oe-blue/40 bg-oe-blue/[0.04] hover:bg-oe-blue/[0.08] hover:border-oe-blue/60',
+        )}
+      >
+        <button
+          type="button"
+          onClick={() => {
+            if (activeProjectId) {
+              navigate(`/projects/${activeProjectId}`);
+            } else {
+              setOpen(true);
+            }
+          }}
+          className={clsx(
+            // WCAG AA fix 2026-05-27: text-oe-blue-text (#0071e3) on bg-oe-blue-subtle
+            // failed 4.35:1; text-oe-blue-text passes at 8.05:1.
+            'flex items-center gap-2 pl-1.5 pr-2 h-9 text-[13px] min-w-0',
+            activeProjectId ? 'text-oe-blue-text' : 'text-oe-blue-text/85 hover:text-oe-blue-text',
+          )}
+          title={activeProjectId
+            ? t('projects.open_current', { defaultValue: 'Open this project' })
+            : t('projects.select_active', { defaultValue: 'Select Project' })}
+        >
+          {/* Leading icon square — colored tile in active mode; pulsing
+              dot in CTA mode so the eye is drawn to "act here". */}
+          {activeProjectId ? (
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-oe-blue/15 shrink-0">
+              <FolderOpen size={13} strokeWidth={2} />
+            </span>
+          ) : (
+            <span aria-hidden className="flex h-6 w-6 items-center justify-center shrink-0">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-2 w-2 rounded-full bg-oe-blue/60 animate-ping" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-oe-blue" />
+              </span>
+            </span>
+          )}
+          <span
+            className={clsx(
+              'truncate',
+              activeProjectId ? 'font-semibold' : 'font-medium',
+            )}
+            title={activeProjectName || undefined}
+          >
+            {activeProjectName || t('projects.select_active', { defaultValue: 'Select Project' })}
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          className={clsx(
+            // WCAG AA: text-oe-blue-text at /70 alpha on bg-oe-blue-subtle drops
+            // below 4.5:1. Use oe-blue-dark for the icon color so axe scans
+            // pass even though ChevronDown is presentational.
+            'flex items-center px-2 border-l transition-colors',
+            activeProjectId
+              ? 'border-oe-blue/20 text-oe-blue-text/70 hover:bg-oe-blue/10 hover:text-oe-blue-text'
+              : 'border-oe-blue/25 border-dashed text-oe-blue-text/60 hover:bg-oe-blue/10 hover:text-oe-blue-text',
+          )}
+          title={t('schedule.switch_project', { defaultValue: 'Switch Project' })}
+          aria-label={t('schedule.switch_project', { defaultValue: 'Switch Project' })}
+        >
+          <ChevronDown size={13} strokeWidth={2.25} className={clsx(
+            'shrink-0 transition-transform duration-fast',
+            open && 'rotate-180',
+          )} />
+        </button>
+      </div>
+
+      {open && (
+        <div className="absolute top-full left-0 mt-1.5 z-50 w-72 rounded-xl border border-border bg-surface-elevated shadow-xl overflow-hidden animate-fade-in">
+          <div className="px-4 py-2.5 border-b border-border-light bg-surface-secondary/50">
+            <p className="text-xs font-semibold text-content-secondary">
+              {t('schedule.switch_project', { defaultValue: 'Switch Project' })}
+            </p>
+          </div>
+          <div className="px-3 py-2 border-b border-border-light">
+            <div className="relative">
+              <Search size={14} className="absolute start-2.5 top-1/2 -translate-y-1/2 text-content-quaternary pointer-events-none" />
+              <input
+                ref={searchRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t('common.search', { defaultValue: 'Search...' })}
+                className="w-full rounded-lg border border-border-light bg-surface-secondary ps-8 pe-3 py-1.5 text-sm text-content-primary placeholder:text-content-quaternary focus:outline-none focus:ring-2 focus:ring-oe-blue/30 focus:border-oe-blue"
+              />
+            </div>
+          </div>
+          <div className="max-h-64 overflow-y-auto py-1">
+            {isLoading && (
+              <div className="flex items-center gap-2 px-4 py-4 text-sm text-content-tertiary">
+                <span className="inline-block w-3 h-3 border-2 border-oe-blue border-t-transparent rounded-full animate-spin" />
+                {t('common.loading', { defaultValue: 'Loading…' })}
+              </div>
+            )}
+            {!isLoading && isError && (
+              <div className="px-4 py-4 text-sm text-content-tertiary text-center">
+                <p className="text-semantic-error mb-2">
+                  {t('common.load_failed', { defaultValue: 'Could not load projects' })}
+                </p>
+                <button
+                  onClick={() => refetch()}
+                  className="text-xs text-oe-blue hover:underline"
+                >
+                  {t('common.retry')}
+                </button>
+              </div>
+            )}
+            {!isLoading && !isError && visibleProjects.length === 0 && (
+              <p className="px-4 py-4 text-sm text-content-tertiary text-center">
+                {searchQuery
+                  ? t('common.no_results', { defaultValue: 'No projects found' })
+                  : t('projects.none', { defaultValue: 'No projects yet' })}
+              </p>
+            )}
+            {visibleProjects.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => {
+                  setActiveProject(p.id, p.name);
+                  const target = resolveRouteAfterProjectSwitch(location.pathname, p.id);
+                  if (target && target !== location.pathname) navigate(target);
+                  setOpen(false);
+                }}
+                className={clsx(
+                  'flex w-full items-center gap-2.5 px-4 py-2 text-sm transition-colors',
+                  p.id === activeProjectId
+                    ? 'bg-oe-blue-subtle text-oe-blue-text font-medium'
+                    : 'text-content-primary hover:bg-surface-secondary',
+                )}
+              >
+                <div className={clsx(
+                  'flex items-center justify-center w-7 h-7 rounded-md shrink-0',
+                  p.id === activeProjectId
+                    ? 'bg-oe-blue/10'
+                    : 'bg-surface-tertiary',
+                )}>
+                  <FolderOpen size={14} className="shrink-0" />
+                </div>
+                <span className="truncate">{p.name}</span>
+                {p.id === activeProjectId && (
+                  <span className="ml-auto text-2xs text-oe-blue font-normal shrink-0">
+                    {t('common.active', { defaultValue: 'Active' })}
+                  </span>
+                )}
+              </button>
+            ))}
+            {remainingCount > 0 && !showEverything && (
+              <button
+                type="button"
+                onClick={() => setExpanded(true)}
+                className="w-full px-4 py-2 text-xs font-medium text-oe-blue hover:bg-surface-secondary transition-colors text-center"
+              >
+                {t('projects.show_all', {
+                  defaultValue: 'Show all ({{count}})',
+                  count: filteredProjects.length,
+                })}
+              </button>
+            )}
+            {expanded && !searchQuery && filteredProjects.length > MAX_VISIBLE && (
+              <button
+                type="button"
+                onClick={() => setExpanded(false)}
+                className="w-full px-4 py-2 text-xs font-medium text-content-tertiary hover:bg-surface-secondary transition-colors text-center"
+              >
+                {t('projects.collapse_list', { defaultValue: 'Collapse' })}
+              </button>
+            )}
+          </div>
+          {activeProjectId && (
+            <div className="border-t border-border-light px-4 py-2.5">
+              <button data-nav-url={`/projects/${activeProjectId}`}
+                onClick={() => { navigate(`/projects/${activeProjectId}`); setOpen(false); }}
+                className="text-xs font-medium text-oe-blue hover:underline"
+              >
+                {t('projects.open_details', { defaultValue: 'Open Project Details' })} &rarr;
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Upload Queue Indicator ────────────────────────────────────────────── */
+
+function UploadQueueIndicator() {
+  const { t } = useTranslation();
+    const tasks = useUploadQueueStore((s) => s.tasks);
+  const removeTask = useUploadQueueStore((s) => s.removeTask);
+  const clearCompleted = useUploadQueueStore((s) => s.clearCompleted);
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const activeTasks = tasks.filter((t) => t.status === 'processing' || t.status === 'queued');
+  const completedTasks = tasks.filter((t) => t.status === 'completed');
+  const errorTasks = tasks.filter((t) => t.status === 'error');
+  const totalActive = activeTasks.length;
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  if (tasks.length === 0) return null;
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        aria-label={t('queue.title', { defaultValue: 'Upload Queue' })}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        className={clsx(
+          'relative flex h-8 w-8 items-center justify-center rounded-lg transition-colors',
+          totalActive > 0 ? 'text-oe-blue-text bg-oe-blue-subtle' : 'text-content-tertiary hover:bg-surface-secondary',
+        )}
+        title={t('queue.title', { defaultValue: 'Upload Queue' })}
+      >
+        {totalActive > 0 ? (
+          <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+        ) : (
+          <Upload size={16} aria-hidden="true" />
+        )}
+        {(totalActive > 0 || errorTasks.length > 0) && (
+          <span className={`absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold text-white ${
+            errorTasks.length > 0 ? 'bg-semantic-error' : 'bg-oe-blue'
+          }`}>
+            {totalActive || errorTasks.length}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full mt-2 w-80 rounded-xl border border-border-light bg-surface-elevated shadow-xl z-50 overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border-light">
+            <h3 className="text-xs font-semibold text-content-primary">
+              {t('queue.title', { defaultValue: 'Processing Queue' })}
+            </h3>
+            {completedTasks.length > 0 && (
+              <button onClick={clearCompleted} className="text-2xs text-oe-blue hover:underline">
+                {t('queue.clear_done', { defaultValue: 'Clear completed' })}
+              </button>
+            )}
+          </div>
+          <div className="max-h-64 overflow-y-auto">
+            {tasks.length === 0 ? (
+              <p className="px-4 py-6 text-center text-xs text-content-tertiary">
+                {t('queue.empty', { defaultValue: 'No tasks' })}
+              </p>
+            ) : (
+              tasks.map((task) => (
+                <div key={task.id} className="flex items-center gap-3 px-4 py-2.5 border-b border-border-light last:border-0 hover:bg-surface-secondary/30">
+                  <div className="shrink-0">
+                    {task.status === 'processing' && <Loader2 size={14} className="text-oe-blue animate-spin" />}
+                    {task.status === 'queued' && <Upload size={14} className="text-content-tertiary" />}
+                    {task.status === 'completed' && <CheckCircle2 size={14} className="text-semantic-success" />}
+                    {task.status === 'error' && <XCircle size={14} className="text-semantic-error" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-content-primary truncate">{task.filename}</p>
+                    <div className="flex items-center gap-2">
+                      {task.status === 'processing' && (
+                        <>
+                          <div className="flex-1 h-1 bg-surface-secondary rounded-full overflow-hidden">
+                            <div className="h-full bg-oe-blue rounded-full transition-all duration-500" style={{ width: `${task.progress}%` }} />
+                          </div>
+                          <span className="text-2xs text-content-quaternary tabular-nums">{Math.round(task.progress)}%</span>
+                        </>
+                      )}
+                      {task.status === 'completed' && task.resultUrl && (
+                        <Link to={task.resultUrl!} onClick={() => setOpen(false)} className="text-2xs text-oe-blue hover:underline">
+                          {t('queue.open_result', { defaultValue: 'Open' })}
+                        </Link>
+                      )}
+                      {task.status === 'error' && (
+                        <p className="text-2xs text-semantic-error truncate">{task.error || 'Failed'}</p>
+                      )}
+                      {task.message && task.status === 'processing' && (
+                        <p className="text-2xs text-content-quaternary truncate">{task.message}</p>
+                      )}
+                    </div>
+                  </div>
+                  {(task.status === 'completed' || task.status === 'error') && (
+                    <button
+                      onClick={() => removeTask(task.id)}
+                      aria-label={t('queue.remove_task', { defaultValue: 'Remove {{filename}} from queue', filename: task.filename })}
+                      title={t('queue.remove_task_short', { defaultValue: 'Remove from queue' })}
+                      className="shrink-0 p-1 rounded hover:bg-surface-secondary text-content-quaternary"
+                    >
+                      <XCircle size={12} aria-hidden="true" />
+                    </button>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

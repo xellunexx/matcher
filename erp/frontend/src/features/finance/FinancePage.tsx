@@ -1,0 +1,3811 @@
+// DDC-CWICR-OE: DataDrivenConstruction · OpenConstructionERP
+// Copyright (c) 2026 Artem Boiko / DataDrivenConstruction
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  AlertTriangle,
+  Wallet,
+  FileText,
+  CreditCard,
+  BarChart3,
+  Search,
+  ArrowUpRight,
+  ArrowDownLeft,
+  ArrowDownRight,
+  Download,
+  Upload,
+  Loader2,
+  X,
+  Plus,
+  Camera,
+  ChevronDown,
+  Lightbulb,
+  TrendingUp,
+  ExternalLink,
+  DollarSign,
+  Receipt,
+  PiggyBank,
+  Pencil,
+  Plug,
+  Inbox,
+  Scale,
+  Landmark,
+  FileCode2,
+} from 'lucide-react';
+import clsx from 'clsx';
+import {
+  Button,
+  Card,
+  Badge,
+  EmptyState,
+  Breadcrumb,
+  DismissibleInfo,
+  IntroRichText,
+  RecoveryCard,
+  SkeletonTable,
+  ConfirmDialog,
+  TabBar,
+  tabIds,
+  ModuleGuideButton,
+} from '@/shared/ui';
+import type { BadgeVariant } from '@/shared/ui';
+import { PageHeader } from '@/shared/ui/PageHeader';
+import { RequiresProject } from '@/shared/auth/RequiresProject';
+import {
+  WideModal,
+  WideModalSection,
+  WideModalField,
+} from '@/shared/ui/WideModal';
+import { useConfirm } from '@/shared/hooks/useConfirm';
+import { MoneyDisplay } from '@/shared/ui/MoneyDisplay';
+import { MultiCurrencyTotal } from '@/shared/ui/MultiCurrencyTotal';
+import { DateDisplay } from '@/shared/ui/DateDisplay';
+import { apiGet, apiPost, apiPatch, downloadWithAuth, extractErrorMessageFromBody, type Page } from '@/shared/lib/api';
+import { TruncationNotice } from '@/shared/ui/TruncationNotice';
+import { ContactSearchInput } from '@/shared/ui/ContactSearchInput';
+import { InvoicePurchaseOrderField } from './InvoicePurchaseOrderField';
+import { InvoiceLinesEditor } from './InvoiceLinesEditor';
+import {
+  editorLinesFromInvoice,
+  invoiceTotals as linesTotals,
+  linesToPayload,
+  newEditorLine,
+  vatChoices,
+  type InvoiceEditorLine,
+  type TaxConfigRow,
+} from './invoiceLines';
+import { invalidateFinanceFigures } from './financeQueryKeys';
+import { settleAndMarkPaid } from './markInvoicePaid';
+import { budgetCategoryLabel, wbsLabel, type WbsNode } from './budgetLabels';
+import { useToastStore } from '@/stores/useToastStore';
+import { useProjectContextStore } from '@/stores/useProjectContextStore';
+import { useActiveProjectId } from '@/shared/hooks/useActiveProjectId';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { InsightsPanel, InsightsToggleButton, useModuleInsights } from '@/features/insights';
+import { buildFinanceInsights } from './financeInsights';
+import { ConnectorsTab } from './ConnectorsTab';
+import { InvoiceInboxTab } from './InvoiceInboxTab';
+import { StatementsTab } from './StatementsTab';
+import { RetentionLedgerTab } from './RetentionLedgerTab';
+import { EInvoiceModal } from './EInvoiceModal';
+import { financeGuide } from './financeGuide';
+import { DEFAULT_FINANCE_TAB, isFinanceTab, type FinanceTab } from './financeTabs';
+import { UnlinkedTwinBanner } from '@/features/subcontractors/UnlinkedTwinBanner';
+import { fmtList, fmtPercent, fmtFixed, fmtNumberForInput } from '@/shared/lib/formatters';
+
+// English fallbacks for the computed `finance.payment_status_*` keys. The default used to be
+// the raw value, so until the key lands in a locale the screen shows the bare
+// enum token to every reader, English included. Unknown values still fall
+// through to the previous default.
+const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  completed: 'Completed', refunded: 'Refunded'
+};
+
+
+/* ── Types ─────────────────────────────────────────────────────────────── */
+
+interface BudgetLine {
+  id: string;
+  project_id: string;
+  wbs_id: string | null;
+  wbs_code?: string;
+  // Server-resolved name of wbs_id (WBS node or bill section), when it is an id.
+  wbs_label?: string | null;
+  category: string;
+  original_budget: number;
+  revised_budget: number;
+  committed: number;
+  actual: number;
+  forecast: number;
+  forecast_final?: number;
+  variance: number;
+  currency_code?: string;
+  currency?: string;
+  metadata?: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface InvoiceLineItem {
+  id: string;
+  description: string;
+  quantity: string;
+  unit: string | null;
+  unit_rate: string;
+  amount: string;
+  wbs_id: string | null;
+  cost_category: string | null;
+  // Gap B link to a costmodel.CostLine (already serialized on
+  // InvoiceLineItemResponse). When present the line can deep-link to the
+  // 5D cost spine row it posts actuals onto.
+  cost_line_id: string | null;
+  // EN 16931 per-line VAT, percent. Null when the line never named one.
+  vat_rate?: string | null;
+  vat_category?: string | null;
+  sort_order?: number;
+}
+
+interface Invoice {
+  id: string;
+  project_id: string;
+  invoice_number: string;
+  direction: 'payable' | 'receivable';
+  counterparty_name: string;
+  issue_date: string;
+  due_date: string;
+  amount: number;
+  currency: string;
+  status: string;
+  description: string;
+  // Gap E: the certified progress claim this receivable was raised from
+  // (serialized on InvoiceResponse). When set the invoice deep-links back
+  // to that claim. NULL on every non-claim invoice.
+  source_claim_id?: string | null;
+  line_items?: InvoiceLineItem[];
+  // Serialized InvoiceResponse.metadata. The e-invoice engine reads
+  // document-level fields (buyer reference / Leitweg-ID, VAT declaration,
+  // seller overrides) from metadata.einvoice, so the edit form has to carry
+  // the object through a PATCH instead of wiping it.
+  metadata?: Record<string, unknown> | null;
+  // Raw wire fields from InvoiceResponse — the API uses these names
+  // (invoice_date / currency_code / amount_total / amount_subtotal /
+  // tax_amount / notes / contact_id) rather than the legacy display
+  // aliases above. Used to prefill the edit form so it round-trips the
+  // same fields the create form exposes.
+  amount_subtotal?: string | null;
+  tax_amount?: string | null;
+  amount_total?: string | null;
+  // Retainage held back from payment, Decimal-as-string.
+  retention_amount?: string | null;
+  contact_id?: string | null;
+  // The purchase order a payable invoice bills, when one was picked.
+  purchase_order_id?: string | null;
+  invoice_date?: string | null;
+  currency_code?: string | null;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// The API (InvoiceResponse) emits the canonical wire names —
+// invoice_direction / invoice_date / currency_code / amount_total — rather
+// than the legacy display aliases the table reads (direction / issue_date /
+// currency / amount). The list/table columns and totals consume the display
+// aliases, so normaliseInvoice MUST map every one of them, not just the
+// counterparty name. Reading inv.amount / inv.currency / inv.issue_date off a
+// raw wire row otherwise yields undefined (em-dash amount, blank date).
+type InvoiceWire = Omit<
+  Invoice,
+  'counterparty_name' | 'direction' | 'issue_date' | 'amount' | 'currency'
+> & {
+  counterparty_name?: string | null;
+  contact_id?: string | null;
+  direction?: 'payable' | 'receivable';
+  invoice_direction?: 'payable' | 'receivable';
+  issue_date?: string | null;
+  invoice_date?: string | null;
+  amount?: number | string | null;
+  amount_total?: string | null;
+  currency?: string | null;
+  currency_code?: string | null;
+};
+
+function normaliseInvoice(i: InvoiceWire): Invoice {
+  const amountRaw = i.amount_total ?? i.amount;
+  return {
+    ...i,
+    counterparty_name: i.counterparty_name ?? i.contact_id ?? '',
+    direction: i.invoice_direction ?? i.direction ?? 'payable',
+    issue_date: i.invoice_date ?? i.issue_date ?? '',
+    amount: amountRaw != null ? Number(amountRaw) : 0,
+    currency: i.currency_code ?? i.currency ?? '',
+  } as Invoice;
+}
+
+/** The stored BT-10 (buyer reference / Leitweg-ID), whichever spelling wrote it. */
+function readBuyerReference(metadata: Record<string, unknown> | null | undefined): string {
+  const einvoice =
+    metadata && typeof metadata === 'object' && metadata.einvoice && typeof metadata.einvoice === 'object'
+      ? (metadata.einvoice as Record<string, unknown>)
+      : {};
+  const value = einvoice.buyer_reference ?? einvoice.leitweg_id;
+  return typeof value === 'string' ? value : '';
+}
+
+/**
+ * Merge the form's buyer reference into a copy of the invoice's stored
+ * metadata. A PATCH replaces the whole metadata object server-side, so the
+ * form must carry every key it does not edit (the seed's seller block, VAT
+ * declaration, claim provenance) or editing one field would wipe the rest.
+ */
+function invoiceMetadataWithBuyerReference(
+  base: Record<string, unknown> | null | undefined,
+  buyerReference: string,
+): Record<string, unknown> {
+  const meta: Record<string, unknown> = { ...(base && typeof base === 'object' ? base : {}) };
+  const einvoice: Record<string, unknown> = {
+    ...(meta.einvoice && typeof meta.einvoice === 'object' ? (meta.einvoice as Record<string, unknown>) : {}),
+  };
+  const ref = buyerReference.trim();
+  if (ref) {
+    einvoice.buyer_reference = ref;
+    // The engine reads either spelling; keep one so they cannot diverge.
+    delete einvoice.leitweg_id;
+  } else {
+    delete einvoice.buyer_reference;
+    delete einvoice.leitweg_id;
+  }
+  if (Object.keys(einvoice).length > 0) meta.einvoice = einvoice;
+  else delete meta.einvoice;
+  return meta;
+}
+
+interface Payment {
+  id: string;
+  invoice_id: string;
+  // Enriched server-side from the parent invoice (PaymentResponse.invoice_number).
+  invoice_number?: string | null;
+  // Backend serialises Decimal as string ("250000.00") per Wave 8 sweep.
+  // Accept both for back-compat with older fixtures.
+  amount: string | number;
+  // Backend field is `currency_code`; older payloads used `currency`.
+  currency?: string;
+  currency_code?: string;
+  payment_date: string;
+  reference?: string | null;
+  // Derived lifecycle label from PaymentResponse: "completed" | "refunded".
+  // (A payment is an immutable ledger entry, so it has no pending state.)
+  status?: string;
+  is_refund?: boolean;
+  created_at: string;
+}
+
+interface EVMData {
+  project_id: string;
+  bac: number;
+  pv: number;
+  ev: number;
+  ac: number;
+  sv: number;
+  cv: number;
+  spi: number;
+  cpi: number;
+  eac: number;
+  etc: number;
+  vac: number;
+  tcpi: number;
+  currency: string;
+  data_date: string;
+}
+
+/* ── Constants ────────────────────────────────────────────────────────── */
+
+type InvoiceSubTab = 'payable' | 'receivable';
+
+/** Common currency shortlist for the create/edit selects. NOT a default —
+ *  the actual default always comes from project data (task #217). The
+ *  project's resolved currency is merged in dynamically so a project priced
+ *  in e.g. BRL/INR still has its own currency selectable. */
+const COMMON_CURRENCIES = [
+  // Construction-market headliners. BRL added 2026-05-27 in response to
+  // a Brazilian user reporting "there is no invoice support for BRL" —
+  // the picker still allowed entering BRL via the project-currency
+  // injection below, but having it in the shortlist saves the click and
+  // signals first-class support.
+  'EUR', 'USD', 'GBP', 'CHF', 'BRL', 'PLN', 'CZK', 'SEK', 'NOK', 'DKK', 'AED', 'SAR',
+] as const;
+
+function currencyOptions(active: string): string[] {
+  const a = (active || '').trim().toUpperCase();
+  if (a && /^[A-Z]{3}$/.test(a) && !COMMON_CURRENCIES.includes(a as never)) {
+    return [a, ...COMMON_CURRENCIES];
+  }
+  return [...COMMON_CURRENCIES];
+}
+
+export const INVOICE_STATUS_COLORS: Record<string, BadgeVariant> = {
+  draft: 'neutral',
+  pending: 'warning',
+  approved: 'blue',
+  // Issued to the client and waiting to be paid. Without an entry here it
+  // arrived as 'neutral', so the invoice the client is holding looked exactly
+  // like a draft nobody has sent and like one that was cancelled. It gets its
+  // own hue rather than sharing blue with approved: the two sit one row apart
+  // in this very column, and a reader scanning it takes one colour to mean one
+  // state.
+  sent: 'purple',
+  paid: 'success',
+  disputed: 'error',
+  cancelled: 'neutral',
+  credit_note_issued: 'neutral',
+};
+
+// Editor-safe invoice status transitions offered by the edit-modal status
+// dropdown (#284). This is a DELIBERATE SUBSET of the backend FSM
+// (finance.service._INVOICE_STATUS_TRANSITIONS): the privileged steps
+// 'approved' and 'paid' are intentionally EXCLUDED here because the
+// backend pins them to manager-only endpoints (finance.approve / finance.pay)
+// and 'pay' also writes a binding ledger entry. Driving them through a plain
+// PATCH would both bypass that gate and skip the payment side effects, so they
+// stay on the dedicated Approve / Mark Paid row buttons. The dropdown only
+// covers the early, reversible lifecycle a draft invoice was previously stuck
+// in (draft <-> pending, and cancel / re-open).
+export const INVOICE_SELF_SERVICE_TRANSITIONS: Record<string, string[]> = {
+  draft: ['pending', 'cancelled'],
+  pending: ['draft', 'cancelled'],
+  approved: [],
+  sent: [],
+  paid: [],
+  cancelled: ['draft'],
+  credit_note_issued: [],
+};
+
+// Display order for the status options so the dropdown reads predictably. This
+// is the whole lifecycle the backend FSM knows, not the part the dropdown may
+// move an invoice into: a status missing here has no label and renders as the
+// raw database word, which is what 'sent' used to do. Which of them an editor
+// may actually select stays governed by the transition map above, and both of
+// those are empty for the states only a privileged endpoint can reach.
+export const INVOICE_STATUS_ORDER = [
+  'draft',
+  'pending',
+  'approved',
+  'sent',
+  'paid',
+  'cancelled',
+  'credit_note_issued',
+];
+
+/**
+ * Statuses from which the Mark Paid button is offered.
+ *
+ * This mirrors the set the pay endpoint accepts (`finance.service.pay_invoice`
+ * guards with `prior not in ("approved", "sent")`), because a button offered
+ * where the endpoint refuses produces a 400 nobody can act on, and a button
+ * withheld where it would succeed strands the invoice with no way forward.
+ *
+ * Both values are reached in normal use, so neither may be dropped. The
+ * Approve button writes 'approved'. 'sent' is kept for backwards
+ * compatibility with legacy rows that may still carry it from before
+ * the status was corrected.
+ */
+const MARK_PAID_FROM = ['sent', 'approved'];
+
+/**
+ * True when a manager may mark this invoice paid.
+ *
+ * Exported (and pure) so the cross-layer invariant - the button appears for
+ * exactly the statuses the pay endpoint accepts - is unit-testable without
+ * mounting the page.
+ */
+export function canMarkPaid(status: string | null | undefined): boolean {
+  return MARK_PAID_FROM.includes(status ?? '');
+}
+
+/**
+ * True when this invoice is one we issue rather than one we received.
+ *
+ * The e-invoice action only belongs on a receivable: the buyer is resolved from
+ * the linked contact for that direction alone, and a payable carries no seller
+ * identity of ours at all. Offered on a supplier's invoice it opened a
+ * compliance report listing our own missing details on a document we are not
+ * issuing. Reads the wire field with the display alias as a fallback, the same
+ * pair the edit form resolves, because the table is fed from both shapes.
+ */
+export function isReceivable(inv: Pick<Invoice, 'direction'>): boolean {
+  const wire = inv as { invoice_direction?: string };
+  return wire.invoice_direction === 'receivable' || inv.direction === 'receivable';
+}
+
+/**
+ * Options shown in the invoice edit-modal status dropdown: the current status
+ * plus only the editor-safe next states. Exported (and pure) so the security
+ * invariant - approve / pay are NEVER reachable via the plain PATCH dropdown,
+ * only via their manager-gated endpoints - is unit-testable (#284).
+ */
+export function invoiceStatusOptions(current: string): string[] {
+  return INVOICE_STATUS_ORDER.filter(
+    (s) => s === current || (INVOICE_SELF_SERVICE_TRANSITIONS[current] ?? []).includes(s),
+  );
+}
+
+/* ── Export / Import helpers ──────────────────────────────────────────── */
+
+/**
+ * Kept as the name this page already calls; the body now lives in
+ * shared/lib/api so the e-invoice modal downloads through the same code
+ * rather than a second copy of it that would have to learn the same
+ * lessons about non-2xx responses independently.
+ */
+async function fetchBlobWithAuth(url: string, fallbackFilename: string): Promise<void> {
+  return downloadWithAuth(url, fallbackFilename);
+}
+
+interface BudgetImportResult {
+  imported: number;
+  skipped: number;
+  errors: { row: number; error: string; data: Record<string, string> }[];
+  total_rows: number;
+}
+
+async function importBudgetsFile(
+  file: File,
+  projectId: string,
+): Promise<BudgetImportResult> {
+  const token = useAuthStore.getState().accessToken;
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const response = await fetch(
+    `/api/v1/finance/budgets/import/file/?project_id=${encodeURIComponent(projectId)}`,
+    { method: 'POST', headers, body: formData },
+  );
+
+  if (!response.ok) {
+    let detail = 'Import failed';
+    try {
+      const body = await response.json();
+      detail = extractErrorMessageFromBody(body) ?? detail;
+    } catch {
+      // ignore parse error
+    }
+    throw new Error(detail);
+  }
+
+  return response.json();
+}
+
+/* ── Main Page ────────────────────────────────────────────────────────── */
+
+const inputCls =
+  'h-10 w-full rounded-lg border border-border bg-surface-primary px-3 text-sm focus:outline-none focus:ring-2 focus:ring-oe-blue/30 focus:border-oe-blue';
+
+/* ── Finance Summary Cards ────────────────────────────────────────────── */
+
+interface FinanceDashboardData {
+  total_payable: number;
+  total_receivable: number;
+  total_overdue: number;
+  overdue_count: number;
+  invoices_draft: number;
+  invoices_pending: number;
+  invoices_approved: number;
+  invoices_paid: number;
+  total_budget_original: number;
+  total_budget_revised: number;
+  total_committed: number;
+  total_actual: number;
+  total_variance: number;
+  budget_consumed_pct: number;
+  budget_warning_level: string;
+  total_payments: number;
+  cash_flow_net: number;
+  /** Net of VAT: supplier invoices and approved subcontract payment
+   *  applications. `total_committed` and `total_actual` are net as well. */
+  total_invoiced?: number | string;
+  /** Cash out of the door, VAT included: payments on supplier invoices less
+   *  refunds, plus subcontract payment applications marked paid. */
+  total_paid?: number | string;
+  /** Net of VAT: incurred beyond what was committed (received past an order
+   *  nobody invoiced, settled past a subcontract's value). Committed stops at
+   *  zero, so this is where that excess shows. */
+  total_over_commitment?: number | string;
+  /** Base currency the totals are expressed in. For a project-scoped
+   *  dashboard the server FX-converts every foreign record into this
+   *  currency via Project.fx_rates; empty when no record carries one. */
+  currency: string;
+  /** True when financial records span more than one currency (totals are
+   *  still in `currency`, converted where an FX rate exists). */
+  mixed_currencies?: boolean;
+  /** Foreign currency codes present but with no FX rate configured — their
+   *  amounts are summed unconverted, so the total is approximate. */
+  missing_fx_rates?: string[];
+}
+
+/**
+ * The six money cards above the Finance tabs.
+ *
+ * Exported so the currency-gap notice (#169) can be tested against the
+ * rendered cards rather than through a source scan. It is not re-exported
+ * from the feature's ``index.ts``; the page remains the public surface.
+ */
+export function FinanceSummaryCards({
+  projectId,
+  onGoToBudgets,
+  onGoToInvoices,
+}: {
+  projectId: string;
+  onGoToBudgets?: () => void;
+  onGoToInvoices?: () => void;
+}) {
+  const { t } = useTranslation();
+
+  const { data: dashboard } = useQuery({
+    queryKey: ['finance', 'dashboard', projectId],
+    queryFn: () =>
+      apiGet<FinanceDashboardData>(`/v1/finance/dashboard/?project_id=${projectId}`),
+  });
+
+  const totalBudget = Number(dashboard?.total_budget_original ?? 0);
+  const totalRevised = Number(dashboard?.total_budget_revised ?? 0);
+  const totalActual = Number(dashboard?.total_actual ?? 0);
+  const totalCommitted = Number(dashboard?.total_committed ?? 0);
+  const totalInvoiced = Number(dashboard?.total_invoiced ?? 0);
+  const totalPaid = Number(dashboard?.total_paid ?? 0);
+  const totalOverCommitment = Number(dashboard?.total_over_commitment ?? 0);
+  const totalUnpaid = Number(dashboard?.total_payable ?? 0);
+  const totalReceivable = Number(dashboard?.total_receivable ?? 0);
+  const totalOverdue = Number(dashboard?.total_overdue ?? 0);
+  const remaining = (totalRevised || totalBudget) - totalActual;
+  // Currency comes from the data (task #217) — never hardcoded. When the
+  // backend cannot resolve one (no priced records yet) MoneyDisplay still
+  // renders, falling back to the user's preferred currency for the symbol.
+  //
+  // The backend now FX-converts every foreign-currency record into the
+  // project base currency (via Project.fx_rates, mirroring boq.service) and
+  // returns the totals already expressed in `currency`, so the single-
+  // currency cards below are correct. When records span more than one
+  // currency it also returns `mixed_currencies` / `missing_fx_rates` so we
+  // can surface an honest "converted / approximate" hint rather than passing
+  // off a blended number as a native-currency sum.
+  const currency = dashboard?.currency || undefined;
+  const consumedPct = Number(dashboard?.budget_consumed_pct ?? 0);
+  const warningLevel = dashboard?.budget_warning_level ?? 'normal';
+  const mixedCurrencies = !!dashboard?.mixed_currencies;
+  const missingFx = dashboard?.missing_fx_rates ?? [];
+
+  // Still loading — render nothing rather than flashing an empty-state hint
+  // before the real totals arrive.
+  if (!dashboard) {
+    return null;
+  }
+
+  // Loaded, but the project has no financial figures yet. Instead of leaving a
+  // blank gap above the tabs, guide the user toward the first actions.
+  if (
+    totalBudget === 0 &&
+    totalRevised === 0 &&
+    totalCommitted === 0 &&
+    totalInvoiced === 0 &&
+    totalUnpaid === 0 &&
+    totalReceivable === 0
+  ) {
+    return (
+      <Card padding="none" className="overflow-hidden">
+        <EmptyState
+          icon={<Wallet size={28} strokeWidth={1.5} />}
+          title={t('finance.summary_empty_title', {
+            defaultValue: 'No financial data yet',
+          })}
+          description={t('finance.summary_empty_desc', {
+            defaultValue:
+              'Add budget lines or create an invoice to start tracking project costs here.',
+          })}
+          action={
+            onGoToBudgets || onGoToInvoices ? (
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                {onGoToBudgets && (
+                  <Button variant="primary" onClick={onGoToBudgets}>
+                    {t('finance.summary_empty_add_budget', {
+                      defaultValue: 'Add budget lines',
+                    })}
+                  </Button>
+                )}
+                {onGoToInvoices && (
+                  <Button variant="secondary" onClick={onGoToInvoices}>
+                    {t('finance.summary_empty_add_invoice', {
+                      defaultValue: 'Create an invoice',
+                    })}
+                  </Button>
+                )}
+              </div>
+            ) : undefined
+          }
+        />
+      </Card>
+    );
+  }
+
+  // Every figure states its basis. Budget, committed, invoiced and remaining
+  // are compared net of VAT, because the budget comes from the bill, which is
+  // net; paid and the two open balances are cash and carry the VAT. A card
+  // with no basis is a count or a status, not an amount against the budget.
+  const basisNet = t('finance.basis_net', { defaultValue: 'Net of VAT' });
+  const basisGross = t('finance.basis_gross', { defaultValue: 'Incl. VAT' });
+
+  const cards: Array<{
+    key: string;
+    label: string;
+    basis?: string;
+    value: number;
+    icon: React.ReactNode;
+    color: string;
+    accent: string;
+  }> = [
+    {
+      key: 'budget',
+      label: t('finance.summary_total_budget', { defaultValue: 'Total Budget' }),
+      basis: basisNet,
+      value: totalBudget,
+      icon: <Wallet size={18} />,
+      color: 'bg-oe-blue/10 text-oe-blue',
+      accent: 'bg-oe-blue',
+    },
+    {
+      // What orders, subcontracts and unordered invoices still promise and
+      // has not been incurred yet. With actual it adds up to the outturn.
+      key: 'committed',
+      label: t('finance.summary_committed', { defaultValue: 'Committed' }),
+      basis: basisNet,
+      value: totalCommitted,
+      icon: <FileText size={18} />,
+      color: 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-400',
+      accent: 'bg-violet-500',
+    },
+    {
+      key: 'invoiced',
+      label: t('finance.summary_invoiced', { defaultValue: 'Invoiced' }),
+      basis: basisNet,
+      value: totalInvoiced,
+      icon: <Receipt size={18} />,
+      color: 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400',
+      accent: 'bg-amber-500',
+    },
+    {
+      key: 'paid',
+      label: t('finance.summary_paid', { defaultValue: 'Paid' }),
+      basis: basisGross,
+      value: totalPaid,
+      icon: <CreditCard size={18} />,
+      color: 'bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-400',
+      accent: 'bg-sky-500',
+    },
+    {
+      // What the old "Total Invoiced (Payable)" card showed: supplier
+      // invoices still to be paid, not everything invoiced.
+      key: 'unpaid',
+      label: t('finance.summary_unpaid_payables', { defaultValue: 'Unpaid supplier invoices' }),
+      basis: basisGross,
+      value: totalUnpaid,
+      icon: <Inbox size={18} />,
+      color: 'bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400',
+      accent: 'bg-orange-500',
+    },
+    {
+      key: 'receivable',
+      label: t('finance.summary_receivable', { defaultValue: 'Receivable' }),
+      basis: basisGross,
+      value: totalReceivable,
+      icon: <PiggyBank size={18} />,
+      color: 'bg-green-50 text-green-600 dark:bg-green-950/40 dark:text-green-400',
+      accent: 'bg-green-500',
+    },
+    {
+      // The money already past its due date, beside the money still owed. The
+      // endpoint has returned it all along and the reporting page has drawn it
+      // all along; this screen declared the field and never read it, so the
+      // one figure a finance lead opens the page for was the one it did not
+      // show. Same key as the reporting tile: one number, one wording.
+      key: 'overdue',
+      label: t('reporting.overdue_total', { defaultValue: 'Total Overdue' }),
+      basis: basisGross,
+      value: totalOverdue,
+      icon: <AlertTriangle size={18} />,
+      color:
+        totalOverdue > 0
+          ? 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400'
+          : 'bg-green-50 text-green-600 dark:bg-green-950/40 dark:text-green-400',
+      accent: totalOverdue > 0 ? 'bg-red-500' : 'bg-green-500',
+    },
+    {
+      key: 'remaining',
+      label: t('finance.summary_remaining', { defaultValue: 'Remaining Budget' }),
+      basis: basisNet,
+      value: remaining,
+      icon: <DollarSign size={18} />,
+      color: remaining >= 0
+        ? 'bg-green-50 text-green-600 dark:bg-green-950/40 dark:text-green-400'
+        : 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400',
+      accent: remaining >= 0 ? 'bg-green-500' : 'bg-red-500',
+    },
+  ];
+  // Only when there is some: committed never goes below zero, so money spent
+  // beyond what was committed would otherwise vanish into that zero.
+  if (totalOverCommitment > 0) {
+    cards.splice(2, 0, {
+      key: 'over_commitment',
+      label: t('finance.summary_over_commitment', { defaultValue: 'Beyond commitment' }),
+      basis: basisNet,
+      value: totalOverCommitment,
+      icon: <AlertTriangle size={18} />,
+      color: 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400',
+      accent: 'bg-red-500',
+    });
+  }
+
+  const barColor =
+    warningLevel === 'critical'
+      ? 'bg-red-500'
+      : warningLevel === 'caution'
+        ? 'bg-amber-500'
+        : 'bg-oe-blue';
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {cards.map((card) => (
+          <div
+            key={card.key}
+            data-testid={`finance-card-${card.key}`}
+            className="relative overflow-hidden rounded-xl border border-border-light bg-surface-elevated/90 shadow-xs transition-shadow duration-normal ease-oe hover:shadow-sm"
+          >
+            <div className={`absolute top-0 start-0 end-0 h-1 ${card.accent}`} />
+            <div className="p-4 pt-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-2xs font-medium uppercase tracking-wider text-content-tertiary">
+                  {card.label}
+                </span>
+                <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${card.color}`}>
+                  {card.icon}
+                </div>
+              </div>
+              <div className="text-xl font-bold tabular-nums text-content-primary">
+                <MoneyDisplay amount={card.value} currency={currency} />
+              </div>
+              {card.basis && (
+                <div className="mt-0.5 text-2xs text-content-tertiary">{card.basis}</div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* No currency resolved (#169). MoneyDisplay refuses to print an amount
+          without its unit - rightly, since a bare number invites being read
+          as the wrong currency - so every card above is an em-dash and the
+          only explanation is a tooltip on each one. A configuration gap that
+          blanks six figures and a total row is indistinguishable from a
+          broken screen until someone hovers. Say it once, in words, and
+          offer the place to fix it. The per-cell guard is unchanged. */}
+      {!currency && (
+        <div
+          className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300"
+          data-testid="finance-no-currency-notice"
+        >
+          {t('finance.no_currency_notice', {
+            defaultValue:
+              'This project has not been given a currency, so amounts cannot be shown with their unit and are left blank rather than guessed.',
+          })}{' '}
+          <Link
+            to={`/projects/${projectId}`}
+            className="font-medium underline underline-offset-2 hover:no-underline"
+          >
+            {t('finance.no_currency_action', { defaultValue: 'Set the project currency' })}
+          </Link>
+        </div>
+      )}
+
+      {/* Mixed-currency honesty hint. When records span several currencies
+          the totals above are FX-converted into the project currency; if a
+          currency has no configured rate it was summed unconverted, so we
+          flag the figure as approximate rather than presenting it as exact. */}
+      {mixedCurrencies && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300">
+          {missingFx.length > 0
+            ? t('finance.mixed_currency_missing_fx', {
+                defaultValue:
+                  'Totals are converted to {{currency}}. No FX rate is set for {{codes}}, so amounts in those currencies are added unconverted and the total is approximate.',
+                currency: currency || '',
+                codes: fmtList(missingFx),
+              })
+            : t('finance.mixed_currency_converted', {
+                defaultValue:
+                  'Records span multiple currencies; totals are converted to {{currency}} using the project exchange rates.',
+                currency: currency || '',
+              })}
+        </div>
+      )}
+
+      {/* Budget consumption — makes the budget→actual money flow legible at
+          a glance and surfaces the over-budget risk the cards only imply. */}
+      {(totalRevised > 0 || totalBudget > 0) && (
+        <Card padding="none" className="overflow-hidden">
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-2 text-xs">
+              <span className="font-medium text-content-secondary">
+                {t('finance.budget_consumption', { defaultValue: 'Budget consumed' })}
+              </span>
+              <span className="tabular-nums font-semibold text-content-primary">
+                {fmtPercent(consumedPct)}
+                {warningLevel !== 'normal' && (
+                  <span
+                    className={clsx(
+                      'ml-2 rounded-full px-2 py-0.5 text-2xs font-medium',
+                      warningLevel === 'critical'
+                        ? 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300'
+                        : 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300',
+                    )}
+                  >
+                    {warningLevel === 'critical'
+                      ? t('finance.budget_critical', { defaultValue: 'Over 95% - critical' })
+                      : t('finance.budget_caution', { defaultValue: 'Over 80% - watch' })}
+                  </span>
+                )}
+              </span>
+            </div>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-surface-secondary">
+              <div
+                className={clsx('h-full rounded-full transition-all', barColor)}
+                style={{ width: `${Math.min(100, Math.max(0, consumedPct))}%` }}
+              />
+            </div>
+            <p className="mt-2 text-2xs text-content-tertiary">
+              {t('finance.budget_consumption_hint', {
+                defaultValue:
+                  'Actual cost vs revised budget. Lock a BOQ to seed budget lines; invoices roll up into Actual when paid.',
+              })}
+            </p>
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+/* ── Module Links ────────────────────────────────────────────────────── */
+
+function FinanceModuleLinks({ projectId: _projectId }: { projectId: string }) {
+  void _projectId;
+  const { t } = useTranslation();
+
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <Link
+        to="/boq"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-border-light bg-surface-primary px-3 py-1.5 text-xs font-medium text-content-secondary hover:bg-surface-secondary hover:text-oe-blue transition-colors"
+      >
+        <ExternalLink size={12} />
+        {t('finance.link_to_boq', { defaultValue: 'BOQ Estimate' })}
+      </Link>
+      <Link
+        to="/5d"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-border-light bg-surface-primary px-3 py-1.5 text-xs font-medium text-content-secondary hover:bg-surface-secondary hover:text-oe-blue transition-colors"
+      >
+        <TrendingUp size={12} />
+        {t('finance.link_to_5d', { defaultValue: '5D Cost Model' })}
+      </Link>
+    </div>
+  );
+}
+
+/* ── Main Page ────────────────────────────────────────────────────────── */
+
+export function FinancePage() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const projectId = useActiveProjectId();
+  const projectName = useProjectContextStore((s) => s.activeProjectName);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // The active tab lives in ?tab= (CONN-74 consumer: the Reporting Finance
+  // dashboard, the accommodation billing link and the case playbooks all
+  // drill in with /finance?tab=retention and the like). It used to be read
+  // once on mount and then deleted, because the tab was component state and
+  // a ?tab= left behind would have pulled a refresh or a shared link back to
+  // the section the user had already moved away from. Every switch now
+  // writes the tab back, so the URL never goes stale and there is nothing
+  // left to clear. Keeping it is what lets a menu row stay highlighted and a
+  // reload keep the section. Switches replace rather than push.
+  const rawTab = searchParams.get('tab');
+  const activeTab: FinanceTab = isFinanceTab(rawTab) ? rawTab : DEFAULT_FINANCE_TAB;
+  const setActiveTab = (next: FinanceTab) =>
+    setSearchParams(
+      (prev) => {
+        const params = new URLSearchParams(prev);
+        params.set('tab', next);
+        return params;
+      },
+      { replace: true },
+    );
+
+  // Module Insights panel. Charts the project's invoices - the register that
+  // carries every payable and receivable together with its status and due
+  // date - so a chart slice reads like the badge on the row it came from. The
+  // list is fetched here at page level with no direction filter (payables and
+  // receivables come together) under the ['finance-invoices', projectId] key
+  // prefix, so the tabs' own invalidations keep it fresh. Currency rides the
+  // dashboard query the summary cards already load, so it is a cache hit.
+  // These hooks sit with the other top-level hooks, above any conditional
+  // render, so the hook order stays stable.
+  const { data: insightPage } = useQuery({
+    queryKey: ['finance-invoices', projectId, 'all'],
+    queryFn: () => apiGet<Page<InvoiceWire>>(`/v1/finance/?project_id=${projectId}`),
+    select: (p): Page<Invoice> => ({ ...p, items: p.items.map(normaliseInvoice) }),
+    enabled: !!projectId,
+  });
+  const insightInvoices = insightPage?.items ?? [];
+  const { data: insightDashboard } = useQuery({
+    queryKey: ['finance', 'dashboard', projectId],
+    queryFn: () =>
+      apiGet<FinanceDashboardData>(`/v1/finance/dashboard/?project_id=${projectId}`),
+    enabled: !!projectId,
+  });
+  const insights = useModuleInsights('finance', { defaultOpen: true });
+  const { datasets: insightDatasets, builtins: insightBuiltins } = useMemo(
+    () => buildFinanceInsights(insightInvoices, insightDashboard?.currency || 'EUR', t),
+    [insightInvoices, insightDashboard, t],
+  );
+
+  const tabs: { key: FinanceTab; label: string; icon: React.ReactNode }[] = [
+    {
+      key: 'budgets',
+      label: t('finance.budgets', { defaultValue: 'Budgets' }),
+      icon: <Wallet size={15} />,
+    },
+    {
+      key: 'invoices',
+      label: t('finance.invoices', { defaultValue: 'Invoices' }),
+      icon: <FileText size={15} />,
+    },
+    {
+      key: 'inbox',
+      label: t('finance.inbox.tab', { defaultValue: 'Invoice inbox' }),
+      icon: <Inbox size={15} />,
+    },
+    {
+      key: 'payments',
+      label: t('finance.payments', { defaultValue: 'Payments' }),
+      icon: <CreditCard size={15} />,
+    },
+    {
+      key: 'statements',
+      label: t('finance.stmt_tab', { defaultValue: 'Statements' }),
+      icon: <Scale size={15} />,
+    },
+    {
+      key: 'retention',
+      label: t('finance.retention_tab', { defaultValue: 'Retention' }),
+      icon: <Landmark size={15} />,
+    },
+    {
+      key: 'evm',
+      label: t('finance.evm_dashboard', { defaultValue: 'EVM Dashboard' }),
+      icon: <BarChart3 size={15} />,
+    },
+    {
+      key: 'connectors',
+      label: t('finance.connectors.tab', { defaultValue: 'Connectors' }),
+      icon: <Plug size={15} />,
+    },
+  ];
+
+  return (
+    <div className="space-y-5 animate-fade-in">
+      <Breadcrumb
+        items={[
+          ...(projectName
+            ? [{ label: projectName, to: `/projects/${projectId}` }]
+            : []),
+          { label: t('finance.title', { defaultValue: 'Finance' }) },
+        ]}
+      />
+
+      {/* Header + Module Links */}
+      <PageHeader
+        srTitle={t('finance.title', { defaultValue: 'Finance' })}
+        subtitle={t('finance.subtitle', {
+          defaultValue:
+            'Budgets, invoices, payments, and earned value management',
+        })}
+        actions={
+          <>
+            <InsightsToggleButton open={insights.open} onClick={insights.toggle} />
+            {projectId && <FinanceModuleLinks projectId={projectId} />}
+            <ModuleGuideButton content={financeGuide} />
+          </>
+        }
+      />
+
+      {/* Module Insights panel - toggled by the header button. Placed high so
+          its charts are visible the moment Finance opens. */}
+      <InsightsPanel
+        open={insights.open}
+        title={t('finance.insights.title', { defaultValue: 'Invoice insights' })}
+        datasets={insightDatasets}
+        builtins={insightBuiltins}
+        custom={insights.custom}
+        onAdd={insights.addCustom}
+        onUpdate={insights.updateCustom}
+        onRemove={insights.removeCustom}
+        onCollapse={() => insights.setOpen(false)}
+      />
+      {/* The charts are built from the invoices this page read, and that read
+          is one page of the register. Say so, or the aggregate reads as the
+          whole project. */}
+      {insights.open && insightPage && (
+        <TruncationNotice page={insightPage} className="-mt-3" />
+      )}
+
+      {/* Canonical module intro — pain-named, copy from MODULE_INTRO_COPY.
+          Replaces the bespoke gradient "How it works" workflow guide. */}
+      <DismissibleInfo
+        storageKey="finance"
+        title={t('finance.intro_title', {
+          defaultValue: 'See where the money actually went',
+        })}
+        more={
+          t('finance.intro_more', { defaultValue: '' })
+            ? <IntroRichText text={t('finance.intro_more')} />
+            : undefined
+        }
+        links={[
+          { label: t('nav.boq', { defaultValue: 'BOQ' }), onClick: () => navigate('/boq') },
+          { label: t('nav.5d', { defaultValue: '5D Cost Model' }), onClick: () => navigate('/5d') },
+          {
+            label: t('nav.procurement', { defaultValue: 'Procurement' }),
+            onClick: () => navigate('/procurement'),
+          },
+        ]}
+      >
+        {t('finance.intro_body', {
+          defaultValue:
+            'Set budget lines against your WBS, then track invoices and payments as they land so committed, actual and forecast sit next to the original budget with the variance called out. The earned value dashboard turns that into cost and schedule performance, and budgets can pull straight from the BOQ estimate and 5D cost model.',
+        })}
+      </DismissibleInfo>
+
+      {/* No-project case is handled by the RequiresProject empty state below;
+          the single global project selector is the one source of truth, so
+          there is no duplicate amber banner here (audit: finance-top). */}
+
+      {/* Summary Cards */}
+      {projectId && (
+        <FinanceSummaryCards
+          projectId={projectId}
+          onGoToBudgets={() => setActiveTab('budgets')}
+          onGoToInvoices={() => setActiveTab('invoices')}
+        />
+      )}
+
+      {/* A subcontract written both as an agreement and as a contract, not
+          linked, is counted twice in the figures above; say so where the
+          double count shows. */}
+      {projectId && <UnlinkedTwinBanner projectId={projectId} />}
+
+      {/* Tab Bar */}
+      <TabBar<FinanceTab>
+        ariaLabel={t('finance.tabs_aria', { defaultValue: 'Finance sections' })}
+        idPrefix="finance"
+        tabs={tabs.map((tab) => ({ id: tab.key, label: tab.label, icon: tab.icon }))}
+        activeId={activeTab}
+        onChange={setActiveTab}
+      />
+
+      {/* Tab Content */}
+      <RequiresProject
+        emptyHint={t('finance.select_project', {
+          defaultValue:
+            'Track invoices, budgets, and payments here. Select a project to view its financial data, or lock a BOQ to auto-generate budget lines.',
+        })}
+      >
+        <div
+          role="tabpanel"
+          id={tabIds('finance').panelId(activeTab)}
+          aria-labelledby={tabIds('finance').tabId(activeTab)}
+        >
+          {projectId && activeTab === 'budgets' && <BudgetsTab projectId={projectId} />}
+          {projectId && activeTab === 'invoices' && <InvoicesTab projectId={projectId} />}
+          {projectId && activeTab === 'inbox' && <InvoiceInboxTab projectId={projectId} />}
+          {projectId && activeTab === 'statements' && <StatementsTab projectId={projectId} />}
+          {projectId && activeTab === 'retention' && <RetentionLedgerTab projectId={projectId} />}
+          {projectId && activeTab === 'payments' && (
+            <PaymentsTab
+              projectId={projectId}
+              onGoToInvoices={() => setActiveTab('invoices')}
+            />
+          )}
+          {projectId && activeTab === 'evm' && (
+            <EVMTab
+              projectId={projectId}
+              onGoToBudgets={() => setActiveTab('budgets')}
+            />
+          )}
+          {projectId && activeTab === 'connectors' && <ConnectorsTab projectId={projectId} />}
+        </div>
+      </RequiresProject>
+    </div>
+  );
+}
+
+/* ── Budgets Tab ──────────────────────────────────────────────────────── */
+
+const INITIAL_BUDGET_FORM = { wbs_code: '', category: '', original_budget: '', notes: '' };
+
+function BudgetsTab({ projectId }: { projectId: string }) {
+  const { t } = useTranslation();
+    const queryClient = useQueryClient();
+  const addToast = useToastStore((s) => s.addToast);
+
+  // Resolve the active project's currency from the dashboard query (already
+  // loaded by the summary cards, so this is a cache hit). Keyed on projectId,
+  // so switching projects via the global selector immediately re-resolves the
+  // currency rather than leaving the budget form pinned to the previous
+  // project's code until edit mode is re-entered.
+  const { data: budgetDashboard } = useQuery({
+    queryKey: ['finance', 'dashboard', projectId],
+    queryFn: () =>
+      apiGet<FinanceDashboardData>(`/v1/finance/dashboard/?project_id=${projectId}`),
+  });
+  const projectCurrency = budgetDashboard?.currency || '';
+  const [search, setSearch] = useState('');
+  const [showImport, setShowImport] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importPending, setImportPending] = useState(false);
+  const [importResult, setImportResult] = useState<BudgetImportResult | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  // When set, the budget modal is in edit mode for this existing line.
+  const [editing, setEditing] = useState<BudgetLine | null>(null);
+  const [budgetForm, setBudgetForm] = useState(INITIAL_BUDGET_FORM);
+  const [budgetErrors, setBudgetErrors] = useState<Record<string, string>>({});
+  const budgetFirstRef = useRef<HTMLInputElement>(null);
+  const isEditingBudget = editing !== null;
+
+  // Auto-focus budget WBS input when modal opens (create or edit)
+  useEffect(() => {
+    if ((showCreate || isEditingBudget) && budgetFirstRef.current) {
+      setTimeout(() => budgetFirstRef.current?.focus(), 100);
+    }
+  }, [showCreate, isEditingBudget]);
+
+  // Prefill the form when entering edit mode — mirrors every field the
+  // create form exposes (WBS, category, original budget, notes).
+  const openEditBudget = (b: BudgetLine) => {
+    const notes =
+      b.metadata && typeof b.metadata === 'object' && b.metadata !== null
+        ? String((b.metadata as Record<string, unknown>).notes ?? '')
+        : '';
+    setBudgetForm({
+      wbs_code: b.wbs_id ?? '',
+      category: b.category ?? '',
+      original_budget:
+        b.original_budget != null ? String(b.original_budget) : '',
+      notes,
+    });
+    setBudgetErrors({});
+    setEditing(b);
+  };
+
+  const closeBudgetModal = () => {
+    setShowCreate(false);
+    setEditing(null);
+    setBudgetForm(INITIAL_BUDGET_FORM);
+    setBudgetErrors({});
+  };
+
+  const canSubmitBudget = budgetForm.category.trim().length > 0 && budgetForm.original_budget.trim().length > 0 && parseFloat(budgetForm.original_budget) > 0;
+
+  const validateBudget = (): boolean => {
+    const e: Record<string, string> = {};
+    if (!budgetForm.category.trim()) e.category = t('validation.required', { defaultValue: 'This field is required' });
+    if (!budgetForm.original_budget.trim()) e.original_budget = t('validation.required', { defaultValue: 'This field is required' });
+    else if (parseFloat(budgetForm.original_budget) <= 0) e.original_budget = t('validation.positive_number', { defaultValue: 'Must be a positive number' });
+    setBudgetErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  // Escape key handler for inline modals
+  useEffect(() => {
+    if (!showCreate && !showImport && !isEditingBudget) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showCreate || isEditingBudget) closeBudgetModal();
+        if (showImport) setShowImport(false);
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showCreate, showImport, isEditingBudget]);
+
+  const createBudgetMut = useMutation({
+    mutationFn: (data: { wbs_id: string | null; category: string | null; original_budget: string; notes: string | null }) =>
+      apiPost('/v1/finance/budgets/', {
+        project_id: projectId,
+        wbs_id: data.wbs_id,
+        category: data.category,
+        original_budget: data.original_budget,
+        notes: data.notes || undefined,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['finance-budgets', projectId] });
+      // The summary cards (Total Budget / Remaining / consumed %) read the
+      // dashboard query, so refresh it too - otherwise the top cards stay
+      // stale after adding a budget line while the table below updates.
+      queryClient.invalidateQueries({ queryKey: ['finance', 'dashboard', projectId] });
+      setShowCreate(false);
+      setBudgetForm(INITIAL_BUDGET_FORM);
+      addToast({ type: 'success', title: t('finance.budget_created', { defaultValue: 'Budget line created successfully' }) });
+    },
+    onError: (e: Error) =>
+      addToast({ type: 'error', title: t('finance.budget_create_failed', { defaultValue: 'Failed to create budget line' }), message: e.message }),
+  });
+
+  // PATCH /v1/finance/budgets/{id} — the only mutating endpoint the budget
+  // API exposes for an existing line (there is no DELETE). Status is not a
+  // budget concept here, so we only send the create-form fields back.
+  const updateBudgetMut = useMutation({
+    mutationFn: (data: {
+      id: string;
+      wbs_id: string | null;
+      category: string | null;
+      original_budget: string;
+      notes: string | null;
+      existingMetadata: Record<string, unknown> | null;
+    }) =>
+      apiPatch(`/v1/finance/budgets/${data.id}`, {
+        wbs_id: data.wbs_id,
+        category: data.category,
+        original_budget: data.original_budget,
+        metadata: {
+          ...(data.existingMetadata ?? {}),
+          ...(data.notes != null ? { notes: data.notes } : {}),
+        },
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['finance-budgets', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['finance', 'dashboard', projectId] });
+      closeBudgetModal();
+      addToast({ type: 'success', title: t('finance.budget_updated', { defaultValue: 'Budget line updated successfully' }) });
+    },
+    onError: (e: Error) =>
+      addToast({ type: 'error', title: t('finance.budget_update_failed', { defaultValue: 'Failed to update budget line' }), message: e.message }),
+  });
+
+  const exportBudgetsMut = useMutation({
+    mutationFn: () =>
+      fetchBlobWithAuth(
+        `/api/v1/finance/budgets/export/?project_id=${encodeURIComponent(projectId)}`,
+        'budgets_export.xlsx',
+      ),
+    onSuccess: () => {
+      // Keep the summary cards (which read the dashboard query) in step with
+      // the exported snapshot so an export-then-reimport round-trip never
+      // shows stale totals against a freshly downloaded file.
+      queryClient.invalidateQueries({ queryKey: ['finance', 'dashboard', projectId] });
+      addToast({
+        type: 'success',
+        title: t('finance.export_success', { defaultValue: 'Budget data exported successfully' }),
+      });
+    },
+    onError: (e: Error) =>
+      addToast({
+        type: 'error',
+        title: t('finance.export_failed', { defaultValue: 'Failed to export budget data' }),
+        message: e.message,
+      }),
+  });
+
+  const handleBudgetImport = async () => {
+    if (!importFile) return;
+    setImportPending(true);
+    setImportError(null);
+    try {
+      const res = await importBudgetsFile(importFile, projectId);
+      setImportResult(res);
+      queryClient.invalidateQueries({ queryKey: ['finance-budgets', projectId] });
+      // The summary cards read the dashboard query, so an import that adds or
+      // updates budget lines must refresh it too - otherwise the top totals
+      // stay stale until a manual page reload.
+      queryClient.invalidateQueries({ queryKey: ['finance', 'dashboard', projectId] });
+    } catch (err: unknown) {
+      setImportError(err instanceof Error ? err.message : 'Import failed');
+    } finally {
+      setImportPending(false);
+    }
+  };
+
+  const BUDGET_CATEGORIES = [
+    { key: 'Material', label: t('finance.cat_material', { defaultValue: 'Material' }) },
+    { key: 'Labor', label: t('finance.cat_labor', { defaultValue: 'Labor' }) },
+    { key: 'Equipment', label: t('finance.cat_equipment', { defaultValue: 'Equipment' }) },
+    { key: 'Subcontract', label: t('finance.cat_subcontract', { defaultValue: 'Subcontract' }) },
+    { key: 'Overhead', label: t('finance.cat_overhead', { defaultValue: 'Overhead' }) },
+    { key: 'Other', label: t('finance.cat_other', { defaultValue: 'Other' }) },
+  ];
+
+  const budgetMutPending = isEditingBudget
+    ? updateBudgetMut.isPending
+    : createBudgetMut.isPending;
+
+  const submitBudget = () => {
+    if (!validateBudget()) return;
+    if (isEditingBudget && editing) {
+      updateBudgetMut.mutate({
+        id: editing.id,
+        wbs_id: budgetForm.wbs_code || null,
+        category: budgetForm.category,
+        original_budget: budgetForm.original_budget,
+        notes: budgetForm.notes || null,
+        existingMetadata:
+          editing.metadata && typeof editing.metadata === 'object'
+            ? (editing.metadata as Record<string, unknown>)
+            : null,
+      });
+    } else {
+      createBudgetMut.mutate({
+        wbs_id: budgetForm.wbs_code || null,
+        category: budgetForm.category,
+        original_budget: budgetForm.original_budget,
+        notes: budgetForm.notes || null,
+      });
+    }
+  };
+
+  const renderBudgetModal = () => (
+    <WideModal
+      open
+      onClose={closeBudgetModal}
+      title={
+        isEditingBudget
+          ? t('finance.edit_budget', { defaultValue: 'Edit Budget Line' })
+          : t('finance.new_budget', { defaultValue: 'New Budget Line' })
+      }
+      size="lg"
+      busy={budgetMutPending}
+      footer={
+        <>
+          <Button variant="ghost" onClick={closeBudgetModal} disabled={budgetMutPending}>
+            {t('common.cancel', { defaultValue: 'Cancel' })}
+          </Button>
+          <Button
+            variant="primary"
+            onClick={submitBudget}
+            disabled={budgetMutPending || !canSubmitBudget}
+          >
+            {budgetMutPending ? (
+              <Loader2 size={16} className="animate-spin mr-1.5" />
+            ) : isEditingBudget ? (
+              <Pencil size={16} className="mr-1.5" />
+            ) : (
+              <Plus size={16} className="mr-1.5" />
+            )}
+            <span>
+              {isEditingBudget
+                ? t('common.save', { defaultValue: 'Save Changes' })
+                : t('common.create', { defaultValue: 'Create' })}
+            </span>
+          </Button>
+        </>
+      }
+    >
+      <WideModalSection columns={2}>
+        {/* Category badge picker spans the full width so all 4-6 chips lay
+            out horizontally rather than wrapping to multiple lines. */}
+        <WideModalField
+          label={t('finance.category', { defaultValue: 'Category' })}
+          required
+          error={budgetErrors.category}
+          span={2}
+        >
+          <div className="flex flex-wrap gap-2">
+            {BUDGET_CATEGORIES.map((cat) => (
+              <button
+                key={cat.key}
+                type="button"
+                onClick={() => {
+                  setBudgetForm((p) => ({ ...p, category: cat.key }));
+                  if (budgetErrors.category) setBudgetErrors((prev) => { const next = { ...prev }; delete next.category; return next; });
+                }}
+                className={clsx(
+                  'rounded-full px-3.5 py-1.5 text-xs font-medium border transition-all',
+                  budgetForm.category === cat.key
+                    ? 'bg-oe-blue text-white border-oe-blue shadow-sm'
+                    : 'border-border text-content-secondary hover:border-oe-blue/40 hover:bg-surface-secondary',
+                )}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+        </WideModalField>
+
+        <WideModalField label={t('finance.wbs', { defaultValue: 'WBS Code' })}>
+          <input
+            ref={budgetFirstRef}
+            value={budgetForm.wbs_code}
+            onChange={(e) => setBudgetForm((p) => ({ ...p, wbs_code: e.target.value }))}
+            className={inputCls}
+            placeholder={t('finance.wbs_placeholder', { defaultValue: 'e.g., 01.02' })}
+          />
+        </WideModalField>
+
+        <WideModalField
+          label={t('finance.original', { defaultValue: 'Original Budget' })}
+          required
+          error={budgetErrors.original_budget}
+        >
+          <div className="relative">
+            <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-xs text-content-tertiary font-medium">
+              {/* Prefer the active project's resolved currency (keyed on
+                  projectId) so switching projects updates the prefix
+                  immediately; fall back to an existing budget row's code,
+                  then to a neutral label. */}
+              {projectCurrency ||
+                budgets?.[0]?.currency_code ||
+                budgets?.[0]?.currency ||
+                t('finance.project_currency', { defaultValue: 'project currency' })}
+            </span>
+            <input
+              type="number"
+              step="0.01"
+              value={budgetForm.original_budget}
+              onChange={(e) => {
+                setBudgetForm((p) => ({ ...p, original_budget: e.target.value }));
+                if (budgetErrors.original_budget) setBudgetErrors((prev) => { const next = { ...prev }; delete next.original_budget; return next; });
+              }}
+              className={clsx(inputCls, 'pl-12', budgetErrors.original_budget && 'border-semantic-error focus:ring-red-300 focus:border-semantic-error')}
+              placeholder="0.00"
+            />
+          </div>
+        </WideModalField>
+
+        <WideModalField
+          label={t('finance.notes', { defaultValue: 'Notes' })}
+          span={2}
+        >
+          <textarea
+            value={budgetForm.notes}
+            onChange={(e) => setBudgetForm((p) => ({ ...p, notes: e.target.value }))}
+            rows={2}
+            className={clsx(inputCls, 'h-auto py-2.5 resize-none')}
+            placeholder={t('finance.budget_notes_placeholder', { defaultValue: 'e.g., Includes contingency for weather delays' })}
+          />
+        </WideModalField>
+      </WideModalSection>
+    </WideModal>
+  );
+
+  const budgetsQuery = useQuery({
+    queryKey: ['finance-budgets', projectId],
+    // The budgets route answers with the envelope but without `offset` /
+    // `limit` - it takes no paging arguments at all - so the type names only
+    // the two fields that are really on the wire.
+    queryFn: () =>
+      apiGet<Pick<Page<BudgetLine>, 'items' | 'total'>>(
+        `/v1/finance/budgets/?project_id=${projectId}`,
+      ),
+  });
+  const { data: budgetPage, isLoading, isError, error, refetch } = budgetsQuery;
+  const budgets = budgetPage?.items;
+
+  // The project's WBS nodes, so a row seeded from a bill shows the node's
+  // code and name instead of its id.
+  const { data: wbsList } = useQuery({
+    queryKey: ['project-wbs', projectId],
+    queryFn: () => apiGet<WbsNode[]>(`/v1/projects/${projectId}/wbs/`),
+    enabled: !!projectId,
+  });
+  const wbsNodes = useMemo(
+    () => new Map((Array.isArray(wbsList) ? wbsList : []).map((node) => [node.id, node])),
+    [wbsList],
+  );
+
+  const filtered = useMemo(() => {
+    if (!budgets) return [];
+    if (!search) return budgets;
+    const q = search.toLowerCase();
+    return budgets.filter(
+      (b) =>
+        (b.wbs_id ?? '').toLowerCase().includes(q) ||
+        wbsLabel(b.wbs_id, wbsNodes, b.wbs_label).text.toLowerCase().includes(q) ||
+        b.category.toLowerCase().includes(q) ||
+        budgetCategoryLabel(t, b.category).toLowerCase().includes(q),
+    );
+  }, [budgets, search]);
+
+  const totals = useMemo(() => {
+    if (!filtered.length) return null;
+    // Each budget line carries its own currency; summing rows into one
+    // scalar and stamping the first row's code is financially meaningless
+    // across mixed currencies. Build per-column {amount, currency} item
+    // lists and let <MultiCurrencyTotal> group + render per ISO code
+    // (degrading to a single MoneyDisplay when only one currency is used).
+    const cur = (b: BudgetLine) => b.currency_code || b.currency || undefined;
+    return {
+      original: filtered.map((b) => ({ amount: Number(b.original_budget ?? 0), currency: cur(b) })),
+      revised: filtered.map((b) => ({ amount: Number(b.revised_budget ?? 0), currency: cur(b) })),
+      committed: filtered.map((b) => ({ amount: Number(b.committed ?? 0), currency: cur(b) })),
+      actual: filtered.map((b) => ({ amount: Number(b.actual ?? 0), currency: cur(b) })),
+      forecast: filtered.map((b) => ({ amount: Number(b.forecast_final ?? b.forecast ?? 0), currency: cur(b) })),
+      variance: filtered.map((b) => ({ amount: Number(b.variance ?? 0), currency: cur(b) })),
+    };
+  }, [filtered]);
+
+  if (isLoading) return <SkeletonTable rows={6} columns={8} />;
+
+  if (isError) return <RecoveryCard error={error} onRetry={() => refetch()} />;
+
+  if (!budgets || budgets.length === 0) {
+    return (
+      <div className="space-y-4">
+        {/* BOQ tip */}
+        <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800 text-sm flex items-start gap-3">
+          <Lightbulb size={18} className="text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+          <div>
+            <strong className="text-blue-800 dark:text-blue-200">
+              {t('finance.boq_tip_title', { defaultValue: 'Tip:' })}
+            </strong>{' '}
+            <span className="text-blue-700 dark:text-blue-300">
+              {t('finance.boq_tip_lock_desc', {
+                defaultValue:
+                  'Lock the bill of quantities and its budget lines appear here, one per WBS item, net of VAT. You can also add a line by hand.',
+              })}
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              to={'/boq'}
+              className="ml-2 text-blue-700 dark:text-blue-300 hover:text-blue-900"
+            >
+              {t('finance.go_to_boq', { defaultValue: 'Go to BOQ \u2192' })}
+            </Button>
+          </div>
+        </div>
+
+        <EmptyState
+          icon={<Wallet size={28} strokeWidth={1.5} />}
+          title={t('finance.no_budgets', { defaultValue: 'No budget lines yet' })}
+          description={t('finance.no_budgets_lock_desc', {
+            defaultValue: 'Lock the bill of quantities to seed budget lines, or add a line manually.',
+          })}
+          action={
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {/* The estimate-to-budget generator lives on the 5D Cost Model
+                  page ("Generate Budget from BOQ") - this is a plain
+                  navigation to it, not a second API path. /5d scopes itself
+                  to the GLOBAL active project, so sync the store to this
+                  page's (possibly route-nested) project before navigating. */}
+              <Button to={'/5d'}
+                variant="primary"
+                onClick={() => {
+                  const store = useProjectContextStore.getState();
+                  if (projectId && store.activeProjectId !== projectId) {
+                    const cached = queryClient.getQueryData<unknown>(['projects']);
+                    const list = Array.isArray(cached)
+                      ? (cached as { id?: string; name?: string }[])
+                      : ((cached as { items?: { id?: string; name?: string }[] } | undefined)
+                          ?.items ?? []);
+                    const name = list.find((p) => p.id === projectId)?.name ?? '';
+                    store.setActiveProject(projectId, name);
+                  }
+                  
+                }}
+                data-testid="create-budget-from-estimate"
+              >
+                {t('finance.create_budget_from_estimate', {
+                  defaultValue: 'Create Budget from Estimate',
+                })}
+              </Button>
+              <Button variant="secondary" onClick={() => setShowCreate(true)}>
+                {t('finance.new_budget', { defaultValue: 'New Budget Line' })}
+              </Button>
+            </div>
+          }
+        />
+
+        {/* New Budget Line Modal (also shown from empty state) */}
+        {(showCreate || isEditingBudget) && renderBudgetModal()}
+      </div>
+    );
+  }
+
+  return (
+    <>
+    {/* Explanatory text + module link */}
+    <div className="flex items-start justify-between gap-3 mb-4">
+      <p className="text-sm text-content-secondary">
+        {t('finance.budgets_explanation', {
+          defaultValue: 'Project budget tracks original vs actual costs by WBS category. Variance is highlighted green when under budget, red when over.',
+        })}
+      </p>
+      <Link
+        to="/5d"
+        className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-oe-blue-subtle/30 px-3 py-1.5 text-xs font-medium text-oe-blue hover:bg-oe-blue-subtle/50 transition-colors"
+      >
+        <TrendingUp size={12} />
+        {t('finance.view_5d_model', { defaultValue: 'Open 5D Cost Model' })}
+      </Link>
+    </div>
+
+    <Card padding="none">
+      {/* Search + actions */}
+      <div className="p-4 border-b border-border-light flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <div className="pointer-events-none absolute inset-y-0 start-0 flex items-center pl-3 text-content-tertiary">
+            <Search size={16} />
+          </div>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            aria-label={t('finance.search_budgets', { defaultValue: 'Search by WBS or category...' })}
+            placeholder={t('finance.search_budgets', {
+              defaultValue: 'Search by WBS or category...',
+            })}
+            className="h-10 w-full rounded-lg border border-border bg-surface-primary ps-10 pe-3 text-sm text-content-primary placeholder:text-content-tertiary focus:outline-none focus:ring-2 focus:ring-oe-blue focus:border-transparent"
+          />
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={
+              exportBudgetsMut.isPending ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Download size={14} />
+              )
+            }
+            onClick={() => exportBudgetsMut.mutate()}
+            disabled={exportBudgetsMut.isPending}
+          >
+            {t('finance.export', { defaultValue: 'Export' })}
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<Upload size={14} />}
+            onClick={() => {
+              setShowImport(true);
+              setImportFile(null);
+              setImportResult(null);
+              setImportError(null);
+            }}
+          >
+            {t('finance.import', { defaultValue: 'Import' })}
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            icon={<Plus size={14} />}
+            onClick={() => setShowCreate(true)}
+          >
+            {t('finance.new_budget', { defaultValue: 'New Budget Line' })}
+          </Button>
+        </div>
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden md:block overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border-light bg-surface-secondary/50">
+              <th className="px-4 py-3 text-left font-medium text-content-tertiary">
+                {t('finance.wbs', { defaultValue: 'WBS' })}
+              </th>
+              <th className="px-4 py-3 text-left font-medium text-content-tertiary">
+                {t('finance.category', { defaultValue: 'Category' })}
+              </th>
+              <th className="px-4 py-3 text-right font-medium text-content-tertiary">
+                {t('finance.original', { defaultValue: 'Original' })}
+              </th>
+              <th className="px-4 py-3 text-right font-medium text-content-tertiary">
+                {t('finance.revised', { defaultValue: 'Revised' })}
+              </th>
+              <th className="px-4 py-3 text-right font-medium text-content-tertiary">
+                {t('finance.committed', { defaultValue: 'Committed' })}
+              </th>
+              <th className="px-4 py-3 text-right font-medium text-content-tertiary">
+                {t('finance.actual', { defaultValue: 'Actual' })}
+              </th>
+              <th className="px-4 py-3 text-right font-medium text-content-tertiary">
+                {t('finance.forecast', { defaultValue: 'Forecast' })}
+              </th>
+              <th className="px-4 py-3 text-right font-medium text-content-tertiary">
+                {t('finance.variance', { defaultValue: 'Variance' })}
+              </th>
+              <th className="px-4 py-3 text-right font-medium text-content-tertiary">
+                {t('common.actions', { defaultValue: 'Actions' })}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={9} className="px-4 py-8 text-center text-sm text-content-tertiary">
+                  {t('finance.no_budget_match', { defaultValue: 'No matching budget lines' })}
+                </td>
+              </tr>
+            ) : filtered.map((b) => {
+              const rowCurrency = b.currency_code || b.currency || undefined;
+              const forecastValue = b.forecast_final ?? b.forecast ?? 0;
+              return (
+                <tr
+                  key={b.id}
+                  className="border-b border-border-light hover:bg-surface-secondary/30 transition-colors"
+                >
+                  <td
+                    className="px-4 py-3 text-xs text-content-primary"
+                    title={wbsLabel(b.wbs_id ?? b.wbs_code, wbsNodes, b.wbs_label).title}
+                    data-testid="budget-wbs"
+                  >
+                    {wbsLabel(b.wbs_id ?? b.wbs_code, wbsNodes, b.wbs_label).text}
+                  </td>
+                  <td className="px-4 py-3 text-content-secondary" data-testid="budget-category">
+                    {budgetCategoryLabel(t, b.category)}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <MoneyDisplay amount={b.original_budget} currency={rowCurrency} />
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <MoneyDisplay amount={b.revised_budget} currency={rowCurrency} />
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <MoneyDisplay amount={b.committed} currency={rowCurrency} />
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <MoneyDisplay amount={b.actual} currency={rowCurrency} />
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <MoneyDisplay amount={forecastValue} currency={rowCurrency} />
+                  </td>
+                  {/* One authority for the colour. The wrapper span used to
+                      colour the cell from `b.variance >= 0` while MoneyDisplay
+                      coloured the number from the same value: two rules over
+                      one figure, and the outer one compared a string that
+                      arrives as money on the wire, so an empty variance read
+                      as a surplus and painted green. MoneyDisplay decides. */}
+                  <td className="px-4 py-3 text-right font-medium">
+                    <MoneyDisplay amount={b.variance} currency={rowCurrency} colorize />
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <button
+                      type="button"
+                      onClick={() => openEditBudget(b)}
+                      title={t('finance.edit_budget', { defaultValue: 'Edit Budget Line' })}
+                      aria-label={t('finance.edit_budget', { defaultValue: 'Edit Budget Line' })}
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-content-tertiary hover:bg-surface-secondary hover:text-oe-blue transition-colors"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+          {/* The totals are written exactly like the rows they sum. They used to
+              be compacted, which sounds like a space saving and is not one:
+              German has no short currency form below a million, so a compacted
+              total of 225,297.60 came out as "225.297,6 $" - full length, one
+              decimal - directly under rows reading "133.794,64 $", and the
+              reader was asked to compare two precisions in one column. Above a
+              million the same cell collapsed to "9,4 Mio. €" instead. A column
+              is compact all the way down or not at all, and these columns are
+              wide enough not to be. */}
+          {totals && (
+            <tfoot>
+              <tr className="bg-surface-secondary/60 font-semibold">
+                <td className="px-4 py-3 text-content-primary" colSpan={2}>
+                  {t('common.total')}
+                </td>
+                <td className="px-4 py-3 text-right">
+                  <MultiCurrencyTotal items={totals.original} variant="inline" />
+                </td>
+                <td className="px-4 py-3 text-right">
+                  <MultiCurrencyTotal items={totals.revised} variant="inline" />
+                </td>
+                <td className="px-4 py-3 text-right">
+                  <MultiCurrencyTotal items={totals.committed} variant="inline" />
+                </td>
+                <td className="px-4 py-3 text-right">
+                  <MultiCurrencyTotal items={totals.actual} variant="inline" />
+                </td>
+                <td className="px-4 py-3 text-right">
+                  <MultiCurrencyTotal items={totals.forecast} variant="inline" />
+                </td>
+                <td className="px-4 py-3 text-right">
+                  <MultiCurrencyTotal items={totals.variance} variant="inline" />
+                </td>
+                <td />
+              </tr>
+            </tfoot>
+          )}
+        </table>
+      </div>
+
+      {/* Mobile card view */}
+      <div className="md:hidden p-4 space-y-3">
+        {filtered.length === 0 ? (
+          <p className="px-2 py-6 text-center text-sm text-content-tertiary">
+            {t('finance.no_budget_match', { defaultValue: 'No matching budget lines' })}
+          </p>
+        ) : filtered.map((b) => {
+          const rowCurrency = b.currency_code || b.currency || undefined;
+          const forecastValue = b.forecast_final ?? b.forecast ?? 0;
+          return (
+            <Card key={b.id} className="p-4">
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <div className="min-w-0">
+                  <span
+                    className="text-xs text-content-tertiary"
+                    title={wbsLabel(b.wbs_id ?? b.wbs_code, wbsNodes, b.wbs_label).title}
+                  >
+                    {wbsLabel(b.wbs_id ?? b.wbs_code, wbsNodes, b.wbs_label).text}
+                  </span>
+                  <h4 className="text-sm font-semibold text-content-primary truncate">
+                    {budgetCategoryLabel(t, b.category)}
+                  </h4>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {rowCurrency && (
+                    <span className="text-2xs font-medium text-content-tertiary">
+                      {rowCurrency}
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => openEditBudget(b)}
+                    title={t('finance.edit_budget', { defaultValue: 'Edit Budget Line' })}
+                    aria-label={t('finance.edit_budget', { defaultValue: 'Edit Budget Line' })}
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-content-tertiary hover:bg-surface-secondary hover:text-oe-blue transition-colors"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-content-tertiary">
+                    {t('finance.original', { defaultValue: 'Original' })}
+                  </span>
+                  <MoneyDisplay amount={b.original_budget} currency={rowCurrency} />
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-content-tertiary">
+                    {t('finance.committed', { defaultValue: 'Committed' })}
+                  </span>
+                  <MoneyDisplay amount={b.committed} currency={rowCurrency} />
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-content-tertiary">
+                    {t('finance.actual', { defaultValue: 'Actual' })}
+                  </span>
+                  <MoneyDisplay amount={b.actual} currency={rowCurrency} />
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-content-tertiary">
+                    {t('finance.forecast', { defaultValue: 'Forecast' })}
+                  </span>
+                  <MoneyDisplay amount={forecastValue} currency={rowCurrency} />
+                </div>
+                <div className="col-span-2 flex justify-between border-t border-border-light pt-1.5 mt-0.5">
+                  <span className="text-content-secondary font-medium">
+                    {t('finance.variance', { defaultValue: 'Variance' })}
+                  </span>
+                  <span className="font-medium">
+                    <MoneyDisplay amount={b.variance} currency={rowCurrency} colorize />
+                  </span>
+                </div>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+
+      {budgetPage && (
+        <TruncationNotice page={budgetPage} className="px-4 py-3 border-t border-border-light" />
+      )}
+    </Card>
+
+    {/* New / Edit Budget Line Modal */}
+    {(showCreate || isEditingBudget) && renderBudgetModal()}
+
+    {/* Budget Import Modal */}
+    {showImport && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-lg animate-fade-in">
+        <div className="w-full max-w-lg bg-surface-elevated rounded-xl shadow-xl border border-border animate-card-in mx-4 max-h-[90vh] overflow-y-auto" role="dialog" aria-label={t('finance.import_budgets', { defaultValue: 'Import Budgets' })}>
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border-light">
+            <h2 className="text-lg font-semibold text-content-primary">
+              {t('finance.import_budgets', { defaultValue: 'Import Budgets' })}
+            </h2>
+            <button
+              onClick={() => setShowImport(false)}
+              aria-label={t('common.close', { defaultValue: 'Close' })}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-content-tertiary hover:bg-surface-secondary hover:text-content-primary transition-colors"
+            >
+              <X size={18} />
+            </button>
+          </div>
+          <div className="px-6 py-4 space-y-4">
+            <div
+              role="button"
+              tabIndex={0}
+              aria-label={t('finance.drop_budget_file', { defaultValue: 'Drop Excel or CSV file here, or click to browse' })}
+              className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 transition-colors cursor-pointer border-border hover:border-oe-blue/50 focus:outline-none focus:ring-2 focus:ring-oe-blue/30"
+              onClick={() => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.xlsx,.csv,.xls';
+                input.onchange = (e) => {
+                  const f = (e.target as HTMLInputElement).files?.[0];
+                  if (f) setImportFile(f);
+                };
+                input.click();
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  (e.currentTarget as HTMLElement).click();
+                }
+              }}
+            >
+              <Upload size={24} className="text-content-tertiary mb-2" />
+              <p className="text-sm text-content-secondary text-center">
+                {importFile
+                  ? importFile.name
+                  : t('finance.drop_budget_file', {
+                      defaultValue: 'Drop Excel or CSV file here, or click to browse',
+                    })}
+              </p>
+              <p className="text-xs text-content-quaternary mt-1">
+                {t('finance.budget_file_hint', {
+                  defaultValue: 'Columns: WBS Code, Category, Original Budget, Notes',
+                })}
+              </p>
+            </div>
+            {importError && (
+              <div className="rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 p-3 text-sm text-semantic-error">
+                {importError}
+              </div>
+            )}
+            {importResult && (
+              <div className="rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-3 text-sm text-content-primary space-y-1">
+                <p>
+                  {t('finance.import_result', {
+                    defaultValue: 'Imported: {{imported}}, Skipped: {{skipped}}, Errors: {{errors}}',
+                    imported: importResult.imported,
+                    skipped: importResult.skipped,
+                    errors: importResult.errors.length,
+                  })}
+                </p>
+                {importResult.errors.length > 0 && (
+                  <details className="text-xs text-content-tertiary">
+                    <summary className="cursor-pointer">
+                      {t('finance.show_errors', { defaultValue: 'Show error details' })}
+                    </summary>
+                    <ul className="mt-1 space-y-0.5 max-h-32 overflow-y-auto">
+                      {importResult.errors.slice(0, 20).map((err) => (
+                        <li key={`row-${err.row}`}>Row {err.row}: {err.error}</li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
+              </div>
+            )}
+          </div>
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border-light">
+            <Button variant="ghost" onClick={() => setShowImport(false)}>
+              {importResult
+                ? t('common.close', { defaultValue: 'Close' })
+                : t('common.cancel', { defaultValue: 'Cancel' })}
+            </Button>
+            {!importResult && (
+              <Button
+                variant="primary"
+                onClick={handleBudgetImport}
+                disabled={!importFile || importPending}
+              >
+                {importPending ? (
+                  <Loader2 size={16} className="animate-spin mr-1.5" />
+                ) : (
+                  <Upload size={16} className="mr-1.5" />
+                )}
+                <span>{t('finance.import_btn', { defaultValue: 'Import' })}</span>
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+    )}
+    </>
+  );
+}
+
+/* ── Invoices Tab ─────────────────────────────────────────────────────── */
+
+/**
+ * The invoice register and the create/edit form behind it.
+ *
+ * Exported so the money a person types into that form can be driven end to
+ * end in a test - typed, read back off the field, submitted - without
+ * mounting the whole Finance page around it.
+ */
+export function InvoicesTab({ projectId }: { projectId: string }) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const addToast = useToastStore((s) => s.addToast);
+  const { confirm, ...confirmProps } = useConfirm();
+  const userRole = useAuthStore((s) => s.userRole);
+  const invoiceProjectName = useProjectContextStore((s) => s.activeProjectName);
+  const isManager = userRole === 'admin' || userRole === 'manager';
+  const [subTab, setSubTab] = useState<InvoiceSubTab>('payable');
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [showCreate, setShowCreate] = useState(false);
+
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  // Resolve the project's currency (budgets → invoices) so new invoices
+  // default to it rather than a hardcoded EUR (task #217). Shares the
+  // dashboard query key, so this is a cache hit alongside the summary cards.
+  const { data: invDashboard } = useQuery({
+    queryKey: ['finance', 'dashboard', projectId],
+    queryFn: () =>
+      apiGet<FinanceDashboardData>(`/v1/finance/dashboard/?project_id=${projectId}`),
+  });
+  const projectCurrency = invDashboard?.currency || '';
+
+  // The VAT rates of the project's country, and the one a new line starts
+  // with. Same key as the project pages, so this is usually a cache hit.
+  const { data: invProject } = useQuery({
+    queryKey: ['project', projectId],
+    queryFn: () => apiGet<{ country_code?: string | null }>(`/v1/projects/${projectId}`),
+    enabled: !!projectId,
+  });
+  const projectCountry = (invProject?.country_code || '').trim().toUpperCase();
+  const { data: countryTaxes } = useQuery({
+    queryKey: ['i18n-tax-configs', projectCountry],
+    queryFn: () =>
+      apiGet<{ items?: TaxConfigRow[] }>(
+        `/v1/i18n_foundation/tax-configs/by-country/${encodeURIComponent(projectCountry)}`,
+      ),
+    enabled: !!projectCountry,
+  });
+  const { options: vatOptions, defaultRate: defaultVat } = useMemo(
+    () => vatChoices(Array.isArray(countryTaxes?.items) ? countryTaxes.items : []),
+    [countryTaxes],
+  );
+
+  const [invoiceForm, setInvoiceForm] = useState({
+    direction: 'payable' as 'payable' | 'receivable',
+    counterparty: '',
+    contact_id: '',
+    invoice_date: todayStr,
+    due_date: '',
+    // The number printed on the supplier's invoice (payable) or our own
+    // (receivable). Empty on create means the register generates one.
+    invoice_number: '',
+    // What was billed, line by line, each with its VAT rate. Subtotal, tax
+    // and total are derived from these; there is no typed total to disagree.
+    lines: [newEditorLine(null)] as InvoiceEditorLine[],
+    // Set once a line is edited. An unedited invoice keeps its stored lines
+    // and figures on save instead of having them rewritten from the editor.
+    lines_dirty: false,
+    currency: '',
+    description: '',
+    // BT-10, the Buyer reference / Leitweg-ID. Invoice data by the standard:
+    // it routes this one document, so it lives under metadata.einvoice here
+    // and deliberately not in the e-invoice settings (which hold seller
+    // columns only). XRechnung refuses without it (BR-DE-15).
+    buyer_reference: '',
+    // Lifecycle status of the invoice. Only meaningful in edit mode (a new
+    // invoice is always created as 'draft'); surfaced as a dropdown so opening
+    // an invoice lets a user advance its status, which is otherwise only
+    // reachable via the row Approve / Mark Paid actions (#284).
+    status: 'draft',
+    // Optional order this payable invoice bills. Empty means not linked.
+    purchase_order_id: '',
+  });
+  const [invoiceErrors, setInvoiceErrors] = useState<Record<string, string>>({});
+  const invoiceDateRef = useRef<HTMLInputElement>(null);
+  // When set, the invoice modal is in edit mode for this existing invoice.
+  const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+  const isEditingInvoice = editingInvoice !== null;
+  const invoiceModalOpen = showCreate || isEditingInvoice;
+
+  // The invoice currently being issued as an EN 16931 e-invoice, if any.
+  const [einvoiceFor, setEinvoiceFor] = useState<Invoice | null>(null);
+
+  // Prefill the form when entering edit mode — mirrors every field the
+  // create form exposes (direction, counterparty, dates, amounts, notes).
+  const openEditInvoice = (inv: Invoice) => {
+    // The API serialises invoices with InvoiceResponse field names
+    // (invoice_direction/invoice_date/currency_code/amount_*); fall back
+    // to the legacy display aliases for safety.
+    const wire = inv as unknown as { invoice_direction?: string };
+    const direction: 'payable' | 'receivable' =
+      wire.invoice_direction === 'receivable' || inv.direction === 'receivable'
+        ? 'receivable'
+        : 'payable';
+    const issueDate = (inv.invoice_date ?? inv.issue_date ?? '').split('T')[0] || '';
+    const dueDate = (inv.due_date ?? '').split('T')[0] || '';
+    setInvoiceForm({
+      direction,
+      counterparty: inv.counterparty_name ?? '',
+      contact_id: inv.contact_id ?? '',
+      invoice_date: issueDate,
+      due_date: dueDate,
+      invoice_number: inv.invoice_number ?? '',
+      lines: editorLinesFromInvoice(
+        inv.line_items,
+        { subtotal: inv.amount_subtotal, tax: inv.tax_amount },
+        defaultVat,
+      ),
+      lines_dirty: false,
+      // Never hardcode EUR — fall back to the project's resolved currency so
+      // an editor on a BRL/USD/etc. project keeps that currency (task #217).
+      currency: inv.currency_code || inv.currency || projectCurrency || '',
+      description: inv.notes ?? inv.description ?? '',
+      buyer_reference: readBuyerReference(inv.metadata),
+      // Shown exactly as stored. A person sees the state the machine wrote.
+      status: inv.status || 'draft',
+      purchase_order_id: inv.purchase_order_id ?? '',
+    });
+    setInvoiceErrors({});
+    setEditingInvoice(inv);
+  };
+
+  useEffect(() => {
+    if (!defaultVat) return;
+    setInvoiceForm((f) =>
+      f.lines.some((l) => !l.vat_touched && l.vat_rate === '')
+        ? {
+            ...f,
+            lines: f.lines.map((l) =>
+              !l.vat_touched && l.vat_rate === '' ? { ...l, vat_rate: defaultVat } : l,
+            ),
+          }
+        : f,
+    );
+  }, [defaultVat]);
+
+  const closeInvoiceModal = () => {
+    setShowCreate(false);
+    setEditingInvoice(null);
+    setInvoiceErrors({});
+  };
+
+  // Auto-focus invoice date when modal opens (create or edit)
+  useEffect(() => {
+    if (invoiceModalOpen && invoiceDateRef.current) {
+      setTimeout(() => invoiceDateRef.current?.focus(), 100);
+    }
+  }, [invoiceModalOpen]);
+
+  const canSubmitInvoice =
+    !!invoiceForm.invoice_date && linesTotals(invoiceForm.lines).total > 0;
+
+  const validateInvoice = (): boolean => {
+    const e: Record<string, string> = {};
+    if (!invoiceForm.invoice_date) e.invoice_date = t('validation.required', { defaultValue: 'This field is required' });
+    if (!(linesTotals(invoiceForm.lines).total > 0)) {
+      e.lines = t('finance.lines_required', {
+        defaultValue: 'Enter at least one line with a quantity and a unit rate',
+      });
+    }
+    setInvoiceErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  // Escape key handler for inline modal (create or edit)
+  useEffect(() => {
+    if (!invoiceModalOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeInvoiceModal();
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invoiceModalOpen]);
+
+  // The e-invoice engine derives the document from its lines (BR-16 refuses
+  // an invoice without any) and the server requires each line to say what it
+  // is, so a line left without a description takes the invoice's notes.
+  const lineFallbackDescription = (form: typeof invoiceForm) =>
+    form.description.trim() ||
+    t('finance.invoice_line_default', { defaultValue: 'Contract works for the billing period' });
+
+  const createInvoiceMut = useMutation({
+    mutationFn: (data: typeof invoiceForm) => {
+      const { subtotal: sub, tax, total } = linesTotals(data.lines);
+      return apiPost('/v1/finance/', {
+        project_id: projectId,
+        invoice_number: data.invoice_number.trim() || undefined,
+        contact_id: data.contact_id || undefined,
+        invoice_direction: data.direction,
+        invoice_date: data.invoice_date,
+        due_date: data.due_date || undefined,
+        amount_subtotal: fmtNumberForInput(sub),
+        tax_amount: fmtNumberForInput(tax),
+        amount_total: fmtNumberForInput(total),
+        // Send the chosen currency; empty string lets the backend
+        // resolve the project currency (never hardcode EUR — task #217).
+        currency_code: data.currency || projectCurrency || '',
+        notes: data.description || undefined,
+        status: 'draft',
+        // One net line for the billed figure, and the BT-10 routing id under
+        // metadata.einvoice - both read by the e-invoice check and export.
+        // The line is the subtotal, never the gross: lines are net amounts and
+        // the server refuses a set of them that does not add up to the
+        // subtotal it is being asked to store.
+        line_items: linesToPayload(data.lines, lineFallbackDescription(data)),
+        metadata: invoiceMetadataWithBuyerReference(null, data.buyer_reference),
+        purchase_order_id:
+          data.direction === 'payable' && data.purchase_order_id ? data.purchase_order_id : undefined,
+      });
+    },
+    onSuccess: () => {
+      void invalidateFinanceFigures(queryClient);
+      setShowCreate(false);
+      setInvoiceForm({ direction: 'payable', counterparty: '', contact_id: '', invoice_date: todayStr, due_date: '', invoice_number: '', lines: [newEditorLine(defaultVat)], lines_dirty: false, currency: projectCurrency, description: '', buyer_reference: '', status: 'draft', purchase_order_id: '' });
+      addToast({ type: 'success', title: t('finance.invoice_created', { defaultValue: 'Invoice created successfully' }) });
+    },
+    onError: (e: Error) =>
+      addToast({ type: 'error', title: t('finance.invoice_create_failed', { defaultValue: 'Failed to create invoice' }), message: e.message }),
+  });
+
+  // PATCH /v1/finance/{id} — the invoice API has no DELETE endpoint, so
+  // editing is the only mutating control we expose on an existing row.
+  // `status` is sent only when the user changed it in the edit modal's status
+  // dropdown (#284): a freshly created invoice lands in 'draft' with no row
+  // action to advance it, so the dropdown is the way to move draft -> pending
+  // -> approved. The backend validates the transition against its FSM and
+  // rejects an illegal jump, and the dropdown only offers legal next states.
+  const updateInvoiceMut = useMutation({
+    mutationFn: (data: { id: string; form: typeof invoiceForm; prevStatus: string }) => {
+      // Money travels only when a line was edited. An unedited save keeps the
+      // stored lines and figures as they are: a claim-born or imported
+      // invoice keeps its own breakdown, and an approved one is not refused
+      // for amounts this form merely re-derived.
+      const { subtotal: sub, tax, total } = linesTotals(data.form.lines);
+      const moneyPatch = data.form.lines_dirty
+        ? {
+            amount_subtotal: fmtNumberForInput(sub),
+            tax_amount: fmtNumberForInput(tax),
+            amount_total: fmtNumberForInput(total),
+            line_items: linesToPayload(data.form.lines, lineFallbackDescription(data.form)),
+          }
+        : {};
+      // Compared against the stored status directly. The form no longer
+      // relabels 'sent', so relabelling here too would make a plain edit of a
+      // sent invoice look like a sent -> sent transition, which the backend
+      // table does not allow and would reject with a 400.
+      const statusChanged = data.form.status !== data.prevStatus;
+      return apiPatch(`/v1/finance/${data.id}`, {
+        contact_id: data.form.contact_id || null,
+        invoice_direction: data.form.direction,
+        invoice_date: data.form.invoice_date,
+        due_date: data.form.due_date || null,
+        currency_code: data.form.currency || projectCurrency || '',
+        notes: data.form.description || null,
+        // Merged over the stored object: PATCH replaces metadata wholesale,
+        // and only the buyer reference is edited here.
+        metadata: invoiceMetadataWithBuyerReference(editingInvoice?.metadata, data.form.buyer_reference),
+        ...moneyPatch,
+        // Null unlinks. A receivable invoice never bills a purchase order.
+        purchase_order_id:
+          data.form.direction === 'payable' && data.form.purchase_order_id ? data.form.purchase_order_id : null,
+        ...(statusChanged ? { status: data.form.status } : {}),
+      });
+    },
+    onSuccess: () => {
+      void invalidateFinanceFigures(queryClient);
+      closeInvoiceModal();
+      addToast({ type: 'success', title: t('finance.invoice_updated', { defaultValue: 'Invoice updated successfully' }) });
+    },
+    onError: (e: Error) =>
+      addToast({ type: 'error', title: t('finance.invoice_update_failed', { defaultValue: 'Failed to update invoice' }), message: e.message }),
+  });
+
+  const exportInvoicesMut = useMutation({
+    mutationFn: () =>
+      fetchBlobWithAuth(
+        `/api/v1/finance/invoices/export/?project_id=${encodeURIComponent(projectId)}&direction=${subTab}`,
+        'invoices_export.xlsx',
+      ),
+    onSuccess: () =>
+      addToast({
+        type: 'success',
+        title: t('finance.invoices_export_success', { defaultValue: 'Invoices exported successfully' }),
+      }),
+    onError: (e: Error) =>
+      addToast({
+        type: 'error',
+        title: t('finance.invoices_export_failed', { defaultValue: 'Failed to export invoices' }),
+        message: e.message,
+      }),
+  });
+
+  const {
+    data: invoicePage,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ['finance-invoices', projectId, subTab],
+    queryFn: () =>
+      apiGet<Page<InvoiceWire>>(
+        `/v1/finance/?project_id=${projectId}&direction=${subTab}`,
+      ),
+    select: (p): Page<Invoice> => ({ ...p, items: p.items.map(normaliseInvoice) }),
+  });
+  const invoices = invoicePage?.items;
+
+  const filtered = useMemo(() => {
+    if (!invoices) return [];
+    let result = invoices;
+    if (statusFilter) {
+      result = result.filter((inv) => inv.status === statusFilter);
+    }
+    if (search) {
+      const q = search.toLowerCase();
+      result = result.filter(
+        (inv) =>
+          (inv.invoice_number ?? '').toLowerCase().includes(q) ||
+          (inv.counterparty_name ?? '').toLowerCase().includes(q),
+      );
+    }
+    return result;
+  }, [invoices, search, statusFilter]);
+
+  const invoiceTotals = useMemo(() => {
+    if (!filtered.length) return null;
+    // Invoices can be in different currencies; summing them into one
+    // scalar and stamping the first row's code blends currencies. Build
+    // per-column {amount, currency} item lists for <MultiCurrencyTotal>,
+    // which groups per ISO code (single MoneyDisplay when homogeneous).
+    const totalAmount = filtered.map((inv) => ({
+      amount: Number(inv.amount ?? 0),
+      currency: inv.currency || projectCurrency || undefined,
+    }));
+    const totalPaid = filtered
+      .filter((inv) => inv.status === 'paid')
+      .map((inv) => ({
+        amount: Number(inv.amount ?? 0),
+        currency: inv.currency || projectCurrency || undefined,
+      }));
+    return { totalAmount, totalPaid };
+  }, [filtered, projectCurrency]);
+
+  // draft -> pending. A non-privileged transition (finance.update) so it is
+  // available to anyone who can edit invoices, not just managers. Gives a draft
+  // invoice a one-click path forward instead of forcing the user into the edit
+  // modal just to flip the status (#284).
+  const sendForApprovalMutation = useMutation({
+    mutationFn: (invoiceId: string) =>
+      apiPatch(`/v1/finance/${invoiceId}`, { status: 'pending' }),
+    onSuccess: () => {
+      void invalidateFinanceFigures(queryClient);
+      addToast({
+        type: 'success',
+        title: t('finance.invoice_sent_for_approval', {
+          defaultValue: 'Invoice sent for approval',
+        }),
+      });
+    },
+    onError: (e: Error) =>
+      addToast({ type: 'error', title: t('finance.send_for_approval_failed', { defaultValue: 'Failed to send invoice for approval' }), message: e.message }),
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: (invoiceId: string) =>
+      apiPost(`/v1/finance/${invoiceId}/approve/`),
+    onSuccess: () => {
+      void invalidateFinanceFigures(queryClient);
+      addToast({
+        type: 'success',
+        title: t('finance.invoice_approved', {
+          defaultValue: 'Invoice approved successfully',
+        }),
+      });
+    },
+    onError: (e: Error) =>
+      addToast({ type: 'error', title: t('finance.approve_failed', { defaultValue: 'Failed to approve invoice' }), message: e.message }),
+  });
+
+  // Records the payment for what is still open, then moves the status. The
+  // status change alone wrote no payment, so payments, cash flow and the
+  // statements stayed at zero for every invoice closed from this button.
+  const markPaidMutation = useMutation({
+    mutationFn: (invoice: Invoice) => settleAndMarkPaid(invoice, new Date().toISOString().slice(0, 10)),
+    onSuccess: () => {
+      void invalidateFinanceFigures(queryClient);
+      addToast({
+        type: 'success',
+        title: t('finance.invoice_paid', { defaultValue: 'Invoice marked as paid successfully' }),
+      });
+    },
+    onError: (e: Error) =>
+      addToast({ type: 'error', title: t('finance.pay_failed', { defaultValue: 'Failed to mark invoice as paid' }), message: e.message }),
+  });
+
+  return (
+    <div className="space-y-4">
+      {/* Explanation */}
+      <p className="text-sm text-content-secondary">
+        {t('finance.invoices_explanation', {
+          defaultValue: 'Track all project invoices in one place. Payable = invoices from subcontractors/vendors. Receivable = invoices you send to clients. Mark invoices as paid to auto-generate payment records.',
+        })}
+      </p>
+
+      {/* Sub-tabs: Payable / Receivable + Export */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2" title={t('finance.payable_receivable_tooltip', { defaultValue: 'Payable = invoices you owe to vendors. Receivable = invoices clients owe to you.' })}>
+          <button
+            onClick={() => setSubTab('payable')}
+            className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+              subTab === 'payable'
+                ? 'bg-oe-blue-subtle text-oe-blue'
+                : 'text-content-tertiary hover:text-content-primary hover:bg-surface-secondary'
+            }`}
+          >
+            {t('finance.payable', { defaultValue: 'Payable' })}
+          </button>
+          <button
+            onClick={() => setSubTab('receivable')}
+            className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+              subTab === 'receivable'
+                ? 'bg-oe-blue-subtle text-oe-blue'
+                : 'text-content-tertiary hover:text-content-primary hover:bg-surface-secondary'
+            }`}
+          >
+            {t('finance.receivable', { defaultValue: 'Receivable' })}
+          </button>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={
+              exportInvoicesMut.isPending ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Download size={14} />
+              )
+            }
+            onClick={() => exportInvoicesMut.mutate()}
+            disabled={exportInvoicesMut.isPending}
+          >
+            {t('finance.export', { defaultValue: 'Export' })}
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            icon={<Plus size={14} />}
+            onClick={() => {
+              setInvoiceForm({ direction: subTab, counterparty: '', contact_id: '', invoice_date: todayStr, due_date: '', invoice_number: '', lines: [newEditorLine(defaultVat)], lines_dirty: false, currency: projectCurrency, description: '', buyer_reference: '', status: 'draft', purchase_order_id: '' });
+              setInvoiceErrors({});
+              setShowCreate(true);
+            }}
+          >
+            {t('finance.new_invoice', { defaultValue: 'New Invoice' })}
+          </Button>
+        </div>
+      </div>
+
+      <Card padding="none">
+        {/* Search + Status filter */}
+        <div className="p-4 border-b border-border-light flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="relative flex-1 max-w-sm">
+            <div className="pointer-events-none absolute inset-y-0 start-0 flex items-center pl-3 text-content-tertiary">
+              <Search size={16} />
+            </div>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              aria-label={t('finance.search_invoices', { defaultValue: 'Search invoices...' })}
+              placeholder={t('finance.search_invoices', {
+                defaultValue: 'Search invoices...',
+              })}
+              className="h-10 w-full rounded-lg border border-border bg-surface-primary ps-10 pe-3 text-sm text-content-primary placeholder:text-content-tertiary focus:outline-none focus:ring-2 focus:ring-oe-blue focus:border-transparent"
+            />
+          </div>
+          <div className="relative shrink-0">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              aria-label={t('finance.filter_status', { defaultValue: 'Filter by status' })}
+              className="h-10 appearance-none rounded-lg border border-border bg-surface-primary ps-3 pe-9 text-sm text-content-primary focus:outline-none focus:ring-2 focus:ring-oe-blue sm:w-36"
+            >
+              <option value="">{t('finance.filter_all_statuses', { defaultValue: 'All Statuses' })}</option>
+              <option value="draft">{t('finance.status_draft', { defaultValue: 'Draft' })}</option>
+              <option value="pending">{t('finance.status_pending', { defaultValue: 'Pending' })}</option>
+              <option value="approved">{t('finance.status_approved', { defaultValue: 'Approved' })}</option>
+              <option value="sent">{t('finance.status_sent', { defaultValue: 'Sent' })}</option>
+              <option value="paid">{t('finance.status_paid', { defaultValue: 'Paid' })}</option>
+              <option value="cancelled">{t('finance.status_cancelled', { defaultValue: 'Cancelled' })}</option>
+              <option value="credit_note_issued">
+                {t('finance.status_credit_note_issued', { defaultValue: 'Credit note issued' })}
+              </option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 end-0 flex items-center pe-2.5 text-content-tertiary">
+              <ChevronDown size={14} />
+            </div>
+          </div>
+        </div>
+
+        {isLoading ? (
+          <SkeletonTable rows={5} columns={6} />
+        ) : isError ? (
+          <RecoveryCard error={error} onRetry={() => refetch()} />
+        ) : !filtered.length ? (
+          <div className="p-8">
+            <EmptyState
+              icon={<FileText size={28} strokeWidth={1.5} />}
+              title={
+                search || statusFilter
+                  ? t('finance.no_invoices_match', { defaultValue: 'No matching invoices' })
+                  : t('finance.no_invoices', { defaultValue: 'No invoices yet' })
+              }
+              description={
+                search || statusFilter
+                  ? t('finance.no_invoices_match_desc', { defaultValue: 'Try adjusting your search or status filter.' })
+                  : t('finance.no_invoices_desc', {
+                      defaultValue: 'Create your first invoice to start tracking payables and receivables.',
+                    })
+              }
+              action={
+                !search && !statusFilter
+                  ? {
+                      label: t('finance.new_invoice', { defaultValue: 'New Invoice' }),
+                      onClick: () => {
+                        setInvoiceForm({ direction: subTab, counterparty: '', contact_id: '', invoice_date: todayStr, due_date: '', invoice_number: '', lines: [newEditorLine(defaultVat)], lines_dirty: false, currency: projectCurrency, description: '', buyer_reference: '', status: 'draft', purchase_order_id: '' });
+                        setInvoiceErrors({});
+                        setShowCreate(true);
+                      },
+                    }
+                  : undefined
+              }
+            />
+          </div>
+        ) : (
+          <>
+            {/* Desktop table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border-light bg-surface-secondary/50">
+                    <th className="px-4 py-3 text-left font-medium text-content-tertiary">
+                      {t('finance.invoice_number', { defaultValue: 'Invoice #' })}
+                    </th>
+                    <th className="px-4 py-3 text-left font-medium text-content-tertiary">
+                      {subTab === 'payable'
+                        ? t('finance.vendor', { defaultValue: 'Vendor' })
+                        : t('finance.client', { defaultValue: 'Client' })}
+                    </th>
+                    <th className="px-4 py-3 text-left font-medium text-content-tertiary">
+                      {t('finance.issue_date', { defaultValue: 'Date' })}
+                    </th>
+                    <th className="px-4 py-3 text-left font-medium text-content-tertiary">
+                      {t('finance.due_date', { defaultValue: 'Due Date' })}
+                    </th>
+                    <th className="px-4 py-3 text-right font-medium text-content-tertiary">
+                      {t('finance.amount', { defaultValue: 'Amount' })}
+                    </th>
+                    <th className="px-4 py-3 text-center font-medium text-content-tertiary">
+                      {t('common.status', { defaultValue: 'Status' })}
+                    </th>
+                    <th className="px-4 py-3 text-right font-medium text-content-tertiary">
+                      {t('common.actions', { defaultValue: 'Actions' })}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((inv) => (
+                    <tr
+                      key={inv.id}
+                      className="border-b border-border-light hover:bg-surface-secondary/30 transition-colors"
+                    >
+                      <td className="px-4 py-3 font-mono text-xs text-content-primary">
+                        {inv.invoice_number}
+                      </td>
+                      <td className="px-4 py-3 text-content-secondary">
+                        <div>{inv.counterparty_name}</div>
+                        {/* Gap E: a receivable raised from a certified progress
+                            claim deep-links straight back to that claim, instead
+                            of leaving the link as a dead figure (CONN-75). */}
+                        {inv.source_claim_id && (
+                          <Link
+                            to={`/projects/${projectId}/contracts/claims/${inv.source_claim_id}`}
+                            className="inline-flex items-center gap-0.5 text-2xs text-oe-blue hover:underline mt-0.5"
+                            title={t('finance.view_source_claim', { defaultValue: 'View source progress claim' })}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <ExternalLink size={10} />
+                            <span>{t('finance.from_claim', { defaultValue: 'From claim' })}</span>
+                          </Link>
+                        )}
+                        {inv.line_items && inv.line_items.length > 0 && inv.line_items.some((li) => li.cost_category || li.wbs_id) && (
+                          <div className="flex items-center gap-1 text-2xs text-content-tertiary mt-0.5">
+                            <span>
+                              {t('finance.budget_line', { defaultValue: 'Budget' })}:{' '}
+                              {fmtList(inv.line_items
+                                .filter((li) => li.cost_category || li.wbs_id)
+                                .slice(0, 2)
+                                .map((li) => li.cost_category || li.wbs_id || ''))}
+                            </span>
+                            <Link
+                              to="/boq"
+                              className="inline-flex items-center gap-0.5 text-oe-blue hover:underline"
+                              title={t('finance.view_in_boq', { defaultValue: 'View in BOQ' })}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <ExternalLink size={10} />
+                              <span>BOQ</span>
+                            </Link>
+                          </div>
+                        )}
+                        {/* Gap B: when a line item is linked to a 5D cost-spine
+                            line, link to that cost model so the posted actual is
+                            traceable to its budget row. The /5d consumer of
+                            ?lineId lands separately (CONN-38). */}
+                        {(() => {
+                          const costLineId = inv.line_items?.find((li) => li.cost_line_id)?.cost_line_id;
+                          if (!costLineId) return null;
+                          return (
+                            <Link
+                              to={`/5d?lineId=${costLineId}`}
+                              className="inline-flex items-center gap-0.5 text-2xs text-oe-blue hover:underline mt-0.5"
+                              title={t('finance.view_cost_line', { defaultValue: 'View linked cost line in 5D' })}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <ExternalLink size={10} />
+                              <span>{t('finance.cost_line', { defaultValue: 'Cost line' })}</span>
+                            </Link>
+                          );
+                        })()}
+                        {inv.description && (!inv.line_items || !inv.line_items.some((li) => li.cost_category || li.wbs_id)) && (
+                          <div className="text-2xs text-content-quaternary mt-0.5 truncate max-w-[200px]">
+                            {inv.description}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-content-secondary">
+                        <DateDisplay value={inv.issue_date} format="numeric" />
+                      </td>
+                      <td className="px-4 py-3 text-content-secondary">
+                        <DateDisplay value={inv.due_date} format="numeric" />
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <MoneyDisplay amount={inv.amount} currency={inv.currency} />
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <Badge
+                          variant={INVOICE_STATUS_COLORS[inv.status] ?? 'neutral'}
+                          size="sm"
+                        >
+                          {t(`finance.status_${inv.status}`, {
+                            defaultValue: inv.status,
+                          })}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() => openEditInvoice(inv)}
+                            title={t('finance.edit_invoice', { defaultValue: 'Edit Invoice' })}
+                            aria-label={t('finance.edit_invoice', { defaultValue: 'Edit Invoice' })}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-content-tertiary hover:bg-surface-secondary hover:text-oe-blue transition-colors"
+                          >
+                            <Pencil size={14} />
+                          </button>
+                          {isReceivable(inv) && (
+                            <button
+                              type="button"
+                              onClick={() => setEinvoiceFor(inv)}
+                              title={t('finance.einvoice.action')}
+                              aria-label={t('finance.einvoice.action')}
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-content-tertiary hover:bg-surface-secondary hover:text-oe-blue transition-colors"
+                            >
+                              <FileCode2 size={14} />
+                            </button>
+                          )}
+                          {inv.status === 'draft' && (
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => sendForApprovalMutation.mutate(inv.id)}
+                              loading={sendForApprovalMutation.isPending}
+                              title={t('finance.send_for_approval_hint', {
+                                defaultValue: 'Move this draft invoice to pending so a manager can approve it.',
+                              })}
+                            >
+                              {t('finance.send_for_approval', { defaultValue: 'Send for approval' })}
+                            </Button>
+                          )}
+                          {inv.status === 'pending' && isManager && (
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={async () => {
+                                const ok = await confirm({
+                                  title: t('finance.confirm_approve_title', { defaultValue: 'Approve invoice?' }),
+                                  message: t('finance.confirm_approve_msg', { defaultValue: 'This invoice will be approved for payment.' }),
+                                  confirmLabel: t('finance.approve', { defaultValue: 'Approve' }),
+                                  variant: 'warning',
+                                });
+                                if (ok) approveMutation.mutate(inv.id);
+                              }}
+                              loading={approveMutation.isPending}
+                            >
+                              {t('finance.approve', { defaultValue: 'Approve' })}
+                            </Button>
+                          )}
+                          {canMarkPaid(inv.status) && isManager && (
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={async () => {
+                                const ok = await confirm({
+                                  title: t('finance.confirm_pay_title', { defaultValue: 'Mark as paid?' }),
+                                  message: t('finance.confirm_pay_msg_immutable', {
+                                    defaultValue:
+                                      'This records the payment as an immutable ledger entry and closes the invoice. It cannot be undone.',
+                                  }),
+                                  confirmLabel: t('finance.mark_paid', { defaultValue: 'Mark Paid' }),
+                                  variant: 'danger',
+                                });
+                                if (ok) markPaidMutation.mutate(inv);
+                              }}
+                              loading={markPaidMutation.isPending}
+                            >
+                              {t('finance.mark_paid', { defaultValue: 'Mark Paid' })}
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                {invoiceTotals && (
+                  <tfoot>
+                    <tr className="bg-surface-secondary/60 font-semibold">
+                      <td className="px-4 py-3 text-content-primary" colSpan={4}>
+                        {t('common.total')}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <MultiCurrencyTotal items={invoiceTotals.totalAmount} variant="inline" />
+                      </td>
+                      <td className="px-4 py-3 text-center text-xs text-content-tertiary">
+                        {t('finance.total_paid', { defaultValue: 'Paid' })}:{' '}
+                        <MultiCurrencyTotal items={invoiceTotals.totalPaid} variant="inline" />
+                      </td>
+                      <td />
+                    </tr>
+                  </tfoot>
+                )}
+              </table>
+            </div>
+
+            {/* Mobile card view */}
+            <div className="md:hidden p-4 space-y-3">
+              {filtered.map((inv) => (
+                <Card key={inv.id} className="p-4">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="min-w-0">
+                      <span className="text-xs font-mono text-content-tertiary">{inv.invoice_number}</span>
+                      <h4 className="text-sm font-semibold text-content-primary truncate">{inv.counterparty_name}</h4>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Badge variant={INVOICE_STATUS_COLORS[inv.status] ?? 'neutral'} size="sm">
+                        {t(`finance.status_${inv.status}`, { defaultValue: inv.status })}
+                      </Badge>
+                      <button
+                        type="button"
+                        onClick={() => openEditInvoice(inv)}
+                        title={t('finance.edit_invoice', { defaultValue: 'Edit Invoice' })}
+                        aria-label={t('finance.edit_invoice', { defaultValue: 'Edit Invoice' })}
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-content-tertiary hover:bg-surface-secondary hover:text-oe-blue transition-colors"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      {/* The card carries the e-invoice action too, for the same
+                          reason #284 gave the status actions: an action only the
+                          desktop table offers is unreachable on a phone. */}
+                      {isReceivable(inv) && (
+                        <button
+                          type="button"
+                          onClick={() => setEinvoiceFor(inv)}
+                          title={t('finance.einvoice.action')}
+                          aria-label={t('finance.einvoice.action')}
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-content-tertiary hover:bg-surface-secondary hover:text-oe-blue transition-colors"
+                        >
+                          <FileCode2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-content-tertiary">
+                    <span><DateDisplay value={inv.issue_date} format="numeric" /></span>
+                    <span className="font-semibold text-content-primary">
+                      <MoneyDisplay amount={inv.amount} currency={inv.currency} />
+                    </span>
+                  </div>
+                  {inv.due_date && (
+                    <div className="text-xs text-content-tertiary mt-1">
+                      {t('finance.due_date', { defaultValue: 'Due' })}: <DateDisplay value={inv.due_date} format="numeric" />
+                    </div>
+                  )}
+                  {/* Status actions mirror the desktop row so a draft invoice
+                      can be advanced on mobile too (#284 - the card previously
+                      exposed only Edit, leaving status unreachable on phones). */}
+                  {(inv.status === 'draft' ||
+                    (inv.status === 'pending' && isManager) ||
+                    (canMarkPaid(inv.status) && isManager)) && (
+                    <div className="mt-3 flex flex-wrap justify-end gap-2">
+                      {inv.status === 'draft' && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => sendForApprovalMutation.mutate(inv.id)}
+                          loading={sendForApprovalMutation.isPending}
+                        >
+                          {t('finance.send_for_approval', { defaultValue: 'Send for approval' })}
+                        </Button>
+                      )}
+                      {inv.status === 'pending' && isManager && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={async () => {
+                            const ok = await confirm({
+                              title: t('finance.confirm_approve_title', { defaultValue: 'Approve invoice?' }),
+                              message: t('finance.confirm_approve_msg', { defaultValue: 'This invoice will be approved for payment.' }),
+                              confirmLabel: t('finance.approve', { defaultValue: 'Approve' }),
+                              variant: 'warning',
+                            });
+                            if (ok) approveMutation.mutate(inv.id);
+                          }}
+                          loading={approveMutation.isPending}
+                        >
+                          {t('finance.approve', { defaultValue: 'Approve' })}
+                        </Button>
+                      )}
+                      {canMarkPaid(inv.status) && isManager && (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={async () => {
+                            const ok = await confirm({
+                              title: t('finance.confirm_pay_title', { defaultValue: 'Mark as paid?' }),
+                              message: t('finance.confirm_pay_msg_immutable', {
+                                defaultValue:
+                                  'This records the payment as an immutable ledger entry and closes the invoice. It cannot be undone.',
+                              }),
+                              confirmLabel: t('finance.mark_paid', { defaultValue: 'Mark Paid' }),
+                              variant: 'danger',
+                            });
+                            if (ok) markPaidMutation.mutate(inv);
+                          }}
+                          loading={markPaidMutation.isPending}
+                        >
+                          {t('finance.mark_paid', { defaultValue: 'Mark Paid' })}
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </Card>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Outside the branch above on purpose: a search that matches nothing
+            is exactly when the reader has to be told that only part of the
+            register was searched. */}
+        {!isLoading && !isError && invoicePage && (
+          <TruncationNotice page={invoicePage} className="px-4 py-3 border-t border-border-light" />
+        )}
+      </Card>
+
+      {/* EN 16931 e-invoice: pick the country profile, read what a receiver
+          would object to, then take the XML or the hybrid PDF. */}
+      {einvoiceFor && (
+        <EInvoiceModal
+          open
+          onClose={() => setEinvoiceFor(null)}
+          invoiceId={einvoiceFor.id}
+          invoiceNumber={einvoiceFor.invoice_number}
+        />
+      )}
+
+      {/* New / Edit Invoice Modal — the edit form reuses this exact create
+          form, prefilled via openEditInvoice(). */}
+      {invoiceModalOpen && (
+        <WideModal
+          open
+          onClose={closeInvoiceModal}
+          title={
+            isEditingInvoice
+              ? t('finance.edit_invoice', { defaultValue: 'Edit Invoice' })
+              : t('finance.new_invoice', { defaultValue: 'New Invoice' })
+          }
+          subtitle={
+            isEditingInvoice
+              ? editingInvoice?.invoice_number || undefined
+              : invoiceProjectName
+                ? t('common.creating_in_project', {
+                    defaultValue: 'In {{project}}',
+                    project: invoiceProjectName,
+                  })
+                : undefined
+          }
+          size="xl"
+          busy={isEditingInvoice ? updateInvoiceMut.isPending : createInvoiceMut.isPending}
+          footer={
+            <>
+              <Button
+                variant="ghost"
+                onClick={closeInvoiceModal}
+                disabled={isEditingInvoice ? updateInvoiceMut.isPending : createInvoiceMut.isPending}
+              >
+                {t('common.cancel', { defaultValue: 'Cancel' })}
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  if (!validateInvoice()) return;
+                  if (isEditingInvoice && editingInvoice) {
+                    updateInvoiceMut.mutate({
+                      id: editingInvoice.id,
+                      form: invoiceForm,
+                      prevStatus: editingInvoice.status,
+                    });
+                  } else {
+                    createInvoiceMut.mutate(invoiceForm);
+                  }
+                }}
+                disabled={
+                  (isEditingInvoice ? updateInvoiceMut.isPending : createInvoiceMut.isPending) ||
+                  !canSubmitInvoice
+                }
+              >
+                {(isEditingInvoice ? updateInvoiceMut.isPending : createInvoiceMut.isPending) ? (
+                  <Loader2 size={16} className="animate-spin mr-1.5" />
+                ) : isEditingInvoice ? (
+                  <Pencil size={16} className="mr-1.5" />
+                ) : (
+                  <Plus size={16} className="mr-1.5" />
+                )}
+                <span>
+                  {isEditingInvoice
+                    ? t('common.save', { defaultValue: 'Save Changes' })
+                    : t('common.create', { defaultValue: 'Create' })}
+                </span>
+              </Button>
+            </>
+          }
+        >
+          {/* Direction picker — full-width two-card visual selector. */}
+          <WideModalSection columns={2}>
+            <WideModalField
+              label={t('finance.direction', { defaultValue: 'Direction' })}
+              span={2}
+            >
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setInvoiceForm((f) => ({ ...f, direction: 'payable' }))}
+                  className={clsx(
+                    'relative flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all',
+                    invoiceForm.direction === 'payable'
+                      ? 'border-red-400 bg-red-50 dark:bg-red-950/20 shadow-sm'
+                      : 'border-border hover:border-red-200 dark:hover:border-red-800 hover:bg-surface-secondary',
+                  )}
+                >
+                  <div className={clsx(
+                    'flex h-10 w-10 items-center justify-center rounded-full',
+                    invoiceForm.direction === 'payable'
+                      ? 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400'
+                      : 'bg-surface-secondary text-content-tertiary',
+                  )}>
+                    <ArrowUpRight size={20} />
+                  </div>
+                  <span className={clsx(
+                    'text-sm font-semibold',
+                    invoiceForm.direction === 'payable' ? 'text-red-700 dark:text-red-300' : 'text-content-secondary',
+                  )}>
+                    {t('finance.payable', { defaultValue: 'Payable' })}
+                  </span>
+                  <span className="text-2xs text-content-tertiary text-center leading-tight">
+                    {t('finance.payable_desc', { defaultValue: 'Invoice you need to pay' })}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInvoiceForm((f) => ({ ...f, direction: 'receivable' }))}
+                  className={clsx(
+                    'relative flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all',
+                    invoiceForm.direction === 'receivable'
+                      ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 shadow-sm'
+                      : 'border-border hover:border-emerald-200 dark:hover:border-emerald-800 hover:bg-surface-secondary',
+                  )}
+                >
+                  <div className={clsx(
+                    'flex h-10 w-10 items-center justify-center rounded-full',
+                    invoiceForm.direction === 'receivable'
+                      ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400'
+                      : 'bg-surface-secondary text-content-tertiary',
+                  )}>
+                    <ArrowDownLeft size={20} />
+                  </div>
+                  <span className={clsx(
+                    'text-sm font-semibold',
+                    invoiceForm.direction === 'receivable' ? 'text-emerald-700 dark:text-emerald-300' : 'text-content-secondary',
+                  )}>
+                    {t('finance.receivable', { defaultValue: 'Receivable' })}
+                  </span>
+                  <span className="text-2xs text-content-tertiary text-center leading-tight">
+                    {t('finance.receivable_desc', { defaultValue: "Invoice you're sending" })}
+                  </span>
+                </button>
+              </div>
+            </WideModalField>
+          </WideModalSection>
+
+          <WideModalSection
+            title={t('finance.section_invoice_details', { defaultValue: 'Invoice Details' })}
+            columns={2}
+          >
+            <WideModalField
+              label={
+                invoiceForm.direction === 'payable'
+                  ? t('finance.vendor', { defaultValue: 'Vendor' })
+                  : t('finance.client', { defaultValue: 'Client' })
+              }
+            >
+              <ContactSearchInput
+                value={invoiceForm.counterparty}
+                onChange={(id, name) =>
+                  setInvoiceForm((f) => ({
+                    ...f,
+                    counterparty: name,
+                    contact_id: id,
+                    // An order belongs to one supplier; a new supplier drops the link.
+                    purchase_order_id: id === f.contact_id ? f.purchase_order_id : '',
+                  }))
+                }
+                placeholder={
+                  invoiceForm.direction === 'payable'
+                    ? t('finance.search_vendor', { defaultValue: 'Search vendor...' })
+                    : t('finance.search_client', { defaultValue: 'Search client...' })
+                }
+              />
+            </WideModalField>
+            <WideModalField
+              label={
+                invoiceForm.direction === 'payable'
+                  ? t('finance.supplier_invoice_number', { defaultValue: 'Supplier invoice number' })
+                  : t('finance.invoice_number', { defaultValue: 'Invoice #' })
+              }
+              hint={
+                isEditingInvoice
+                  ? undefined
+                  : t('finance.invoice_number_hint', {
+                      defaultValue: 'As printed on the document. Leave empty to have a number generated.',
+                    })
+              }
+            >
+              <input
+                type="text"
+                value={invoiceForm.invoice_number}
+                maxLength={50}
+                // The number is the key payments and exports match on, so it
+                // is set when the invoice is entered and not edited after.
+                disabled={isEditingInvoice}
+                onChange={(e) => setInvoiceForm((f) => ({ ...f, invoice_number: e.target.value }))}
+                className={clsx(inputCls, isEditingInvoice && 'opacity-70')}
+                aria-label={
+                  invoiceForm.direction === 'payable'
+                    ? t('finance.supplier_invoice_number', { defaultValue: 'Supplier invoice number' })
+                    : t('finance.invoice_number', { defaultValue: 'Invoice #' })
+                }
+              />
+            </WideModalField>
+            <WideModalField
+              label={t('finance.issue_date', { defaultValue: 'Invoice Date' })}
+              required
+              error={invoiceErrors.invoice_date}
+            >
+              <input
+                ref={invoiceDateRef}
+                type="date"
+                value={invoiceForm.invoice_date}
+                onChange={(e) => {
+                  setInvoiceForm((f) => ({ ...f, invoice_date: e.target.value }));
+                  if (invoiceErrors.invoice_date) setInvoiceErrors((prev) => { const next = { ...prev }; delete next.invoice_date; return next; });
+                }}
+                className={clsx(inputCls, invoiceErrors.invoice_date && 'border-semantic-error focus:ring-red-300 focus:border-semantic-error')}
+              />
+            </WideModalField>
+
+            {/* BT-10 Buyer reference / Leitweg-ID - outgoing invoices only.
+                It routes this one document through the recipient's systems
+                (German public buyers hand a Leitweg-ID over for exactly this),
+                so it is invoice data and the e-invoice check (BR-DE-15)
+                points here. The seller side lives in Settings, E-invoice;
+                this field is deliberately not there. */}
+            {invoiceForm.direction === 'receivable' && (
+              <WideModalField
+                label={t('finance.einvoice.buyerReferenceLabel', {
+                  defaultValue: 'Buyer reference / Leitweg-ID',
+                })}
+                span={2}
+                hint={t('finance.einvoice.buyerReferenceHint', {
+                  defaultValue:
+                    'BT-10 on the e-invoice. Public-sector buyers in Germany supply a Leitweg-ID and reject an XRechnung without it; other buyers may give a PO or routing reference.',
+                })}
+              >
+                <input
+                  type="text"
+                  value={invoiceForm.buyer_reference}
+                  onChange={(e) =>
+                    setInvoiceForm((f) => ({ ...f, buyer_reference: e.target.value }))
+                  }
+                  className={inputCls}
+                  placeholder="04011000-1234512345-06"
+                  aria-label={t('finance.einvoice.buyerReferenceLabel', {
+                    defaultValue: 'Buyer reference / Leitweg-ID',
+                  })}
+                />
+              </WideModalField>
+            )}
+
+            {/* The order this supplier invoice bills. Optional; linking it is
+                what keeps an order and its invoice from being committed
+                twice on the Finance dashboard. */}
+            {invoiceForm.direction === 'payable' && (
+              <WideModalField
+                label={t('finance.po_link_label', { defaultValue: 'Purchase order' })}
+                span={2}
+                hint={t('finance.po_link_hint', {
+                  defaultValue:
+                    'Optional. A linked invoice counts against its order, so the order and the invoice are committed once.',
+                })}
+              >
+                <InvoicePurchaseOrderField
+                  projectId={projectId}
+                  contactId={invoiceForm.contact_id}
+                  value={invoiceForm.purchase_order_id}
+                  onChange={(poId) => setInvoiceForm((f) => ({ ...f, purchase_order_id: poId }))}
+                  amountSubtotal={linesTotals(invoiceForm.lines).subtotal}
+                  invoiceId={editingInvoice?.id}
+                />
+              </WideModalField>
+            )}
+
+            {/* Status - edit mode only. A new invoice is always created as
+                'draft', and before #284 a draft had no control to move forward
+                (the row Approve / Mark Paid buttons only appear from 'pending'
+                / 'approved'). This dropdown covers the early, reversible steps
+                (draft <-> pending, cancel / re-open). Approving and marking
+                paid stay on the manager-gated row buttons, so those options are
+                intentionally absent here. */}
+            {isEditingInvoice && (
+              <WideModalField
+                label={t('finance.status_label', { defaultValue: 'Status' })}
+                span={2}
+                hint={t('finance.status_edit_hint', {
+                  defaultValue:
+                    'Move the invoice between draft, pending and cancelled. Approving an invoice and marking it paid are done from the Approve and Mark Paid buttons on the invoice row.',
+                })}
+              >
+                {(() => {
+                  const options = invoiceStatusOptions(invoiceForm.status);
+                  // No reversible next step from here (e.g. approved / paid) -
+                  // show the current status read-only rather than a one-option
+                  // dropdown that looks editable but isn't.
+                  if (options.length <= 1) {
+                    return (
+                      <div className="flex h-10 items-center rounded-lg border border-border bg-surface-secondary/40 px-3 text-sm text-content-secondary">
+                        {t(`finance.status_${invoiceForm.status}`, { defaultValue: invoiceForm.status })}
+                      </div>
+                    );
+                  }
+                  return (
+                    <select
+                      value={invoiceForm.status}
+                      onChange={(e) => setInvoiceForm((f) => ({ ...f, status: e.target.value }))}
+                      className={inputCls}
+                      aria-label={t('finance.status_label', { defaultValue: 'Status' })}
+                    >
+                      {options.map((s) => (
+                        <option key={s} value={s}>
+                          {t(`finance.status_${s}`, { defaultValue: s })}
+                          {s === invoiceForm.status
+                            ? ` (${t('finance.status_current', { defaultValue: 'current' })})`
+                            : ''}
+                        </option>
+                      ))}
+                    </select>
+                  );
+                })()}
+              </WideModalField>
+            )}
+          </WideModalSection>
+
+          <WideModalSection
+            title={t('finance.section_amounts', { defaultValue: 'Amounts' })}
+            columns={3}
+          >
+            <WideModalField
+              label={t('finance.currency', { defaultValue: 'Currency' })}
+            >
+              <select
+                value={invoiceForm.currency}
+                onChange={(e) => setInvoiceForm((f) => ({ ...f, currency: e.target.value }))}
+                className={inputCls}
+              >
+                {!invoiceForm.currency && (
+                  <option value="">
+                    {t('finance.currency_from_project', {
+                      defaultValue: 'Use project currency',
+                    })}
+                  </option>
+                )}
+                {currencyOptions(invoiceForm.currency).map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </WideModalField>
+            <div className="sm:col-span-2 lg:col-span-3">
+              <InvoiceLinesEditor
+                lines={invoiceForm.lines}
+                onChange={(lines) => {
+                  setInvoiceForm((f) => ({ ...f, lines, lines_dirty: true }));
+                  if (invoiceErrors.lines) setInvoiceErrors((prev) => { const next = { ...prev }; delete next.lines; return next; });
+                }}
+                currency={invoiceForm.currency || projectCurrency || undefined}
+                vatOptions={vatOptions}
+                defaultVat={defaultVat}
+                error={invoiceErrors.lines}
+              />
+            </div>
+          </WideModalSection>
+
+          <WideModalSection columns={2}>
+            <WideModalField
+              label={t('finance.due_date', { defaultValue: 'Due Date' })}
+              span={2}
+            >
+              <input
+                type="date"
+                value={invoiceForm.due_date}
+                onChange={(e) => setInvoiceForm((f) => ({ ...f, due_date: e.target.value }))}
+                className={inputCls}
+              />
+            </WideModalField>
+            <WideModalField
+              label={t('finance.notes', { defaultValue: 'Notes / Description' })}
+              span={2}
+            >
+              <textarea
+                value={invoiceForm.description}
+                onChange={(e) => setInvoiceForm((f) => ({ ...f, description: e.target.value }))}
+                rows={3}
+                className={clsx(inputCls, 'h-auto py-2.5 resize-none')}
+                placeholder={t('finance.invoice_desc_placeholder', { defaultValue: 'e.g., Progress payment for concrete works - Phase 2' })}
+              />
+            </WideModalField>
+          </WideModalSection>
+        </WideModal>
+      )}
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog {...confirmProps} />
+    </div>
+  );
+}
+
+/* ── Payments Tab ─────────────────────────────────────────────────────── */
+
+function PaymentsTab({
+  projectId,
+  onGoToInvoices,
+}: {
+  projectId: string;
+  onGoToInvoices: () => void;
+}) {
+  const { t } = useTranslation();
+
+  const {
+    data: paymentPage,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ['finance-payments', projectId],
+    // Enveloped, but this route sends `items` and `total` only - no
+    // `offset` / `limit` on the wire.
+    queryFn: () =>
+      apiGet<Pick<Page<Payment>, 'items' | 'total'>>(`/v1/finance/payments/?project_id=${projectId}`),
+  });
+  const payments = paymentPage?.items;
+
+  const paymentTotals = useMemo(() => {
+    if (!payments || !payments.length) return null;
+    // Payments may be recorded in different currencies; summing into one
+    // scalar and stamping the first row's code blends them. Map rows to
+    // {amount, currency} for <MultiCurrencyTotal>, which groups per ISO
+    // code (and degrades to a single MoneyDisplay when homogeneous).
+    const total = payments.map((p) => ({
+      amount: Number(p.amount ?? 0),
+      currency: p.currency_code || p.currency || undefined,
+    }));
+    return { total };
+  }, [payments]);
+
+  if (isLoading) return <SkeletonTable rows={5} columns={5} />;
+
+  if (isError) return <RecoveryCard error={error} onRetry={() => refetch()} />;
+
+  if (!payments || payments.length === 0) {
+    return (
+      <EmptyState
+        icon={<CreditCard size={28} strokeWidth={1.5} />}
+        title={t('finance.no_payments', { defaultValue: 'No payments yet' })}
+        description={t('finance.no_payments_desc', {
+          defaultValue:
+            'Payments are recorded automatically when you mark invoices as paid. Go to the Invoices tab to approve and pay invoices.',
+        })}
+        action={{
+          label: t('finance.go_to_invoices', { defaultValue: 'Go to Invoices' }),
+          onClick: onGoToInvoices,
+        }}
+      />
+    );
+  }
+
+  return (
+    <Card padding="none">
+      {/* Header bar */}
+      <div className="p-4 border-b border-border-light flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <p className="text-sm text-content-secondary">
+          {t('finance.payments_explanation', {
+            defaultValue:
+              'Payments are read-only ledger entries created automatically when an invoice is marked as paid in the Invoices tab. To record a new payment, approve and pay its invoice.',
+          })}
+        </p>
+        <Button
+          variant="secondary"
+          size="sm"
+          icon={<FileText size={14} />}
+          onClick={onGoToInvoices}
+          className="shrink-0"
+        >
+          {t('finance.go_to_invoices', { defaultValue: 'Go to Invoices' })}
+        </Button>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border-light bg-surface-secondary/50">
+              <th className="px-4 py-3 text-left font-medium text-content-tertiary">
+                {t('finance.invoice_ref', { defaultValue: 'Invoice Ref' })}
+              </th>
+              <th className="px-4 py-3 text-left font-medium text-content-tertiary">
+                {t('finance.payment_date', { defaultValue: 'Payment Date' })}
+              </th>
+              <th className="px-4 py-3 text-right font-medium text-content-tertiary">
+                {t('finance.amount', { defaultValue: 'Amount' })}
+              </th>
+              <th className="px-4 py-3 text-left font-medium text-content-tertiary">
+                {t('finance.reference', { defaultValue: 'Reference' })}
+              </th>
+              <th className="px-4 py-3 text-center font-medium text-content-tertiary">
+                {t('common.status', { defaultValue: 'Status' })}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {payments.map((p) => (
+              <tr
+                key={p.id}
+                className="border-b border-border-light hover:bg-surface-secondary/30 transition-colors"
+              >
+                <td className="px-4 py-3 font-mono text-xs text-content-primary">
+                  {p.invoice_number || '\u2014'}
+                </td>
+                <td className="px-4 py-3 text-content-secondary">
+                  <DateDisplay value={p.payment_date} format="numeric" />
+                </td>
+                <td className="px-4 py-3 text-right">
+                  <MoneyDisplay amount={p.amount} currency={p.currency_code || p.currency} />
+                </td>
+                <td className="px-4 py-3 text-content-secondary font-mono text-xs">
+                  {p.reference || '\u2014'}
+                </td>
+                <td className="px-4 py-3 text-center">
+                  {(() => {
+                    // PaymentResponse derives status server-side: "completed"
+                    // for a forward payment, "refunded" for a refund. Fall
+                    // back to the is_refund flag for older payloads.
+                    const status = p.status || (p.is_refund ? 'refunded' : 'completed');
+                    return (
+                      <Badge variant={status === 'refunded' ? 'warning' : 'success'} size="sm">
+                        {t(`finance.payment_status_${status}`, { defaultValue: PAYMENT_STATUS_LABELS[status] ?? status })}
+                      </Badge>
+                    );
+                  })()}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          {paymentTotals && (
+            <tfoot>
+              <tr className="bg-surface-secondary/60 font-semibold">
+                <td className="px-4 py-3 text-content-primary" colSpan={2}>
+                  {t('common.total', { defaultValue: 'Total' })}
+                </td>
+                <td className="px-4 py-3 text-right">
+                  <MultiCurrencyTotal items={paymentTotals.total} variant="inline" />
+                </td>
+                <td colSpan={2} />
+              </tr>
+            </tfoot>
+          )}
+        </table>
+      </div>
+
+      {paymentPage && (
+        <TruncationNotice page={paymentPage} className="px-4 py-3 border-t border-border-light" />
+      )}
+    </Card>
+  );
+}
+
+/* ── EVM Dashboard Tab ────────────────────────────────────────────────── */
+
+function EVMTab({
+  projectId,
+  onGoToBudgets,
+}: {
+  projectId: string;
+  onGoToBudgets: () => void;
+}) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const addToast = useToastStore((s) => s.addToast);
+
+  // Resolve the project currency from the finance dashboard so EVM money
+  // KPIs are never mislabelled as EUR (task #217). Shares the same query
+  // key as the summary cards, so this is a cache hit in practice.
+  const { data: dashboard } = useQuery({
+    queryKey: ['finance', 'dashboard', projectId],
+    queryFn: () =>
+      apiGet<FinanceDashboardData>(`/v1/finance/dashboard/?project_id=${projectId}`),
+  });
+  const evmCurrency = dashboard?.currency || undefined;
+
+  // Backend returns EVMListResponse `{items: EVMSnapshot[], total: int}`
+  // sorted by snapshot_date DESC — the most-recent snapshot is items[0].
+  // EVM money/index fields ship as Decimal-as-string; coerce to numbers
+  // for the KPI cards. Empty list → show the "No EVM data" empty state.
+  const {
+    data: evm,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ['finance-evm', projectId],
+    queryFn: () =>
+      apiGet<{
+        items: Array<{
+          bac: string; pv: string; ev: string; ac: string; sv: string;
+          cv: string; spi: string; cpi: string; eac: string; etc: string;
+          vac: string; tcpi: string; snapshot_date: string;
+        }>;
+        total: number;
+      }>(`/v1/finance/evm/?project_id=${projectId}`),
+    select: (resp): EVMData | null => {
+      const latest = resp?.items?.[0];
+      if (!latest) return null;
+      const num = (s: string | undefined): number => {
+        const n = Number.parseFloat(s ?? '0');
+        return Number.isFinite(n) ? n : 0;
+      };
+      return {
+        project_id: projectId,
+        bac: num(latest.bac), pv: num(latest.pv), ev: num(latest.ev),
+        ac: num(latest.ac), sv: num(latest.sv), cv: num(latest.cv),
+        spi: num(latest.spi), cpi: num(latest.cpi), eac: num(latest.eac),
+        etc: num(latest.etc), vac: num(latest.vac), tcpi: num(latest.tcpi),
+        // Resolved from the dashboard below — kept empty here so the
+        // currency is never hardcoded in the data layer (task #217).
+        currency: '',
+        data_date: latest.snapshot_date,
+      };
+    },
+  });
+
+  const snapshotMut = useMutation({
+    mutationFn: () =>
+      apiPost('/v1/finance/evm/snapshot/', {
+        project_id: projectId,
+        snapshot_date: new Date().toISOString().split('T')[0],
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['finance-evm', projectId] });
+      addToast({
+        type: 'success',
+        title: t('finance.snapshot_created', { defaultValue: 'EVM snapshot created successfully' }),
+      });
+    },
+    onError: (e: Error) =>
+      addToast({
+        type: 'error',
+        title: t('finance.snapshot_failed', { defaultValue: 'Failed to create EVM snapshot' }),
+        message: e.message,
+      }),
+  });
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div
+            key={i}
+            className="h-28 animate-pulse rounded-xl bg-surface-secondary"
+          />
+        ))}
+      </div>
+    );
+  }
+
+  if (isError) return <RecoveryCard error={error} onRetry={() => refetch()} />;
+
+  if (!evm) {
+    const hasBudget =
+      (dashboard?.total_budget_revised ?? 0) > 0 ||
+      (dashboard?.total_budget_original ?? 0) > 0;
+    return (
+      <div className="space-y-4">
+        <EmptyState
+          icon={<BarChart3 size={28} strokeWidth={1.5} />}
+          title={t('finance.no_evm', { defaultValue: 'No EVM data available' })}
+          description={
+            hasBudget
+              ? t('finance.no_evm_desc', {
+                  defaultValue:
+                    'Earned value data requires a cost baseline. Click "Create Snapshot" to compute BAC, SPI, CPI and the forecast metrics from your current budget and paid invoices.',
+                })
+              : t('finance.no_evm_no_budget_desc', {
+                  defaultValue:
+                    'EVM is computed from your project budget and paid invoices. Add budget lines first - then create a snapshot to track schedule and cost performance.',
+                })
+          }
+          action={
+            hasBudget
+              ? {
+                  label: t('finance.create_snapshot', { defaultValue: 'Create Snapshot' }),
+                  onClick: () => snapshotMut.mutate(),
+                }
+              : {
+                  label: t('finance.go_to_budgets', { defaultValue: 'Go to Budgets' }),
+                  onClick: onGoToBudgets,
+                }
+          }
+        />
+      </div>
+    );
+  }
+
+  const kpiCards: {
+    label: string;
+    value: number;
+    isCurrency: boolean;
+    isIndex?: boolean;
+    /** Variance metrics colorize good=positive / bad=negative. The label
+     *  text is translated, so we must NOT match on it (was a bug: German
+     *  "Abweichung" never matched "Variance"). */
+    isVariance?: boolean;
+    good?: 'high' | 'low';
+  }[] = [
+    {
+      label: t('finance.evm_bac', { defaultValue: 'BAC (Budget at Completion)' }),
+      value: evm.bac,
+      isCurrency: true,
+    },
+    {
+      label: t('finance.evm_pv', { defaultValue: 'PV (Planned Value)' }),
+      value: evm.pv,
+      isCurrency: true,
+    },
+    {
+      label: t('finance.evm_ev', { defaultValue: 'EV (Earned Value)' }),
+      value: evm.ev,
+      isCurrency: true,
+    },
+    {
+      label: t('finance.evm_ac', { defaultValue: 'AC (Actual Cost)' }),
+      value: evm.ac,
+      isCurrency: true,
+    },
+    {
+      label: t('finance.evm_spi', { defaultValue: 'SPI (Schedule Performance)' }),
+      value: evm.spi,
+      isCurrency: false,
+      isIndex: true,
+      good: 'high',
+    },
+    {
+      label: t('finance.evm_cpi', { defaultValue: 'CPI (Cost Performance)' }),
+      value: evm.cpi,
+      isCurrency: false,
+      isIndex: true,
+      good: 'high',
+    },
+    {
+      label: t('finance.evm_sv', { defaultValue: 'SV (Schedule Variance)' }),
+      value: evm.sv,
+      isCurrency: true,
+      isVariance: true,
+    },
+    {
+      label: t('finance.evm_cv', { defaultValue: 'CV (Cost Variance)' }),
+      value: evm.cv,
+      isCurrency: true,
+      isVariance: true,
+    },
+    {
+      label: t('finance.evm_eac', { defaultValue: 'EAC (Estimate at Completion)' }),
+      value: evm.eac,
+      isCurrency: true,
+    },
+    {
+      label: t('finance.evm_etc', { defaultValue: 'ETC (Estimate to Complete)' }),
+      value: evm.etc,
+      isCurrency: true,
+    },
+    {
+      label: t('finance.evm_vac', { defaultValue: 'VAC (Variance at Completion)' }),
+      value: evm.vac,
+      isCurrency: true,
+      isVariance: true,
+    },
+    {
+      label: t('finance.evm_tcpi', { defaultValue: 'TCPI (To-Complete Performance)' }),
+      value: evm.tcpi,
+      isCurrency: false,
+      isIndex: true,
+      good: 'low',
+    },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Explanation */}
+      <div className="rounded-lg border border-oe-blue/15 bg-oe-blue/[0.03] p-3">
+        <p className="text-sm text-content-secondary">
+          {t('finance.evm_explanation', {
+            defaultValue: 'Earned Value Management (EVM) compares planned progress with actual performance. SPI > 1.0 = ahead of schedule. CPI > 1.0 = under budget. Create snapshots periodically to track trends over time.',
+          })}
+        </p>
+        <div className="mt-2 flex flex-wrap gap-3 text-2xs text-content-tertiary">
+          <span><strong className="text-content-secondary">SPI</strong> = EV / PV ({t('finance.evm_hint_schedule', { defaultValue: 'schedule efficiency' })})</span>
+          <span><strong className="text-content-secondary">CPI</strong> = EV / AC ({t('finance.evm_hint_cost', { defaultValue: 'cost efficiency' })})</span>
+          <span><strong className="text-content-secondary">EAC</strong> = AC + (BAC − EV) / CPI ({t('finance.evm_hint_forecast', { defaultValue: 'forecast total cost' })})</span>
+        </div>
+      </div>
+
+      {/* Header: Data date + Create Snapshot */}
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-content-tertiary">
+          {t('finance.data_date', { defaultValue: 'Data Date' })}:{' '}
+          <DateDisplay value={evm.data_date} className="font-medium text-content-secondary" />
+        </div>
+        <Button
+          variant="secondary"
+          size="sm"
+          icon={
+            snapshotMut.isPending ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <Camera size={14} />
+            )
+          }
+          onClick={() => snapshotMut.mutate()}
+          disabled={snapshotMut.isPending}
+        >
+          {t('finance.create_snapshot', { defaultValue: 'Create Snapshot' })}
+        </Button>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        {kpiCards.map((kpi) => {
+          let indicatorColor = '';
+          if (kpi.isIndex) {
+            // TCPI is "good" when LOW (≤1 means the remaining work is
+            // achievable at or under the planned rate); all other indices
+            // are good when ≥1.
+            const onTrack =
+              kpi.good === 'low' ? kpi.value <= 1.0 : kpi.value >= 1.0;
+            indicatorColor = onTrack
+              ? 'text-semantic-success'
+              : 'text-semantic-error';
+          } else if (kpi.isCurrency && kpi.isVariance) {
+            indicatorColor =
+              kpi.value >= 0 ? 'text-semantic-success' : 'text-semantic-error';
+          }
+
+          return (
+            <Card key={kpi.label} className="p-4">
+              <div className="text-2xs font-medium text-content-tertiary uppercase tracking-wider mb-2">
+                {kpi.label}
+              </div>
+              <div
+                className={`text-xl font-bold tabular-nums ${indicatorColor || 'text-content-primary'}`}
+              >
+                {kpi.isCurrency ? (
+                  <MoneyDisplay
+                    amount={kpi.value}
+                    currency={evmCurrency}
+                    compact
+                    colorize={kpi.isVariance}
+                  />
+                ) : (
+                  fmtFixed(kpi.value ?? 0, 2)
+                )}
+              </div>
+              {kpi.isIndex && (() => {
+                const onTrack =
+                  kpi.good === 'low' ? kpi.value <= 1.0 : kpi.value >= 1.0;
+                return (
+                  <div className="mt-1 flex items-center gap-1 text-xs">
+                    {onTrack ? (
+                      <ArrowUpRight size={12} className="text-semantic-success" />
+                    ) : (
+                      <ArrowDownRight size={12} className="text-semantic-error" />
+                    )}
+                    <span
+                      className={
+                        onTrack ? 'text-semantic-success' : 'text-semantic-error'
+                      }
+                    >
+                      {onTrack
+                        ? t('finance.on_track', { defaultValue: 'On track' })
+                        : t('finance.behind', { defaultValue: 'Behind' })}
+                    </span>
+                  </div>
+                );
+              })()}
+            </Card>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
