@@ -6,14 +6,24 @@ from dataclasses import asdict, dataclass
 from functools import lru_cache
 from typing import Any
 
-from app.modules.cost_match.bulgarian import is_structural, ANCILLARY_OPS
-from app.modules.cost_match.work_catalog import canonical_work, catalog_digest, work_metadata
+from app.modules.cost_match.bulgarian import is_structural, quotation_eligible
+from app.modules.cost_match.work_catalog import (
+    canonical_work,
+    catalog_digest,
+    concept_id,
+    operator_pricing_rule,
+    work_metadata,
+)
 from app.modules.cost_match.work_context import effective_work, is_work_fragment
 
-SIGNATURE_INDEX_VERSION = 1
+SIGNATURE_INDEX_VERSION = 2
 DESCRIPTION_WHITESPACE = (' \t\n\r\v\f\x1c\x1d\x1e\x1f\x85\xa0\u1680'
                          '\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a'
                          '\u2028\u2029\u202f\u205f\u3000')
+
+
+def literal_description(text: str) -> str:
+    return text.replace('\r\n', '\n').replace('\r', '\n').strip().lower()
 
 
 @dataclass(frozen=True)
@@ -28,55 +38,24 @@ class RetrievalGroup:
         return bool(self.value in getattr(work, self.kind + 's'))
 
 
-# Site works bundled into bill lines (dig, refill, haul) are priced per
-# object elsewhere in the corpus - a pipe quotation legitimately stays
-# silent about the excavation around it. They must not veto retrieval.
-# Defined in ``bulgarian`` (which cannot import this module) and re-exported.
-
-
 @dataclass(frozen=True)
 class RetrievalPlan:
-    """Object identity is required; operations and materials veto only on
-    genuine disjointness. A query for demolition never sees install-only
-    rows, but a quote silent about its work type still surfaces for the
-    matcher to judge. Modifier materials (fibres in concrete, the timber
-    structure around insulation) cannot empty a pool - one shared material
-    suffices, none declared is not a contradiction."""
     groups: tuple[RetrievalGroup, ...]
-    query_ops: frozenset[str] = ()
-    query_materials: frozenset[str] = ()
     blocked_reason: str | None = None
     exact_text: str | None = None
-
-    def compatible(self, operations: Any, materials: Any) -> bool:
-        ops = set(operations or ())
-        mats = set(materials or ())
-        # Veto, not containment: silence is not a contradiction. A quote that
-        # declares a different operation family or a disjoint material is
-        # excluded; a quote silent about them stays for the matcher to judge.
-        if self.query_ops and ops and ops.isdisjoint(self.query_ops):
-            return False
-        if self.query_materials and mats and mats.isdisjoint(self.query_materials):
-            return False
-        return True
-
-    def compatible_signature(self, work: dict[str, Any] | None) -> bool:
-        work = work or {}
-        return self.compatible(work.get('operations'), work.get('materials'))
+    allow_without_disassembly: bool = False
+    candidate_code: str | None = None
+    operator_rule_id: str | None = None
 
     def matches(self, description: str, parents: list[str] | None = None) -> bool:
+        if not self.allow_without_disassembly and not quotation_eligible('', description):
+            return False
         evidence: str = effective_work(description, parents or [])
         if self.blocked_reason:
             return False
         if self.exact_text is not None:
-            return evidence.strip().lower() == self.exact_text
-        if not self.groups:
-            return False
-        work = canonical_work(evidence)
-        for group in self.groups:
-            if group.kind == 'object' and not group.matches(evidence):
-                return False
-        return self.compatible(work.operations, work.materials)
+            return literal_description(evidence) == self.exact_text
+        return bool(self.groups) and all(group.matches(evidence) for group in self.groups)
 
     def requirements(self) -> dict[str, Any]:
         required: dict[str, Any] = {}
@@ -87,35 +66,48 @@ class RetrievalPlan:
                 required.setdefault(group.kind + 's', []).append(group.value)
         return required
 
+    def id_requirements(self) -> dict[str, Any]:
+        required: dict[str, Any] = {}
+        for group in self.groups:
+            value = concept_id(group.kind, group.value)
+            if group.kind == 'object':
+                required['object'] = value
+            else:
+                required.setdefault(group.kind + 's', []).append(value)
+        return required
+
+    def compatible_signature(self, work: dict[str, Any] | None) -> bool:
+        if not isinstance(work, dict):
+            return False
+        requirements = self.requirements()
+        return all(work.get(key) == value if key == 'object'
+                   else set(value) <= set(work.get(key) or ())
+                   for key, value in requirements.items())
+
     def as_dict(self) -> dict[str, Any]:
-        return {'schema_version': 2, 'catalog_digest': catalog_digest(),
+        return {'schema_version': 1, 'catalog_digest': catalog_digest(),
                 'groups': [asdict(group) for group in self.groups],
-                'query_ops': sorted(self.query_ops),
-                'query_materials': sorted(self.query_materials),
-                'blocked_reason': self.blocked_reason, 'exact_text': self.exact_text}
+                'blocked_reason': self.blocked_reason, 'exact_text': self.exact_text,
+                'concept_ids': self.id_requirements(), 'allow_without_disassembly': self.allow_without_disassembly,
+                'candidate_code': self.candidate_code, 'operator_rule_id': self.operator_rule_id}
 
 
 @lru_cache(maxsize=16384)
-def retrieval_plan(text: str) -> RetrievalPlan:
+def retrieval_plan(text: str, raw_query: str | None = None) -> RetrievalPlan:
+    allow = quotation_eligible(text if raw_query is None else raw_query, 'без демонтаж')
     if is_structural(text) or is_work_fragment(text):
-        return RetrievalPlan((), blocked_reason='work_context_missing' if is_work_fragment(text) else 'structural_row')
+        return RetrievalPlan((), 'work_context_missing' if is_work_fragment(text) else 'structural_row')
     work = canonical_work(text)
     if not work.object:
-        return (RetrievalPlan((), exact_text=text.strip().lower()) if text.strip()
-                else RetrievalPlan((), blocked_reason='work_object_unknown'))
-    # ``groups`` reports the recognized concept groups (object, then
-    # operations, then materials); only the object group is enforced as a
-    # conjunct. Operations and materials act as disjointness vetoes via
-    # ``compatible()``.
-    required_ops = frozenset(work.operations) - ANCILLARY_OPS
+        return (RetrievalPlan((), exact_text=literal_description(text), allow_without_disassembly=allow) if text.strip()
+                else RetrievalPlan((), 'work_object_unknown'))
     groups = [RetrievalGroup('object', work.object)]
-    groups.extend(RetrievalGroup('operation', op) for op in sorted(required_ops))
-    groups.extend(RetrievalGroup('material', m) for m in sorted(work.materials))
-    return RetrievalPlan(
-        tuple(groups),
-        query_ops=required_ops,
-        query_materials=frozenset(work.materials),
-    )
+    groups.extend(RetrievalGroup('operation', operation) for operation in work.operations)
+    groups.extend(RetrievalGroup('material', material) for material in work.materials)
+    rule = operator_pricing_rule(text)
+    return RetrievalPlan(tuple(groups), allow_without_disassembly=allow,
+                         candidate_code=rule['code'] if rule else None,
+                         operator_rule_id=rule['id'] if rule else None)
 
 
 def quotation_text(item: Any) -> str:
@@ -158,22 +150,26 @@ def sql_current_signature(model: Any) -> Any:
     )
 
 
+def sql_literal_description(model: Any) -> Any:
+    from sqlalchemy import func
+
+    upper = 'АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЬЮЯ'
+    quote = func.translate(func.lower(sql_description(model)), upper, upper.lower())
+    return func.replace(func.replace(quote, '\r\n', '\n'), '\r', '\n')
+
+
 def sql_predicate(plan: RetrievalPlan, model: Any) -> Any:
-    from sqlalchemy import and_, cast, false, func
+    from sqlalchemy import and_, cast, false, true
     from sqlalchemy.dialects.postgresql import JSONB
 
     if plan.blocked_reason:
         return false()
+    eligible: Any = (True if plan.allow_without_disassembly else
+                ~sql_description(model).op('~*')(r'\mбез\s+демонтаж\M'))
     if plan.exact_text is not None:
-        upper = 'АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЬЮЯ'
-        quote = func.translate(func.lower(sql_description(model)), upper, upper.lower())
-        return func.trim(quote) == plan.exact_text
-    required = plan.requirements()
-    if 'object' not in required:
+        return and_(eligible, sql_literal_description(model) == plan.exact_text)
+    if not plan.groups:
         return false()
-    work = cast(model.metadata_['canonical_work']['work'], JSONB)
-    # Only the object conjunct is enforced in SQL; operation and material
-    # disjointness vetoes are applied by the caller via
-    # ``RetrievalPlan.compatible_signature`` on the stored signature.
-    return and_(sql_current_signature(model),
-                work.contains({'object': required['object']}))
+    ids = cast(model.metadata_['canonical_work']['work']['concept_ids'], JSONB)
+    return and_(eligible, sql_current_signature(model), ids.contains(plan.id_requirements()),
+                model.code == plan.candidate_code if plan.candidate_code else true())

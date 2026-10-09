@@ -41,12 +41,12 @@ import re
 import uuid
 from typing import Any
 
-from sqlalchemy import Integer, Select, case, cast, func, or_, select, update
+from sqlalchemy import Integer, Select, case, cast, func, literal, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.orm.attributes import set_committed_value
 from sqlalchemy.orm.util import identity_key
-from sqlalchemy.sql.elements import ClauseElement
+from sqlalchemy.sql.elements import ClauseElement, ColumnElement
 
 from app.modules.cost_match.bases import base_clause
 from app.modules.cost_match.matcher import (
@@ -110,7 +110,7 @@ def _escape_like(term: str) -> str:
     return term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
-def _search_text_predicate(term: str) -> ClauseElement:
+def _search_text_predicate(term: str) -> ColumnElement[bool]:
     """Alias-surface match against the enriched ``metadata.search_text``.
 
     Corpus rows carry a normalized alias string (verb prefixes stripped,
@@ -211,7 +211,7 @@ def retrieval_terms(text: str) -> list[str]:
     return list(terms)[:_MAX_TERMS]
 
 
-def _short_term_predicate(term: str) -> ClauseElement:
+def _short_term_predicate(term: str) -> ColumnElement[bool]:
     """Two-char terms matched on word boundaries, not substrings.
 
     A bare ``ск`` ILIKE would land every ``скоба``/``скорост`` row in the
@@ -239,7 +239,7 @@ def _short_term_predicate(term: str) -> ClauseElement:
 class _CRUDBase:
     """Shared CRUD primitives for the cost-match repositories."""
 
-    model: type
+    model: type[Any]
     session: AsyncSession
 
     def __init__(self, session: AsyncSession) -> None:
@@ -581,14 +581,17 @@ class CostBaseRepository:
         stmt = stmt.where(sql_current_signature(CostItem).is_not(True))
         result = await self.session.stream_scalars(stmt.execution_options(yield_per=256))
         count = 0
-        async for item in result:
-            existing = item.metadata_ if isinstance(item.metadata_, dict) else {}
-            if item.metadata_ is not None and not isinstance(item.metadata_, dict):
-                existing = {'legacy_metadata': item.metadata_}
-            item.metadata_ = {**existing, 'canonical_work': signature_metadata(item)}
-            count += 1
-            if count % 256 == 0:
-                await self.session.flush()
+        try:
+            async for item in result:
+                existing = item.metadata_ if isinstance(item.metadata_, dict) else {}
+                if item.metadata_ is not None and not isinstance(item.metadata_, dict):
+                    existing = {'legacy_metadata': item.metadata_}
+                item.metadata_ = {**existing, 'canonical_work': signature_metadata(item)}
+                count += 1
+                if count % 256 == 0:
+                    await self.session.flush()
+        finally:
+            await result.close()
         await self.session.flush()
         return count
 
@@ -601,6 +604,7 @@ class CostBaseRepository:
         catalog_id: uuid.UUID | None = None,
         unit: str | None = None,
         limit: int = 40,
+        raw_query: str | None = None,
     ) -> list[CostItem]:
         """Cost items worth scoring against ``text``.
 
@@ -629,7 +633,7 @@ class CostBaseRepository:
         from app.modules.cost_match.bulgarian import is_bulgarian
         from app.modules.cost_match.retrieval_bg import retrieval_plan, sql_predicate
 
-        bg_plan = retrieval_plan(text) if is_bulgarian(text) else None
+        bg_plan = retrieval_plan(text, raw_query) if is_bulgarian(text) else None
         if bg_plan is not None:
             if bg_plan.blocked_reason:
                 return []
@@ -659,10 +663,10 @@ class CostBaseRepository:
                 clauses.append((parts[0] if len(parts) == 1 else or_(*parts), _term_weight(term)))
         if not clauses:
             return []
-        matched = cast(
-            sum(case((clause, weight), else_=0) for clause, weight in clauses),
-            Integer,
-        )
+        matched: ColumnElement[int] = literal(0)
+        for clause, weight in clauses:
+            matched += case((clause, weight), else_=0)
+        matched = cast(matched, Integer)
         stmt = self._scoped(cost_source=cost_source, region=region, catalog_id=catalog_id)
         stmt = stmt.where(or_(*(clause for clause, _ in clauses)))
         # Pool membership is gated on a *discriminating* hit: a candidate
@@ -673,9 +677,10 @@ class CostBaseRepository:
         # genuinely generic line keeps the old OR semantics so it is never
         # starved of candidates.
         if any(weight >= 2 for _, weight in clauses):
-            discriminating = sum(
-                case((clause, 1), else_=0) for clause, weight in clauses if weight >= 2
-            )
+            discriminating: ColumnElement[int] = literal(0)
+            for clause, weight in clauses:
+                if weight >= 2:
+                    discriminating += case((clause, 1), else_=0)
             stmt = stmt.where(cast(discriminating, Integer) > 0)
         # Oversample so the unit-dimension partition below still fills the
         # pool after incompatible rows sink to the tail.

@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "families": [
     {
       "id": "primer",
@@ -204,7 +204,7 @@
     {
       "id": "inverter",
       "object_patterns": [
-        "\\bинвертор\\w*"
+        "\\bинвертор(?:ът|а|и|ите)?\\b"
       ],
       "notation": []
     },
@@ -323,14 +323,48 @@
     {
       "id": "window_sill",
       "object_patterns": [
-        "\\bпрозоречн\\w*\\s+перваз\\w*"
+        "\\bпрозоречн\\w*\\s+перваз\\w*",
+        "\\bподпрозоречн\\w*\\s+д[ъу]ск\\w*"
       ],
       "notation": []
     },
     {
       "id": "window_reveal",
       "object_patterns": [
-        "\\bобръщан\\w*\\s+(?:на\\s+)?отвор\\w*"
+        "\\bобръщан\\w*\\s+(?:на\\s+)?отвор\\w*",
+        "\\bобръщан\\w*(?:\\s*/[^/]+/)?\\s+(?:на\\s+)?страниц\\w*\\s+на\\s+(?:врат[аи]\\w*|прозор\\w*)"
+      ],
+      "project_spec_fields": ["dim_len"],
+      "allowed_unspecified_materials": [["gypsum"]],
+      "candidate_attribute_supersets": {"opening": ["door", "window"]},
+      "attributes": [
+        {
+          "field": "opening",
+          "value": "door",
+          "pattern": "\\bврат[аи]\\w*"
+        },
+        {
+          "field": "opening",
+          "value": "window",
+          "pattern": "\\bпрозор\\w*"
+        },
+        {
+          "field": "room",
+          "value": "interior",
+          "pattern": "\\bпомещен\\w*"
+        },
+        {
+          "field": "board_grade",
+          "role": "project",
+          "value": "ordinary",
+          "pattern": "\\bобикновен\\w*"
+        },
+        {
+          "field": "width_limit",
+          "role": "project",
+          "capture": "value",
+          "pattern": "\\b(?P<value>до\\s*\\d+(?:[.,]\\d+)?\\s*см)\\b"
+        }
       ],
       "notation": []
     },
@@ -392,7 +426,7 @@
             ],
             [
               "пояс\\w*",
-              "beam"
+              "ring_beam"
             ],
             [
               "площадк\\w*",
@@ -406,6 +440,25 @@
       "id": "masonry",
       "object_patterns": [
         "\\b(?:тухл\\w*(?:\\s+(?:зид\\w*|стен\\w*))?|зидари\\w*|зид\\w*|газобетон\\w*)"
+      ],
+      "attributes": [
+        {
+          "pattern": "(?:^|\\b(?:на|от)\\s+)(?P<width>\\d+(?:[.,]\\d+)?)\\s*см\\.?\\s+тухлен\\w*\\s+(?:зид|стен)\\w*",
+          "field": "wall_thickness_cm",
+          "capture": "width",
+          "numeric": true
+        },
+        {
+          "pattern": "\\bдебелин\\w*\\s+(?P<width>\\d+(?:[.,]\\d+)?)\\s*см\\b",
+          "field": "wall_thickness_cm",
+          "capture": "width",
+          "numeric": true
+        },
+        {
+          "pattern": "\\b(?:зидари\\w*|зид\\w*|стен\\w*)\\s+(?:с\\s+дебелин\\w*\\s+)?1(?:[.,]0+)?\\s+тухл\\w*",
+          "field": "wall_thickness_cm",
+          "value": "25"
+        }
       ],
       "notation": [
         {
@@ -452,8 +505,69 @@
     },
     {
       "id": "plaster",
+      "context_attributes": ["substrate_material"],
+      "substrate_patterns": [
+        "\\b(?:от|върху|по)\\s+(?:тухлен\\w*|бетон\\w*|газобетон\\w*)\\s+(?:стен\\w*|зид\\w*)",
+        "\\b(?:по|от|върху)\\s+(?:стен\\w*|зид\\w*)\\s+от\\s+(?:тухл\\w*|бетон\\w*|газобетон\\w*)"
+      ],
       "object_patterns": [
         "\\b(?:(?:варов\\w*|вароцимент\\w*|гипсов\\w*|цимент\\w*)\\s+)?мазилк\\w*"
+      ],
+      "covers_surface_subsets": true,
+      "material_equivalences": [
+        {
+          "id": "ordinary_lime_plaster_v1",
+          "variants": [["lime"], ["lime_cement"], ["gypsum", "lime"]],
+          "canonical": ["lime"]
+        }
+      ],
+      "attributes": [
+        {
+          "field": "finish",
+          "value": "smooth",
+          "pattern": "\\bгладк\\w*"
+        },
+        {
+          "field": "finish",
+          "value": "textured",
+          "pattern": "\\b(?:декоративн\\w*|структурн\\w*|влачен\\w*|драскан\\w*|релефн\\w*|пръскан\\w*)"
+        },
+        {
+          "field": "layer",
+          "value": "base",
+          "pattern": "\\bосновн\\w*"
+        },
+        {
+          "field": "layer",
+          "value": "finish",
+          "pattern": "\\b(?:финишн\\w*|завършващ\\w*)"
+        },
+        {
+          "field": "room",
+          "value": "dry",
+          "pattern": "\\b(?:за\\s+)?сух\\w*\\s+помещен\\w*"
+        },
+        {
+          "field": "room",
+          "value": "low_humidity",
+          "pattern": "\\b(?:при\\s+)?ниск\\w*\\s+влагонатоварван\\w*"
+        },
+        {
+          "field": "room",
+          "value": "interior",
+          "pattern": "\\bвътрешн\\w*",
+          "context_locations": ["interior"]
+        },
+        {
+          "field": "boilerplate",
+          "value": "equivalent_product",
+          "pattern": "\\bили\\s+еквивалентн\\w*|\\bнапр\\b\\.?"
+        },
+        {
+          "field": "product",
+          "capture": "product",
+          "pattern": "[\"„](?P<product>(?:рьофикс|rofix|röfix|baumit|weber)\\s*[^\"“]+)[\"“]"
+        }
       ],
       "notation": [
         {
@@ -476,7 +590,136 @@
       "object_patterns": [
         "\\b(?:латекс\\w*|боя\\b|боядис\\w*)"
       ],
-      "notation": []
+      "notation": [],
+      "attributes": [
+        {
+          "field": "coats",
+          "value": "1",
+          "pattern": "\\b(?:еднократ\\w*|(?:една|1)\\s+ръка|(?:един|1)\\s+слой)\\b"
+        },
+        {
+          "field": "coats",
+          "value": "2",
+          "pattern": "\\b(?:двукрат\\w*|(?:две|2)\\s+ръце|(?:два|2)\\s+слоя)\\b"
+        },
+        {
+          "field": "coats",
+          "value": "3",
+          "pattern": "\\b(?:трикрат\\w*|(?:три|3)\\s+(?:ръце|слоя))\\b"
+        },
+        {
+          "field": "colour_count",
+          "value": "1",
+          "pattern": "\\bедноцвет\\w*"
+        },
+        {
+          "field": "colour_count",
+          "value": "2",
+          "pattern": "\\bдвуцвет\\w*"
+        },
+        {
+          "field": "colour",
+          "value": "white",
+          "pattern": "\\b(?:цвят\\s+)?бял\\w*"
+        },
+        {
+          "field": "colour",
+          "value": "black",
+          "pattern": "\\b(?:цвят\\s+)?черен\\w*"
+        },
+        {
+          "field": "colour",
+          "value": "red",
+          "pattern": "\\b(?:цвят\\s+)?червен\\w*"
+        },
+        {
+          "field": "performance",
+          "value": "moisture_resistant",
+          "pattern": "\\bвлагоустойчив\\w*"
+        },
+        {
+          "field": "performance",
+          "value": "antifungal",
+          "pattern": "\\bпротивогъбич\\w*"
+        },
+        {
+          "field": "manufacturer",
+          "value": "orgachim",
+          "pattern": "\\bоргахим\\b"
+        },
+        {
+          "field": "manufacturer",
+          "value": "dulux",
+          "pattern": "\\bdulux\\b"
+        },
+        {
+          "field": "product",
+          "value": "leko_interin",
+          "pattern": "\\bлеко\\s+интерин\\b"
+        },
+        {
+          "field": "surface",
+          "value": "wall",
+          "pattern": "\\bстен\\w*"
+        },
+        {
+          "field": "surface",
+          "value": "ceiling",
+          "pattern": "\\bтаван\\w*"
+        },
+        {
+          "field": "surface",
+          "value": "floor",
+          "pattern": "\\bпод(?:а|ове|овете)?\\b"
+        },
+        {
+          "field": "surface",
+          "value": "facade",
+          "pattern": "\\bфасад\\w*"
+        },
+        {
+          "field": "surface",
+          "value": "door",
+          "pattern": "\\bврат[аи]\\w*"
+        },
+        {
+          "field": "surface",
+          "value": "roof",
+          "pattern": "\\bпокрив\\w*"
+        },
+        {
+          "field": "room",
+          "value": "sanitary",
+          "pattern": "\\bсанитар\\w*\\s+помещен\\w*"
+        },
+        {
+          "field": "room",
+          "value": "room",
+          "pattern": "\\bпомещен\\w*"
+        },
+        {
+          "field": "boilerplate",
+          "value": "company_suffix",
+          "pattern": "\\bад\\b"
+        },
+        {
+          "field": "product",
+          "capture": "product",
+          "pattern": "\"(?P<product>[^\"]+)\"\\s+на\\s+\"(?P<manufacturer>[^\"]+)\"(?:\\s*(?:АД|ЕООД|ООД))?",
+          "aliases": {
+            "леко интерин": "leko_interin"
+          }
+        },
+        {
+          "field": "manufacturer",
+          "capture": "manufacturer",
+          "pattern": "\"(?P<product>[^\"]+)\"\\s+на\\s+\"(?P<manufacturer>[^\"]+)\"(?:\\s*(?:АД|ЕООД|ООД))?",
+          "aliases": {
+            "оргахим": "orgachim",
+            "dulux": "dulux"
+          }
+        }
+      ]
     },
     {
       "id": "concrete_floor",
@@ -531,12 +774,36 @@
       "object_patterns": [
         "\\b(?:бетон(?:ов|н)\\w*\\s+)?рамп\\w*"
       ],
-      "notation": []
+      "notation": [
+        {
+          "pattern": "(?P<slope_percent>\\d+(?:[.,]\\d+)?)\\s*%",
+          "fields": ["slope_percent"]
+        }
+      ]
     },
     {
       "id": "screed",
       "object_patterns": [
         "\\b(?:(?:цимент\\w*|бетонов\\w*)\\s+)?замазк\\w*"
+      ],
+      "project_spec_fields": ["dim_len", "cable_thick_cm", "cable_thick_mm"],
+      "attributes": [
+        {
+          "field": "layer_thickness_range",
+          "role": "project",
+          "capture": "value",
+          "pattern": "\\b(?:с\\s+)?дебелин\\w*\\s+(?:на\\s+слоя\\s+)?(?P<value>(?:от\\s+)?\\d+(?:[.,]\\d+)?(?:\\s*(?:мм|см))?\\s*(?:до|[-–])\\s*\\d+(?:[.,]\\d+)?\\s*(?:мм|см))\\b"
+        },
+        {
+          "field": "method",
+          "value": "self_levelling",
+          "pattern": "\\b(?:само[-\\s]?разливн\\w*|самонивелиращ\\w*)"
+        },
+        {
+          "field": "product",
+          "capture": "product",
+          "pattern": "[\"„](?P<product>(?:ceresit|церезит|baumit|weber)\\s*[^\"“]+)[\"“]"
+        }
       ],
       "notation": [
         {
@@ -708,7 +975,20 @@
       "object_patterns": [
         "\\bгранит\\s*[- ]?\\s*стълб\\w*"
       ],
-      "notation": []
+      "notation": [],
+      "attributes": [
+        {
+          "pattern": "\\(\\s*(?P<room>топл\\w*\\s+връзк\\w*|експозицион\\w*\\s+зал\\w*)\\s*\\)",
+          "field": "room",
+          "capture": "room"
+        },
+        {
+          "pattern": "\\b(?P<room>към\\s+сутерен\\w*)\\b",
+          "field": "room",
+          "capture": "room",
+          "context_locations": ["basement"]
+        }
+      ]
     },
     {
       "id": "reinforcement",
@@ -1081,7 +1361,8 @@
     {
       "id": "skylight",
       "object_patterns": [
-        "\\b(?:оберлихт\\w*|капандур\\w*)"
+        "\\b(?:оберлихт\\w*|капандур\\w*)",
+        "\\bкапандур\\w*"
       ],
       "notation": []
     },
@@ -1138,6 +1419,33 @@
       "id": "tiling",
       "object_patterns": [
         "\\b(?:теракот\\w*|фаянс\\w*|гранитогрес\\w*|плочк\\w*)"
+      ],
+      "project_spec_fields": ["height"],
+      "covers_surface_subsets": true,
+      "attributes": [
+        {
+          "field": "wall_height_m",
+          "role": "project",
+          "capture": "value",
+          "numeric": true,
+          "spec_field": "dim_len",
+          "pattern": "\\bh\\s*[=:]\\s*(?P<value>\\d+(?:[.,]\\d+)?)\\s*[мm]\\b"
+        },
+        {
+          "field": "room",
+          "value": "sanitary",
+          "pattern": "\\bсанитар\\w*\\s+помещен\\w*"
+        },
+        {
+          "field": "surface",
+          "value": "wall",
+          "pattern": "\\bоблицовк\\w*\\s+и\\s+настилк\\w*"
+        },
+        {
+          "field": "surface",
+          "value": "floor",
+          "pattern": "\\bоблицовк\\w*\\s+и\\s+настилк\\w*"
+        }
       ],
       "notation": []
     },
@@ -1208,6 +1516,18 @@
             "OPR2-000328",
             "OPR3-000328"
           ]
+        },
+        {
+          "pattern": "\\bдо\\s*(?P<section_max_mm2>\\d+(?:[.,]\\d+)?)\\s*(?:mm|мм)(?:²|2)(?!\\w)",
+          "fields": ["section_max_mm2"]
+        }
+      ],
+      "attributes": [
+        {
+          "pattern": "\\bкъм\\s+(?:ел\\.?\\s*)?(?:табло\\w*|съоръжен\\w*)",
+          "operations": ["connect"],
+          "field": "connection_target",
+          "value": "electrical_equipment"
         }
       ]
     },
@@ -1363,6 +1683,48 @@
         "\\bсмесител\\w*(?:\\s+батери\\w*)?"
       ],
       "notation": []
+    },
+    {
+      "id": "glass_pane",
+      "object_patterns": [
+        "\\bстъкл[ао]\\b"
+      ],
+      "notation": []
+    },
+    {
+      "id": "door_lock",
+      "object_patterns": [
+        "\\bбрав\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "hinge",
+      "object_patterns": [
+        "\\bпант[аи]\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "window_latch",
+      "object_patterns": [
+        "\\bмартинк\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "window_handle",
+      "object_patterns": [
+        "\\bоливк\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "stone_cladding",
+      "object_patterns": [
+        "\\b(?:каменн\\w*\\s+облицов\\w*|облицовъчн\\w*\\s+плоч\\w*)"
+      ],
+      "notation": []
     }
   ],
   "operations": [
@@ -1429,6 +1791,10 @@
     {
       "id": "compact",
       "pattern": "\\b(?:трамбован\\w*|уплътняван\\w*|трамбовк\\w*|уплътнен\\w*)\\b"
+    },
+    {
+      "id": "replace",
+      "pattern": "\\b(?:подмяна|подменяне|подменя\\w*|смяна|сменяне|сменя\\w*)\\b"
     }
   ],
   "materials": [
@@ -1518,7 +1884,7 @@
     },
     {
       "id": "granite",
-      "pattern": "\\bгранит\\b(?!огрес)"
+      "pattern": "(?:\\bгранит\\b(?!огрес))|(?:\\bгранит\\b)"
     },
     {
       "id": "gravel",
@@ -1539,9 +1905,30 @@
     {
       "id": "ceramic_granite",
       "pattern": "\\bкерамогранит\\w*"
+    },
+    {
+      "id": "oil_paint",
+      "pattern": "\\bблажн\\w*\\s+бо[яи]\\w*"
+    },
+    {
+      "id": "marble",
+      "pattern": "\\bмрамор\\w*"
+    },
+    {
+      "id": "sandstone",
+      "pattern": "\\bпясъчник\\w*"
+    },
+    {
+      "id": "gas_concrete",
+      "pattern": "\\bгазобетон\\w*"
     }
   ],
   "context_operations": [
+    {
+      "id": "install",
+      "objects": ["window_reveal"],
+      "pattern": "\\bобръщан\\w*"
+    },
     {
       "id": "demolish",
       "objects": [
@@ -1551,5 +1938,273 @@
       ],
       "pattern": "\\bотстраняване\\b"
     }
+  ],
+  "profiles": [
+    {
+      "id": "ordinary_window_reveal_v1",
+      "object": "window_reveal",
+      "operations": ["install"],
+      "materials": [],
+      "defaults": {"scope": "supply_install", "locations": ["wall"]}
+    },
+    {
+      "id": "gypsum_board_window_reveal_v1",
+      "object": "window_reveal",
+      "operations": ["install"],
+      "materials": ["gypsum"],
+      "defaults": {"scope": "supply_install", "locations": ["wall"]}
+    },
+    {
+      "id": "standard_lime_plaster_v1",
+      "object": "plaster",
+      "operations": ["install"],
+      "materials": ["lime"],
+      "excluded_attributes": {"finish": ["textured"], "layer": ["finish"]},
+      "defaults": {
+        "scope": "supply_install",
+        "locations": [],
+        "attributes": {"finish": ["smooth"], "layer": ["base"]}
+      }
+    },
+    {
+      "id": "standard_self_levelling_screed_v1",
+      "object": "screed",
+      "operations": ["install"],
+      "materials": [],
+      "attributes": {"method": ["self_levelling"]},
+      "defaults": {"scope": "supply_install", "locations": ["floor"]}
+    },
+    {
+      "id": "standard_interior_latex_v1",
+      "object": "paint",
+      "operations": [
+        "install"
+      ],
+      "allowed_extra_operations": [
+        "prime"
+      ],
+      "materials": [
+        "latex"
+      ],
+      "defaults": {
+        "scope": "supply_install",
+        "locations": [
+          "wall",
+          "ceiling"
+        ],
+        "specs": {
+          "coats": [
+            "2"
+          ],
+          "colour_count": [
+            "1"
+          ]
+        }
+      }
+    }
+  ],
+  "concept_ids": {
+    "object": {
+      "primer": 1001,
+      "roof_ridge_cap": 1002,
+      "fascia_board": 1003,
+      "drip_edge": 1004,
+      "lift_platform": 1005,
+      "steel_beam": 1006,
+      "steel_column": 1007,
+      "steel_purlin": 1008,
+      "earthing": 1009,
+      "niche": 1010,
+      "wall_opening": 1011,
+      "router": 1012,
+      "network_switch": 1013,
+      "server": 1014,
+      "storage_drive": 1015,
+      "ups": 1016,
+      "fire_detector": 1017,
+      "sounder": 1018,
+      "lightning_terminal": 1019,
+      "terminal_clamp": 1020,
+      "inverter": 1021,
+      "compensator": 1022,
+      "anchor_block": 1023,
+      "vrf_indoor_unit": 1024,
+      "pressure_test": 1025,
+      "evacuation": 1026,
+      "commissioning": 1027,
+      "drain_grate": 1028,
+      "drain_channel": 1029,
+      "downpipe": 1030,
+      "bracket": 1031,
+      "mounting_plate": 1032,
+      "cable_tray": 1033,
+      "roof_vent_cap": 1034,
+      "window_sill": 1035,
+      "window_reveal": 1036,
+      "formwork": 1037,
+      "masonry": 1038,
+      "plaster": 1039,
+      "putty": 1040,
+      "paint": 1041,
+      "concrete_floor": 1042,
+      "ramp": 1043,
+      "screed": 1044,
+      "concrete_slab": 1045,
+      "concrete": 1046,
+      "granite_stairs": 1047,
+      "reinforcement": 1048,
+      "fan": 1049,
+      "duct": 1050,
+      "strainer": 1051,
+      "filter": 1052,
+      "diffuser": 1053,
+      "treatment_plant": 1054,
+      "pump": 1055,
+      "plant": 1056,
+      "fastener": 1057,
+      "control": 1058,
+      "sensor": 1059,
+      "valve": 1060,
+      "pipe": 1061,
+      "elbow": 1062,
+      "tee": 1063,
+      "coupling": 1064,
+      "reducer": 1065,
+      "collector": 1066,
+      "water_meter": 1067,
+      "toilet": 1068,
+      "basin": 1069,
+      "siphon": 1070,
+      "radiator": 1071,
+      "convector": 1072,
+      "boiler": 1073,
+      "chiller": 1074,
+      "air_conditioner": 1075,
+      "heat_pump": 1076,
+      "door": 1077,
+      "window": 1078,
+      "drywall": 1079,
+      "skylight": 1080,
+      "ceiling": 1081,
+      "board": 1082,
+      "cladding": 1083,
+      "vapour_barrier": 1084,
+      "profile": 1085,
+      "mesh": 1086,
+      "curb": 1087,
+      "tiling": 1088,
+      "insulation": 1089,
+      "waterproofing": 1090,
+      "geotextile": 1091,
+      "geogrid": 1092,
+      "cable": 1093,
+      "panel": 1094,
+      "switchgear": 1095,
+      "luminaire": 1096,
+      "socket": 1097,
+      "switch": 1098,
+      "camera": 1099,
+      "earthwork": 1100,
+      "roof_tile": 1101,
+      "gutter": 1102,
+      "railing": 1103,
+      "scaffold": 1104,
+      "glass_pane": 1106,
+      "door_lock": 1107,
+      "hinge": 1108,
+      "window_latch": 1109,
+      "window_handle": 1110,
+      "stone_cladding": 1111,
+      "manhole": 1112,
+      "air_valve": 1113,
+      "mixer_tap": 1114
+    },
+    "operation": {
+      "demolish": 101,
+      "install": 102,
+      "repair": 103,
+      "haul": 104,
+      "test": 105,
+      "clean": 106,
+      "prime": 107,
+      "excavate": 108,
+      "backfill": 109,
+      "replace": 110,
+      "reinstall": 111,
+      "polish": 112,
+      "connect": 113,
+      "drain": 114,
+      "fill": 115,
+      "insulate": 116,
+      "pull": 117,
+      "compact": 118
+    },
+    "material": {
+      "brick": 201,
+      "lime_cement": 202,
+      "lime": 203,
+      "gypsum": 204,
+      "cement": 205,
+      "pvc": 206,
+      "pe": 207,
+      "ppr": 208,
+      "copper": 209,
+      "steel": 210,
+      "aluminium": 211,
+      "wood": 212,
+      "concrete": 213,
+      "bitumen": 214,
+      "silicone": 215,
+      "latex": 216,
+      "oil_paint": 217,
+      "granite": 218,
+      "marble": 219,
+      "sandstone": 220,
+      "gas_concrete": 221,
+      "mineral_wool": 222,
+      "eps": 223,
+      "xps": 224,
+      "ceramic": 225,
+      "glass": 226,
+      "gravel": 227,
+      "sand": 228,
+      "brass": 229,
+      "aerated_concrete": 230,
+      "ceramic_granite": 231
+    },
+    "scope": {
+      "supply_install": 301,
+      "labour": 302,
+      "material": 303
+    }
+  },
+  "operator_pricing_rules": [
+    {
+      "id": "ordinary_reveal_operator_pin_v1",
+      "object": "window_reveal",
+      "operations": ["install"],
+      "scope": "supply_install",
+      "materials": [],
+      "locations": ["wall"],
+      "attributes": {
+        "opening": ["door", "window"],
+        "room": ["interior"]
+      },
+      "code": "OPR3-000159",
+      "operator_interpretation": "„обръщане“ = „преместване или обръщане на касата“",
+      "approved_by": "xellunexx",
+      "approval_session": "https://app.devin.ai/sessions/6a4813c1239141688264039789034f81"
+    }
+  ],
+  "semantic_equivalence_families": [
+    "window_reveal",
+    "plaster",
+    "tiling",
+    "screed",
+    "paint",
+    "masonry",
+    "downpipe",
+    "gutter",
+    "cable"
   ]
 }

@@ -16,6 +16,7 @@ from __future__ import annotations
 import uuid
 from decimal import Decimal
 
+import pytest
 from httpx import AsyncClient
 
 BASE = "/api/v1/cost-match"
@@ -162,6 +163,29 @@ class TestBoqRun:
 
 
 class TestDecisionWriteBack:
+    @pytest.mark.parametrize('action,unit', [('confirmed', 'm2'), ('overridden', 'm3')])
+    async def test_incompatible_decision_preserves_prices_and_pending_history(
+        self, client: AsyncClient, header, project_id, cost_base, action, unit
+    ) -> None:
+        boq = await _boq_with_positions(client, header, project_id,
+                                        [{'description': WALL, 'unit': unit, 'quantity': 10}])
+        summary = await _run_boq_match(client, header, boq['id'])
+        items = (await client.get(f"{BASE}/runs/{summary['run_ids'][0]}/results", headers=header)).json()['items']
+        result_id = items[0]['id']
+        before = _by_description(await _positions(client, header, boq['id']), 'concrete wall')
+        payload = {'decision': action}
+        if action == 'overridden':
+            payload['cost_item_id'] = str(cost_base['CM-FORMWORK'])
+        response = await client.post(f'{BASE}/results/{result_id}/decision', json=payload, headers=header)
+        assert response.status_code == 422, response.text
+        assert 'manual price' in response.json()['detail']
+        after = _by_description(await _positions(client, header, boq['id']), 'concrete wall')
+        assert (after['unit_rate'], after['total'], after['price_basis']) == (
+            before['unit_rate'], before['total'], before['price_basis'])
+        detail = (await client.get(f'{BASE}/results/{result_id}', headers=header)).json()
+        assert detail['decision_state'] == 'pending'
+        assert detail['decisions'] == []
+
     async def test_confirm_keeps_the_price_and_marks_it_ruled(
         self, client: AsyncClient, header, project_id, cost_base
     ) -> None:
@@ -196,7 +220,7 @@ class TestDecisionWriteBack:
             client,
             header,
             project_id,
-            [{"description": "Stahlbetonwand", "unit": "m3", "quantity": 12}],
+            [{"description": "Stahlbetonwand", "unit": "m2", "quantity": 12}],
         )
         summary = await _run_boq_match(client, header, boq["id"])
         results = await client.get(
@@ -211,7 +235,7 @@ class TestDecisionWriteBack:
         assert decision.status_code == 201, decision.text
 
         position = _by_description(await _positions(client, header, boq["id"]), "Stahlbetonwand")
-        # Formwork is priced per m2 on the item; the override takes the item's rate.
+        # Formwork and the BOQ line are both priced per m2.
         assert Decimal(position["unit_rate"]) == Decimal("42.5")
         assert position["price_basis"] == "corpus_override"
         cm = position["metadata"]["cost_match"]
@@ -307,6 +331,18 @@ class TestCurrencyMismatch:
         assert cm["currency_mismatch"] is True
         assert cm["suggested_rate"] == "185.0000"
         assert cm["currency"] == "EUR"
+
+        items = (await client.get(f"{BASE}/runs/{summary['run_ids'][0]}/results", headers=header)).json()['items']
+        result_id = items[0]['id']
+        decision = await client.post(f'{BASE}/results/{result_id}/decision',
+                                     json={'decision': 'confirmed'}, headers=header)
+        assert decision.status_code == 422, decision.text
+        assert 'manual price in project currency' in decision.json()['detail']
+        position = _by_description(await _positions(client, header, boq['id']), 'concrete wall')
+        assert Decimal(position['unit_rate']) == 0
+        detail = (await client.get(f'{BASE}/results/{result_id}', headers=header)).json()
+        assert detail['decision_state'] == 'pending'
+        assert detail['decisions'] == []
 
 
 async def _seed_item(
@@ -411,6 +447,26 @@ class TestBulkConfirm:
     into the corpus from it. Only a rate standing on an operator-declared
     ``price_basis`` (invoice, quotation, ...) may become corpus evidence.
     """
+
+    async def test_duplicate_selected_scope_and_remaining_counts(
+        self, client: AsyncClient, header, project_id, cost_base
+    ) -> None:
+        boq = await _boq_with_positions(client, header, project_id,
+                                        [{'description': WALL, 'unit': 'm3', 'quantity': 10} for _ in range(3)])
+        await _run_boq_match(client, header, boq['id'])
+        positions = await _positions(client, header, boq['id'])
+        selected = positions[0]['id']
+        response = await client.post(f"{BASE}/boq/{boq['id']}/confirm",
+                                     json={'position_ids': [selected]}, headers=header)
+        assert response.status_code == 200, response.text
+        assert response.json()['confirmed'] == 1
+        positions = await _positions(client, header, boq['id'])
+        assert sum(p['price_basis'] == 'corpus_confirmed' for p in positions) == 1
+        response = await client.post(f"{BASE}/boq/{boq['id']}/confirm", json={}, headers=header)
+        assert response.status_code == 200, response.text
+        assert (response.json()['confirmed'], response.json()['skipped'], response.json()['learned']) == (2, 0, 0)
+        positions = await _positions(client, header, boq['id'])
+        assert sum(p['price_basis'] == 'corpus_confirmed' for p in positions) == 3
 
     async def test_confirm_all_rules_pending_lines_and_learns_to_corpus(
         self, client: AsyncClient, header, project_id, cost_base

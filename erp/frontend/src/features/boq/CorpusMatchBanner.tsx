@@ -16,7 +16,7 @@
  * A ruling recorded later in Cost Match re-syncs the position, which is why
  * the summary toast points the reviewer at the queue.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { CheckCheck, Coins, Loader2 } from 'lucide-react';
@@ -28,11 +28,13 @@ import {
   confirmBoqPositions,
   fetchCorpusItemCount,
   getActiveBoqMatchJob,
-  listRuns,
+  listAllRuns,
   pollBoqMatchJob,
   startBoqMatchJob,
   type BoqMatchRunResponse,
 } from '@/features/cost-match/api';
+import { runBoqId } from '@/features/cost-match/costMatchStatus';
+import { refreshMatchPrices } from '@/features/cost-match/cache';
 
 /** Ordered base cascade offered in the match dialog - mirrors
  * ``cost_match.bases.BASE_CHOICES`` on the backend. Checked bases run in
@@ -69,7 +71,7 @@ export function CorpusMatchBanner({
   onSelectionConsumed,
 }: CorpusMatchBannerProps) {
   const { t } = useTranslation();
-    const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
   const addToast = useToastStore((s) => s.addToast);
   const [confirming, setConfirming] = useState(false);
   const [confirmingAll, setConfirmingAll] = useState(false);
@@ -78,6 +80,7 @@ export function CorpusMatchBanner({
   // The job this page is polling - set by a fresh start OR recovered from the
   // server on mount, so a reload mid-match re-attaches instead of looking dead.
   const [pollJobId, setPollJobId] = useState<string | null>(null);
+  const handledJobs = useRef(new Set<string>());
   const [progress, setProgress] = useState<{ done: number | null; total: number | null }>({
     done: null,
     total: null,
@@ -103,7 +106,7 @@ export function CorpusMatchBanner({
   });
   useEffect(() => {
     const job = activeJobQuery.data;
-    if (job && job.status === 'running' && pollJobId === null) {
+    if (job && job.status === 'running' && pollJobId === null && !handledJobs.current.has(job.job_id)) {
       setPollJobId(job.job_id);
       setProgress({ done: job.lines_done ?? null, total: job.lines_total ?? null });
     }
@@ -114,33 +117,28 @@ export function CorpusMatchBanner({
   // the database either way, and the queue is how its rulings are reached.
   // Runs raised from a BOQ carry {"boq_id": ...} in notes - match on that.
   const existingRunsQuery = useQuery({
-    queryKey: ['cost-match-runs', projectId],
-    queryFn: () => listRuns({ projectId: projectId as string, limit: 50 }),
+    queryKey: ['cost-match', 'runs', projectId],
+    queryFn: () => listAllRuns(projectId as string),
     enabled: Boolean(projectId),
     staleTime: 30_000,
     refetchOnWindowFocus: false,
   });
-  const hasRunForThisBoq = (existingRunsQuery.data ?? []).some((run) => {
-    try {
-      const notes = JSON.parse(run.notes ?? '');
-      return notes?.boq_id === boqId;
-    } catch {
-      return false;
-    }
-  });
+  const boqRuns = (existingRunsQuery.data ?? []).filter((run) => runBoqId(run) === boqId);
+  const hasRunForThisBoq = boqRuns.length > 0;
+  const reviewParams = new URLSearchParams({ boq_id: boqId });
+  if (projectId) reviewParams.set('project_id', projectId);
+  const reviewRunId = doneResult?.run_ids[0] ?? boqRuns[0]?.id;
+  if (reviewRunId) reviewParams.set('run_id', reviewRunId);
 
   const finishWithResult = (res: BoqMatchRunResponse) => {
     setDoneResult(res);
-    queryClient.invalidateQueries({ queryKey: ['boq', boqId] });
-    queryClient.invalidateQueries({ queryKey: ['boq-cost-breakdown', boqId] });
-    queryClient.invalidateQueries({ queryKey: ['boq-resource-summary', boqId] });
-    queryClient.invalidateQueries({ queryKey: ['cost-match'] });
+    refreshMatchPrices(queryClient, boqId);
     addToast({
       type: 'success',
       title: t('boq.corpus_match_done_title', { defaultValue: 'Bill priced from the corpus' }),
-      message: t('boq.corpus_match_done', {
+      message: t('boq.corpus_match_done_evidence', {
         defaultValue:
-          '{{priced}} of {{lines}} positions priced ({{exact}} exact, {{high}} confident, {{review}} to review). {{unpriced}} lines have no corpus evidence and stay unpriced. The review queue holds every ruling.',
+          '{{priced}} of {{lines}} positions priced ({{exact}} exact, {{high}} confident, {{review}} to review). {{unpriced}} lines need review or have no eligible price. Suggestions remain visible without entering totals.',
         priced: res.positions_priced,
         lines: res.lines,
         exact: res.counts.exact,
@@ -176,11 +174,13 @@ export function CorpusMatchBanner({
     })
       .then((res) => {
         if (cancelled) return;
+        handledJobs.current.add(pollJobId);
         setPollJobId(null);
         finishWithResult(res);
       })
       .catch((err) => {
         if (cancelled) return;
+        handledJobs.current.add(pollJobId);
         setPollJobId(null);
         failWithError(err);
       });
@@ -195,7 +195,7 @@ export function CorpusMatchBanner({
     try {
       const job = await startBoqMatchJob(
         boqId,
-        selectedBases.length ? { bases: selectedBases } : {},
+        selectedBases.length ? { bases: COST_BASE_CHOICES.filter((base) => selectedBases.includes(base.key)).map((base) => base.key) } : {},
       );
       setDoneResult(null);
       setProgress({ done: job.lines_done ?? null, total: job.lines_total ?? null });
@@ -219,9 +219,7 @@ export function CorpusMatchBanner({
     setConfirmBusy(true);
     try {
       const res = await confirmBoqPositions(boqId, positionIds);
-      queryClient.invalidateQueries({ queryKey: ['boq', boqId] });
-      queryClient.invalidateQueries({ queryKey: ['boq-cost-breakdown', boqId] });
-      queryClient.invalidateQueries({ queryKey: ['cost-match'] });
+      refreshMatchPrices(queryClient, boqId);
       addToast({
         type: 'success',
         title: t('boq.corpus_confirm_done', {
@@ -237,8 +235,8 @@ export function CorpusMatchBanner({
         }),
         message:
           res.skipped > 0
-            ? t('boq.corpus_confirm_skipped', {
-                defaultValue: '{{skipped}} rows had nothing pending to confirm',
+            ? t('boq.corpus_confirm_not_applied', {
+                defaultValue: '{{skipped}} rows were not confirmed. They may already be ruled or need a compatible or manual price; check the review queue.',
                 skipped: res.skipped,
               })
             : undefined,
@@ -326,11 +324,14 @@ export function CorpusMatchBanner({
       >
         {t('boq.corpus_match_button', { defaultValue: 'Match against corpus' })}
       </Button>
+      {activeJobQuery.isError && <span role="alert">{t('boq.corpus_job_recovery_failed', {
+        defaultValue: 'Could not check the running match. Retry or reload to reconnect.',
+      })}</span>}
       {(doneResult || hasRunForThisBoq) && (
         <Button
           size="sm"
           variant="ghost"
-          to={'/cost-match'}
+          to={`/cost-match?${reviewParams}`}
           data-testid="corpus-match-review"
         >
           {t('boq.corpus_match_review', { defaultValue: 'Open review queue' })}
@@ -340,9 +341,9 @@ export function CorpusMatchBanner({
         open={confirming}
         variant="warning"
         title={t('boq.corpus_match_title', { defaultValue: 'Price this bill from the corpus?' })}
-        message={t('boq.corpus_match_confirm', {
+        message={t('boq.corpus_match_confirm_evidence', {
           defaultValue:
-            'Every priceable position is matched against the local cost corpus. Suggestions are written onto the positions immediately with their evidence tier, lines without evidence stay unpriced, and every line lands in the review queue for a person. This can take a few minutes on a large bill.',
+            'Every priceable position is matched against the local cost corpus. Eligible exact and confident prices enter the estimate; review-only suggestions stay visible without entering totals until you rule. All results are available on the review screen. This can take a few minutes on a large bill.',
         })}
         confirmLabel={t('boq.corpus_match_go', { defaultValue: 'Match & price' })}
         onConfirm={startMatch}
@@ -387,9 +388,9 @@ export function CorpusMatchBanner({
         open={confirmingAll}
         variant="warning"
         title={t('boq.corpus_confirm_all_title', { defaultValue: 'Confirm all suggestions?' })}
-        message={t('boq.corpus_confirm_all_msg', {
+        message={t('boq.corpus_confirm_all_compatible_msg', {
           defaultValue:
-            'Every position still holding an unruled corpus price gets a confirmed ruling by you and is added to the corpus as company evidence. Rows already confirmed, overridden or rejected are not touched.',
+            'Confirm pending suggestions with a compatible positive price in the BOQ unit and project currency. Incompatible suggestions remain pending for review or a manual price. Already ruled rows are not touched. Only unchanged operator-declared prices can be learned as company evidence; matcher-generated prices are not added to the corpus.',
           n: unconfirmedCount,
         })}
         confirmLabel={t('boq.corpus_confirm_all_go', { defaultValue: 'Confirm all' })}

@@ -9,7 +9,7 @@
 
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Layers } from 'lucide-react';
 
 import { CollapsibleSection } from '@/shared/ui/CollapsibleSection';
@@ -26,6 +26,7 @@ function ModLink({ to, children }: { to: string; children: ReactNode }) {
 
 export function CostMatchPage() {
   const { t } = useTranslation();
+  const [params] = useSearchParams();
 
   return (
     <div className="space-y-4 p-4">
@@ -87,7 +88,14 @@ export function CostMatchPage() {
         </div>
       </CollapsibleSection>
 
-      <CostMatchPanel />
+      <CostMatchPanel
+        key={params.toString()}
+        projectId={params.get('project_id') ?? undefined}
+        boqId={params.get('boq_id') ?? undefined}
+        initialRunId={params.get('run_id') ?? undefined}
+        initialResultId={params.get('result_id') ?? undefined}
+        initialTab={params.has('boq_id') ? 'all' : 'queue'}
+      />
     </div>
   );
 }

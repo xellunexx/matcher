@@ -37,11 +37,15 @@ from __future__ import annotations
 import json
 import logging
 import uuid
+from collections.abc import Callable
 from decimal import Decimal, InvalidOperation
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+if TYPE_CHECKING:
+    from app.modules.boq.models import Position
 
 from app.core.events import event_bus
 from app.modules.cost_match import events
@@ -62,6 +66,7 @@ from app.modules.cost_match.matcher import (
     scopes_conflict,
     suggestion_rate,
     unit_rate_factor,
+    work_rate_factor,
 )
 from app.modules.cost_match.models import (
     DECISION_CONFIRMED,
@@ -103,6 +108,7 @@ from app.modules.cost_match.schemas import (
     MatchRunUpdate,
     WebEstimateResponse,
 )
+from app.modules.cost_match.semantic_feedback import decode_link, encode_link, semantic_links
 from app.modules.cost_match.validators import (
     evaluate_result,
     evaluate_run,
@@ -265,6 +271,40 @@ class BoqLockedError(RuntimeError):
 # ── small helpers ───────────────────────────────────────────────────────────
 
 
+def _decision_price(
+    rate: Decimal | None,
+    unit: str,
+    currency: str,
+    *,
+    target_unit: str,
+    project_currency: str,
+    query_text: str = "",
+    candidate_text: str = "",
+) -> Decimal:
+    if rate is None or not rate.is_finite() or rate <= 0:
+        raise DecisionPayloadError("the adopted price must be finite and positive; enter a manual price")
+    factor = work_rate_factor(unit, target_unit, query_text=query_text, candidate_text=candidate_text)
+    if factor is None:
+        raise DecisionPayloadError(
+            f"cannot convert quotation unit '{unit}' to BOQ unit '{target_unit}'; "
+            "choose a compatible item or enter a manual price per BOQ unit"
+        )
+    applied_rate: Decimal = rate * factor
+    source_currency = (currency or "").strip().upper()
+    target_currency = (project_currency or "").strip().upper()
+    if not target_currency:
+        raise DecisionPayloadError("set the project currency before adopting a price")
+    if source_currency != target_currency:
+        if {source_currency, target_currency} <= _FIXED_CURRENCY_RATES:
+            applied_rate *= Decimal(1) / BGN_PER_EUR if target_currency == "EUR" else BGN_PER_EUR
+        else:
+            raise DecisionPayloadError(
+                f"cannot convert quotation currency '{source_currency}' to project currency "
+                f"'{target_currency}'; enter a manual price in project currency"
+            )
+    return applied_rate
+
+
 def _quantise_confidence(value: float | Decimal) -> Decimal:
     """Bring a confidence onto the stored four-decimal Decimal scale.
 
@@ -367,7 +407,15 @@ def _to_candidate(item: CostItem, locale: str) -> Candidate:
     """
     meta = item.metadata_ or {}
     desc = _localized_description(item, locale)
-    from app.modules.cost_match.work_catalog import work_metadata
+    quotation = meta.get('original_quotation')
+    if not isinstance(quotation, dict):
+        quotation = {}
+    money = meta.get('money')
+    if not isinstance(money, dict):
+        money = quotation.get('money')
+    if not isinstance(money, dict):
+        money = {}
+    from app.modules.cost_match.work_catalog import evidence_origin, work_metadata
     from app.modules.cost_match.work_context import effective_work
 
     context = meta.get('work_context')
@@ -393,6 +441,10 @@ def _to_candidate(item: CostItem, locale: str) -> Candidate:
             "currency": currency,
             "quotation_rate": None if item.rate is None else str(item.rate),
             "quotation_currency": item.currency or "",
+            "vat_included": (meta.get('vat_included') if meta.get('vat_included') is not None
+                             else money.get('vatIncluded')),
+            "auto_pricing_eligible": (meta.get('tenderops_status') != 'pending_review'
+                                      and str(meta.get('origin_kind') or item.source or '') not in _REFERENCE_ORIGINS),
             "code": item.code,
             "source": item.source,
             "scope": str(meta.get("scope") or ""),
@@ -403,8 +455,8 @@ def _to_candidate(item: CostItem, locale: str) -> Candidate:
             "evidence_description": evidence,
             "work_context": parents,
             "bill_terms": meta.get("bill_terms"),
-            "price_as_of": (item.price_as_of.isoformat()
-                            if getattr(item, "price_as_of", None) else ""),
+            "evidence_origin": evidence_origin(meta),
+            "price_as_of": as_of.isoformat() if (as_of := getattr(item, "price_as_of", None)) else "",
             "created_at": (item.created_at.isoformat()
                            if getattr(item, "created_at", None) else ""),
         },
@@ -487,7 +539,7 @@ class CostMatchService:
         data: MatchRunCreate,
         *,
         created_by: uuid.UUID | None = None,
-        on_line_done=None,
+        on_line_done: Callable[[int, dict[str, Any]], None] | None = None,
     ) -> MatchRun:
         """Score a submitted batch and persist the run with all its results.
 
@@ -522,13 +574,14 @@ class CostMatchService:
         )
         await self.run_repo.create(run)
 
-        scored_cache: dict[tuple[str, str, str], dict[str, Any]] = {}
+        scored_cache: dict[tuple[str, str, str, str], dict[str, Any]] = {}
         rows: list[MatchResult] = []
         for index, line in enumerate(data.lines, start=1):
             key = (
                 normalize_text(line.description),
                 normalize_unit(line.unit) or normalize_text(line.unit),
                 (line.source_ref or "").strip().lower(),
+                normalize_text(line.raw_description if line.raw_description is not None else line.description),
             )
             if key not in scored_cache:
                 scored_cache[key] = await self._score_line(
@@ -536,6 +589,7 @@ class CostMatchService:
                     unit=line.unit,
                     source_ref=line.source_ref,
                     run=run,
+                    raw_query=line.raw_description,
                 )
             if on_line_done is not None:
                 on_line_done(index, scored_cache[key])
@@ -545,7 +599,7 @@ class CostMatchService:
                     project_id=run.project_id,
                     line_no=index,
                     source_ref=line.source_ref,
-                    source_description=line.description,
+                    source_description=line.raw_description if line.raw_description is not None else line.description,
                     source_unit=line.unit,
                     source_quantity=line.quantity,
                     **scored_cache[key],
@@ -577,6 +631,7 @@ class CostMatchService:
         unit: str,
         source_ref: str,
         run: MatchRun,
+        raw_query: str | None = None,
     ) -> dict[str, Any]:
         """Retrieve, score and shape one distinct line into result columns.
 
@@ -613,6 +668,7 @@ class CostMatchService:
             catalog_id=run.catalog_id,
             unit=unit,
             limit=run.candidate_limit,
+            raw_query=raw_query,
         )
         # Semantic recall: the lexical predicate alone misses paraphrased or
         # differently-worded bill lines ("Разрушаване ... с багер-чук"). The
@@ -620,6 +676,9 @@ class CostMatchService:
         # deterministic in best_match below, which is the same contract the
         # code lookup above follows.
         items = await self._vector_candidates(description, items, run=run)
+        remembered = await self._remembered_candidates(description, run)
+        seen_items = {item.id for item in items}
+        items.extend(item for item in remembered if item.id not in seen_items)
         if source_ref:
             coded = await self.base_repo.find_by_code(
                 source_ref,
@@ -631,7 +690,7 @@ class CostMatchService:
                 from app.modules.cost_match.retrieval_bg import retrieval_plan
 
                 evidence = _to_candidate(coded, 'bg' if is_bulgarian(description) else run.source_locale)
-                if not is_bulgarian(description) or retrieval_plan(description).matches(evidence.text):
+                if not is_bulgarian(description) or retrieval_plan(description, raw_query).matches(evidence.text):
                     items = [coded, *items]
 
         items = _dedupe_pool(items, run.source_locale)
@@ -640,7 +699,7 @@ class CostMatchService:
         # before lifts the candidate that offers it; one they refused sinks
         # it. The prior travels through the candidate payload so the matcher
         # itself stays free of I/O.
-        priors = await self._pattern_priors(description, candidates)
+        priors = await self._pattern_priors(description, candidates, run)
         for cand in candidates:
             prior = priors.get(cand.ref, 1.0)
             if prior != 1.0 and isinstance(cand.payload, dict):
@@ -651,6 +710,7 @@ class CostMatchService:
             query_unit=unit,
             locale=run.source_locale,
             top_n=ALTERNATIVES_KEPT,
+            raw_query=raw_query,
         )
 
         scored_all = outcome.scored_all or outcome.alternatives
@@ -663,10 +723,11 @@ class CostMatchService:
             (cand, score) for cand, score in scored_all
             if score.confidence > 0 or score.factors.get("pattern_prior")
         ][:ALTERNATIVES_KEPT]
-        alternatives = [
-            _candidate_snapshot(cand, score, in_pool=cand.ref in outcome.pool_refs)
-            for cand, score in plausible
-        ]
+        alternatives = []
+        for cand, score in plausible:
+            snapshot = _candidate_snapshot(cand, score, in_pool=cand.ref in outcome.pool_refs)
+            snapshot['semantic_links'] = semantic_links(description, cand.text)
+            alternatives.append(snapshot)
         if outcome.candidate is None or outcome.score is None:
             return {
                 "tier": TIER_UNMATCHED,
@@ -686,7 +747,26 @@ class CostMatchService:
 
         confidence = _quantise_confidence(outcome.score.confidence)
         payload = outcome.candidate.payload or {}
-        factors = {name: float(value) for name, value in outcome.score.factors.items()}
+        factors: dict[str, Any] = {name: float(value) for name, value in outcome.score.factors.items()}
+        from app.modules.cost_match.work_catalog import work_metadata
+
+        factors['query_work'] = work_metadata(description)
+        factors['raw_kcc_description'] = description if raw_query is None else raw_query
+        factors['effective_work_description'] = description
+        if 'no_equivalent_price_evidence' in outcome.score.reasons:
+            factors['price_evidence_status'] = 'no_evidence'
+        if outcome.pool_size:
+            factors['equivalent_price_pool'] = {
+                'method': 'median' if outcome.median_rate is not None else 'single_or_divergent',
+                'unit': unit, 'currency': 'EUR' if outcome.median_rate is not None else payload.get('currency'),
+                'rate': None if outcome.median_rate is None else str(outcome.median_rate),
+                'min': str(outcome.pool_min), 'max': str(outcome.pool_max),
+                'observations': [_candidate_snapshot(c, s, in_pool=True)
+                                 for c, s in outcome.scored_all if c.ref in outcome.pool_refs],
+            }
+        if any(c.ref in outcome.pool_refs and not (c.payload or {}).get('auto_pricing_eligible', True)
+               for c, _ in outcome.scored_all):
+            factors['reference_price'] = True
         reasons = list(outcome.score.reasons)
 
         # Scope intent: the line's verb prefix declares which price kind it
@@ -705,12 +785,16 @@ class CostMatchService:
         # Reference-priced rows price as flagged REF: the rate stays
         # visible but the result can never sit in an auto-trusted tier.
         is_reference = (
+            bool(factors.get('reference_price'))
+            or
             payload.get("provenance_status") == "pending_review"
             or payload.get("origin_kind") in _REFERENCE_ORIGINS
         )
         if is_reference:
             reasons.append("reference_price")
         tier = _tier_for(confidence, factors, has_candidate=True)
+        if not outcome.is_confident and tier in (TIER_EXACT, TIER_HIGH_CONFIDENCE):
+            tier = TIER_NEEDS_REVIEW
         if is_reference and tier != TIER_UNMATCHED:
             tier = TIER_NEEDS_REVIEW
         # A cross-scope price is evidence, never auto-trust: the material
@@ -719,10 +803,8 @@ class CostMatchService:
         if scope_conflicted and tier != TIER_UNMATCHED:
             tier = TIER_NEEDS_REVIEW
 
-        # Pooled composite pricing: a "доставка и монтаж" line is priced by
-        # the median of its same-scope same-unit candidate pool, reported
-        # against the pool member nearest the median. A diverged pool
-        # (spread > 3x) likely still mixes items, so the row stays in review.
+        # Equivalent Bulgarian quotations use a median; the selected source
+        # remains evidence, not a claim that it quoted the calculated rate.
         suggested_item = outcome.candidate
         suggested_unit = outcome.candidate.unit or ""
         suggested_rate = suggestion_rate(outcome.candidate)
@@ -750,6 +832,10 @@ class CostMatchService:
             reasons.append("pool_divergence")
             if tier != TIER_UNMATCHED:
                 tier = TIER_NEEDS_REVIEW
+
+        factors['semantic_links'] = semantic_links(description, suggested_item.text)
+        if suggested_payload.get('human_semantic_links'):
+            factors['human_semantic_links'] = suggested_payload['human_semantic_links']
 
         # Duplicate-price evidence: rows sharing the winner's name and unit
         # carry a rate spread the reviewer should see rather than
@@ -823,110 +909,110 @@ class CostMatchService:
         }
 
     async def _pattern_priors(
-        self, description: str, candidates: list[Candidate]
+        self, description: str, candidates: list[Candidate], run: MatchRun
     ) -> dict[str, float]:
-        """Per-candidate prior from past rulings on the same evidence.
-
-        Two lessons count: the same cost item adopted for a related line
-        before (``confirmed``/``overridden``), and the same token bridge
-        appearing in an earlier pattern - confirmed or refused. A refused
-        bridge outweighs any confirmations: a person already ruled that
-        overlap wrong once. Priors stay bounded - they move ranking inside a
-        plausible set; they can never manufacture overlap that isn't there.
-        """
-        stmt = select(MatchPattern)
-        rows = list((await self.session.execute(stmt)).scalars().all())
-        if not rows:
-            return {}
-        q_toks = set(canonical_tokens(description))
-        # A ruling only teaches about its own query class: the pattern's
-        # line tokens must share at least one token with this line, else a
-        # ruling on a concrete-wall line would demote a rebar answer.
-        related = [p for p in rows if set(p.query_tokens or []) & q_toks]
-        if not related:
-            return {}
+        """Apply current explicit rulings on this exact text and cost-base scope."""
+        patterns = await self._semantic_patterns(description, run)
         priors: dict[str, float] = {}
         for cand in candidates:
-            confirmed = rejected = 0
-            for p in related:
-                # Priors key on the item alone: "this row was adopted for
-                # this class of line" / "this row was refused for it". A
-                # shared token bridge is too weak a link - one generic word
-                # like "door" boosted every обръщане-row in the base to the
-                # cap and the confirmed item drowned in its own peers.
-                # Cross-item bridge evidence needs token roles (head vs
-                # component), which the pattern store does not model yet.
-                same_item = p.cost_item_id is not None and str(p.cost_item_id) == cand.ref
-                if not same_item:
+            if not isinstance(cand.payload, dict):
+                continue
+            payload = cand.payload
+            payload.pop('human_semantic_rejection', None)
+            payload.pop('human_semantic_links', None)
+            links = {link['id']: link for link in semantic_links(description, cand.text)}
+            accepted: dict[str, dict[str, str]] = {}
+            for pattern in patterns:
+                if pattern.candidate_text != payload.get('display_text', cand.text):
                     continue
-                if p.verdict == DECISION_REJECTED:
-                    rejected += 1
-                else:
-                    confirmed += 1
-            if rejected:
-                priors[cand.ref] = 0.5
-            elif confirmed:
-                priors[cand.ref] = round(min(1.0 + 0.05 * confirmed, 1.25), 4)
+                for value in pattern.shared_tokens or []:
+                    lesson = decode_link(value)
+                    if (lesson is None or lesson['id'] not in links
+                            or lesson['unit'] != (cand.unit or '')
+                            or lesson['code'] != payload.get('code')):
+                        continue
+                    accepted[lesson['role']] = lesson
+            if not accepted:
+                continue
+            if any(link['verdict'] == 'different' for link in accepted.values()):
+                payload['human_semantic_rejection'] = True
+                continue
+            payload['human_semantic_links'] = [links[link['id']] for link in accepted.values()]
+            priors[cand.ref] = round(min(1.0 + 0.05 * len(accepted), 1.25), 4)
         return priors
 
-    async def _record_pattern(
-        self, run: MatchRun, result: MatchResult, decision: MatchDecision
-    ) -> None:
-        """Persist the token-level lesson one ruling teaches.
+    async def _remembered_candidates(self, description: str, run: MatchRun) -> list[CostItem]:
+        from app.modules.cost_match.bulgarian import is_bulgarian
 
-        Confirmed/overridden rulings teach the bridge to the adopted item; a
-        rejection teaches the bridge that was refused. A rejection of a line
-        that offered nothing records nothing - there is no bridge to unlearn.
-        """
-        cand_text = decision.decided_description or ""
-        item_id = decision.decided_cost_item_id
-        if decision.decision == DECISION_REJECTED:
-            cand_text = result.suggested_description or ""
-            item_id = result.suggested_cost_item_id
-        if not cand_text:
+        if not is_bulgarian(description):
+            return []
+        patterns = await self._semantic_patterns(description, run)
+        ids = list(dict.fromkeys(pattern.cost_item_id for pattern in patterns
+                                 if pattern.cost_item_id is not None and any(
+                                     (lesson := decode_link(value)) is not None
+                                     and lesson['verdict'] == 'same'
+                                     for value in pattern.shared_tokens or [])))
+        if not ids:
+            return []
+        items = await self.base_repo.find_by_ids(
+            ids, cost_source=run.cost_source, region=run.region, catalog_id=run.catalog_id,
+        )
+        codes = {lesson['code'] for pattern in patterns for value in pattern.shared_tokens or []
+                 if (lesson := decode_link(value)) is not None and lesson['verdict'] == 'same'}
+        for code in sorted(codes - {item.code for item in items}):
+            active = await self.base_repo.find_by_code(
+                code, cost_source=run.cost_source, region=run.region, catalog_id=run.catalog_id,
+            )
+            if active is not None:
+                items.append(active)
+        candidates = [_to_candidate(item, 'bg') for item in items]
+        priors = await self._pattern_priors(description, candidates, run)
+        return [item for item, candidate in zip(items, candidates, strict=True)
+                if candidate.ref in priors]
+
+    async def _semantic_patterns(self, description: str, run: MatchRun) -> list[MatchPattern]:
+        stmt = (
+            select(MatchPattern)
+            .join(MatchDecision, MatchDecision.id == MatchPattern.decision_id)
+            .join(MatchRun, MatchRun.id == MatchPattern.run_id)
+            .where(MatchPattern.query_text == description,
+                   MatchRun.cost_source == run.cost_source,
+                   MatchRun.region == run.region,
+                   MatchRun.catalog_id == run.catalog_id,
+                   MatchRun.tenant_id == run.tenant_id)
+            .order_by(MatchDecision.created_at, MatchDecision.seq, MatchDecision.id)
+        )
+        return list((await self.session.execute(stmt)).scalars().all())
+
+    async def _record_pattern(
+        self, run: MatchRun, result: MatchResult, decision: MatchDecision,
+        chosen_links: list[tuple[dict[str, str], str, CostItem]] | None = None,
+    ) -> None:
+        """Persist only expressly judged roles, with the exact two quoted texts."""
+        if not chosen_links:
             return
-        q_toks = list(canonical_tokens(result.source_description))
-        rows: list[MatchPattern] = [
-            MatchPattern(
+        query = (result.factors or {}).get('effective_work_description') or result.source_description
+        grouped: dict[uuid.UUID, tuple[CostItem, list[str]]] = {}
+        for link, verdict, item in chosen_links:
+            if item.id not in grouped:
+                grouped[item.id] = (item, [])
+            grouped[item.id][1].append(encode_link(link, verdict, item.code, item.unit))
+        rows: list[MatchPattern] = []
+        for item, encoded_links in grouped.values():
+            cand_text = _localized_description(item, 'bg')
+            rows.append(MatchPattern(
                 decision_id=decision.id,
                 result_id=result.id,
                 run_id=result.run_id,
                 project_id=result.project_id,
                 verdict=decision.decision,
-                query_text=result.source_description,
-                query_tokens=q_toks,
+                query_text=query,
+                query_tokens=list(canonical_tokens(query)),
                 candidate_text=cand_text,
                 candidate_tokens=list(canonical_tokens(cand_text)),
-                shared_tokens=sorted(set(q_toks) & set(canonical_tokens(cand_text))),
-                cost_item_id=item_id,
-            )
-        ]
-        # An override (or a manual price, which adopts nothing from the base)
-        # is two lessons in one ruling: the adopted bridge, and the refusal of
-        # whatever the machine offered. Without the second half a
-        # wrong-but-confident suggestion is never demoted.
-        if (
-            decision.decision in (DECISION_OVERRIDDEN, DECISION_MANUAL)
-            and result.suggested_cost_item_id is not None
-            and result.suggested_cost_item_id != decision.decided_cost_item_id
-            and result.suggested_description
-        ):
-            s_toks = list(canonical_tokens(result.suggested_description))
-            rows.append(
-                MatchPattern(
-                    decision_id=decision.id,
-                    result_id=result.id,
-                    run_id=result.run_id,
-                    project_id=result.project_id,
-                    verdict=DECISION_REJECTED,
-                    query_text=result.source_description,
-                    query_tokens=q_toks,
-                    candidate_text=result.suggested_description,
-                    candidate_tokens=s_toks,
-                    shared_tokens=sorted(set(q_toks) & set(s_toks)),
-                    cost_item_id=result.suggested_cost_item_id,
-                )
-            )
+                shared_tokens=encoded_links,
+                cost_item_id=item.id,
+            ))
         self.session.add_all(rows)
 
     async def _price_spread(
@@ -947,13 +1033,14 @@ class CostMatchService:
         """
         if not description.strip():
             return None
+        from app.modules.cost_match.retrieval_bg import literal_description, sql_literal_description
+
         stmt = (
             select(CostItem.rate, CostItem.currency, CostItem.unit,
                    CostItem.source, CostItem.price_as_of, CostItem.created_at)
             .where(CostItem.is_active.is_(True))
             .where(
-                func.lower(func.btrim(CostItem.description))
-                == func.lower(description.strip())
+                sql_literal_description(CostItem) == literal_description(description)
             )
             .where(CostItem.rate.op("~")("^[0-9]+(\\.[0-9]+)?$"))
         )
@@ -974,7 +1061,9 @@ class CostMatchService:
                 parsed = parsed / BGN_PER_EUR
             elif cur != "EUR":
                 continue
-            day = str(as_of or "")[:10] or str(created or "")[:10]
+            day = str(as_of or "")[:10]
+            if not day and source == "estimate_confirmed":
+                day = str(created or "")[:10]
             peers.append((parsed * factor, str(source or ""), day))
         if not peers:
             return None
@@ -1000,10 +1089,10 @@ class CostMatchService:
     async def _vector_candidates(
         self,
         description: str,
-        items: list,
+        items: list[CostItem],
         *,
         run: MatchRun,
-    ) -> list:
+    ) -> list[CostItem]:
         """Append embedding-index hits the lexical recall missed.
 
         Returns ``items`` unchanged whenever the vector path is unavailable
@@ -1068,7 +1157,7 @@ class CostMatchService:
         boq_id: uuid.UUID,
         data: BoqMatchRunCreate,
         created_by: uuid.UUID | None = None,
-        on_progress=None,
+        on_progress: Callable[[int, int], None] | None = None,
     ) -> BoqMatchRunResponse:
         """Match a whole BOQ against the cost base and price it in one pass.
 
@@ -1151,7 +1240,7 @@ class CostMatchService:
         remaining = list(positions)
         settled: set[uuid.UUID] = set()
 
-        def _settle_progress(position, scored, last_stage) -> None:
+        def _settle_progress(position: Position, scored: dict[str, Any], last_stage: bool) -> None:
             # The bar counts lines, not line-evaluations: a position settles
             # the moment any base prices it, and unpriced lines settle only
             # after the final base - so 542 positions read 0..542, not 2168.
@@ -1174,12 +1263,19 @@ class CostMatchService:
                 lines = [
                     MatchLineInput(
                         description=effective_work(p.description or '', contexts.get(p.id, []))[:4000],
+                        raw_description=(p.description or '')[:4000],
                         unit=(p.unit or "")[:40],
                         quantity=_parse_rate(p.quantity),
                         source_ref=(p.reference_code or "")[:100],
                     )
                     for p in chunk
                 ]
+                def on_scored(
+                    n: int, scored: dict[str, Any],
+                    _chunk: list[Position] = chunk, _last: bool = last_stage,
+                ) -> None:
+                    _settle_progress(_chunk[n - 1], scored, _last)
+
                 run = await self.create_run(
                     MatchRunCreate(
                         project_id=boq.project_id,
@@ -1198,12 +1294,7 @@ class CostMatchService:
                         lines=lines,
                     ),
                     created_by=created_by,
-                    on_line_done=(
-                        (lambda n, scored, _chunk=chunk, _last=last_stage:
-                            _settle_progress(_chunk[n - 1], scored, _last))
-                        if on_progress is not None
-                        else None
-                    ),
+                    on_line_done=on_scored if on_progress is not None else None,
                 )
                 run_ids.append(run.id)
 
@@ -1269,7 +1360,7 @@ class CostMatchService:
 
     def _price_position_from_result(
         self,
-        position,
+        position: Position,
         run: MatchRun,
         result: MatchResult,
         *,
@@ -1303,8 +1394,13 @@ class CostMatchService:
         was withheld.
         """
         rate = result.suggested_rate
+        if rate is None or not rate.is_finite() or rate <= 0:
+            return False
         suggestion_currency = (result.suggested_currency or "").strip().upper()
-        factor = unit_rate_factor(result.suggested_unit, position.unit)
+        factors = getattr(result, "factors", None) or {}
+        query_text = str(factors.get("effective_work_description") or getattr(position, "description", ""))
+        factor = work_rate_factor(result.suggested_unit, position.unit, query_text=query_text,
+                                  candidate_text=result.suggested_description)
         # No honest conversion is a conflict whenever either side carries a
         # recognisable unit; two unknown units simply carry no signal.
         unit_conflict = factor is None and (
@@ -1359,7 +1455,7 @@ class CostMatchService:
             TIER_UNMATCHED: 0,
         }
 
-        def _offer_key(tier: str, confidence: object, conflicted: bool) -> tuple:
+        def _offer_key(tier: str, confidence: Any, conflicted: bool) -> tuple[int, float]:
             rank = -1 if conflicted else _TIER_RANK.get(tier, 1)
             try:
                 conf = float(confidence or 0)
@@ -1375,7 +1471,8 @@ class CostMatchService:
             prior_offer.get("confidence"),
             prior_conflict,
         )
-        keep_prior = bool(prior_offer) and new_key <= prior_key
+        keep_prior = (prior_offer.get('run_id') == str(run.id)
+                      and bool(prior_offer) and new_key <= prior_key)
         human_basis = (position.price_basis or "") in _HUMAN_BASES
         if not keep_prior or human_basis:
             meta["cost_match"] = offer
@@ -1397,6 +1494,8 @@ class CostMatchService:
         position.metadata_ = meta
         if human_basis:
             return True
+        if keep_prior:
+            return position.price_basis in {BOQ_BASIS_EXACT, BOQ_BASIS_HIGH}
         if unit_conflict or currency_mismatch:
             if (position.price_basis or "") in _AUTO_WRITTEN_BASES:
                 position.unit_rate = "0"
@@ -1420,11 +1519,6 @@ class CostMatchService:
                 position.confidence = format(
                     Decimal(result.confidence).quantize(_CONFIDENCE_PLACES), "f"
                 )
-            return False
-        if keep_prior:
-            # The earlier base's offer stands; the rejected result stays on
-            # its own run row for the audit trail, and the position keeps
-            # the rate/basis/confidence the better stage already set.
             return False
         applied_rate = applied_rate.quantize(_CONFIDENCE_PLACES)
         position.unit_rate = format(applied_rate, "f")
@@ -1469,33 +1563,22 @@ class CostMatchService:
             cm["decision"] = DECISION_REJECTED
             cm["state"] = "rejected"
         elif decision.decided_rate is not None:
-            # The ruling adopts a corpus figure, so it passes through the same
-            # normalisation the auto write-back applies: units convert at the
-            # honest rate factor and BGN/EUR cross at the fixed peg. A unit
-            # with no honest conversion keeps the reviewer's number - the
-            # human explicitly ruled it, unlike a machine suggestion.
-            decided_factor = unit_rate_factor(decision.decided_unit, position.unit)
-            applied_rate = (
-                decision.decided_rate * decided_factor
-                if decided_factor is not None
-                else decision.decided_rate
-            )
-            decided_currency = (decision.decided_currency or "").strip().upper()
             project_currency = ""
             if boq is not None:
                 from app.modules.projects.models import Project
 
                 project = await self.session.get(Project, boq.project_id)
                 project_currency = (project.currency or "").strip().upper() if project else ""
-            if (
-                project_currency
-                and decided_currency
-                and decided_currency != project_currency
-                and {decided_currency, project_currency} <= _FIXED_CURRENCY_RATES
-            ):
-                applied_rate = applied_rate * (
-                    Decimal(1) / BGN_PER_EUR if project_currency == "EUR" else BGN_PER_EUR
-                )
+            applied_rate = _decision_price(
+                decision.decided_rate,
+                decision.decided_unit,
+                decision.decided_currency,
+                target_unit=position.unit,
+                project_currency=project_currency,
+                query_text=str((getattr(result, "factors", None) or {}).get("effective_work_description")
+                               or getattr(result, "source_description", "")),
+                candidate_text=getattr(decision, "decided_description", ""),
+            )
             position.unit_rate = format(applied_rate, "f")
             qty = _parse_rate(position.quantity)
             if qty is not None:
@@ -1524,7 +1607,7 @@ class CostMatchService:
         await self.session.flush()
 
     async def _learn_manual_ruling(
-        self, position, applied_rate: Decimal, project_currency: str
+        self, position: Position, applied_rate: Decimal, project_currency: str
     ) -> None:
         """Persist a typed-in review price as an active operator corpus row.
 
@@ -1545,7 +1628,7 @@ class CostMatchService:
                 CostItem.code == code, CostItem.source == "operator_pricelist"
             )
         )
-        meta = {
+        meta: dict[str, Any] = {
             "learned_from": "manual_ruling",
             "boq_id": str(position.boq_id),
             "position_id": str(position.id),
@@ -1635,6 +1718,15 @@ class CostMatchService:
         row reads in German for one reviewer and in Russian for the next.
         """
         response = MatchResultResponse.model_validate(result)
+        query = (result.factors or {}).get('effective_work_description') or result.source_description
+        if result.suggested_cost_item_id:
+            response.factors = dict(response.factors)
+            snapshot: dict[str, Any] = next((row for row in result.alternatives or []
+                             if row.get('cost_item_id') == str(result.suggested_cost_item_id)), {})
+            evidence = snapshot.get('evidence_description') or result.suggested_description
+            response.factors['semantic_links'] = semantic_links(query, evidence)
+        for candidate in response.alternatives:
+            candidate.semantic_links = semantic_links(query, candidate.evidence_description or candidate.description)
         if web_estimate is not None:
             estimate = WebEstimateResponse.model_validate(web_estimate)
             # A record earns ``web_verified`` only when real pages were
@@ -1646,7 +1738,8 @@ class CostMatchService:
             score = MatchScore(
                 confidence=float(result.confidence),
                 band=_band(result.confidence),
-                factors={name: float(value) for name, value in (result.factors or {}).items()},
+                factors={name: float(value) for name, value in (result.factors or {}).items()
+                         if isinstance(value, int | float | Decimal)},
                 reasons=codes,
             )
             response.explanation = explain(score, locale=locale)
@@ -1656,6 +1749,17 @@ class CostMatchService:
 
     # ── deciding ────────────────────────────────────────────────────────
 
+    async def links_for_item(
+        self, run: MatchRun, result: MatchResult, item_id: uuid.UUID,
+    ) -> list[dict[str, str]]:
+        active = await self.base_repo.get_active(
+            item_id, cost_source=run.cost_source, region=run.region, catalog_id=run.catalog_id,
+        )
+        if active is None:
+            raise LookupError(item_id)
+        query = (result.factors or {}).get('effective_work_description') or result.source_description
+        return semantic_links(query, _to_candidate(active, 'bg').text)
+
     async def record_decision(
         self,
         run: MatchRun,
@@ -1663,6 +1767,7 @@ class CostMatchService:
         data: MatchDecisionCreate,
         *,
         decided_by: uuid.UUID | None,
+        propagate_duplicates: bool = True,
     ) -> MatchDecision:
         """Record one person's ruling on one result.
 
@@ -1773,6 +1878,55 @@ class CostMatchService:
         if data.decision != DECISION_MANUAL and data.rate is not None:
             raise DecisionPayloadError("a rate is only meaningful on a manual ruling")
 
+        chosen_links: list[tuple[dict[str, str], str, CostItem]] = []
+        if data.semantic_choices:
+            if data.decision == DECISION_MANUAL:
+                raise DecisionPayloadError('a manually supplied price has no corpus work link to verify')
+            target_id = (data.cost_item_id if data.decision == DECISION_OVERRIDDEN
+                         else result.suggested_cost_item_id)
+            query = (result.factors or {}).get('effective_work_description') or result.source_description
+            items: dict[uuid.UUID, CostItem] = {}
+            seen: set[tuple[uuid.UUID, str]] = set()
+            for choice in data.semantic_choices:
+                item_id = choice.cost_item_id or target_id
+                if item_id is None or item_id not in {target_id, result.suggested_cost_item_id}:
+                    raise DecisionPayloadError('semantic link belongs to a different quotation')
+                if item_id not in items:
+                    active = await self.base_repo.get_active(
+                        item_id, cost_source=run.cost_source, region=run.region,
+                        catalog_id=run.catalog_id,
+                    )
+                    if active is None:
+                        raise LookupError('semantic feedback needs an active quotation in this cost base')
+                    items[item_id] = active
+                evidence = _to_candidate(items[item_id], 'bg').text
+                by_id = {link['id']: link for link in semantic_links(query, evidence)}
+                if (item_id, choice.link_id) in seen or choice.link_id not in by_id:
+                    raise DecisionPayloadError('unknown or repeated semantic link for this quotation')
+                seen.add((item_id, choice.link_id))
+                chosen_links.append((by_id[choice.link_id], choice.verdict, items[item_id]))
+            if (data.decision != DECISION_REJECTED and any(
+                verdict == 'different' and item.id == target_id
+                for _, verdict, item in chosen_links
+            )):
+                raise DecisionPayloadError('a quotation marked as different cannot be confirmed')
+
+        if data.decision != DECISION_REJECTED:
+            from app.modules.projects.models import Project
+
+            position = await self._position_for_result(run, result)
+            project = await self.session.get(Project, result.project_id)
+            _decision_price(
+                snapshot["decided_rate"],
+                snapshot["decided_unit"],
+                snapshot["decided_currency"],
+                target_unit=position.unit if position is not None else result.source_unit,
+                project_currency=project.currency if project is not None else "",
+                query_text=str((getattr(result, "factors", None) or {}).get("effective_work_description")
+                               or result.source_description),
+                candidate_text=snapshot["decided_description"],
+            )
+
         decision = MatchDecision(
             result_id=result.id,
             run_id=result.run_id,
@@ -1781,16 +1935,21 @@ class CostMatchService:
             tier_at_decision=result.tier,
             confidence_at_decision=result.confidence,
             decided_by=decided_by,
-            note=data.note,
+            note='; '.join(filter(None, [data.note, *(
+                f"[{item.code}] {link['label']}: {link['query']} ↔ {link['candidate']} = "
+                f"{'същото' if verdict == 'same' else 'различно'}"
+                for link, verdict, item in chosen_links
+            )])) or None,
             **snapshot,
         )
         await self.decision_repo.create(decision)
         await self.session.flush()
-        await self._record_pattern(run, result, decision)
+        await self._record_pattern(run, result, decision, chosen_links)
         result.decision_state = data.decision
         await self.session.flush()
         await self._sync_position_from_decision(run, result, decision)
-        await self._propagate_to_duplicates(run, result, decision, decided_by)
+        if propagate_duplicates:
+            await self._propagate_to_duplicates(run, result, decision, decided_by)
 
         event_bus.publish_detached(
             events.MATCH_REVIEWED,
@@ -2087,10 +2246,9 @@ class CostMatchService:
         wanted = set(position_ids) if position_ids is not None else None
         confirmed = skipped = learned = 0
         done_positions: set[uuid.UUID] = set()
+        newest_positions: set[uuid.UUID] = set()
 
         for run in runs:
-            if run.status != RUN_STATUS_MATCHED:
-                continue
             try:
                 meta = json.loads(run.notes or "")
             except (TypeError, ValueError):
@@ -2106,8 +2264,12 @@ class CostMatchService:
                     continue
             results = await self.result_repo.list_all_for_run(run.id)
             result_by_pos = {
-                pos_by_line[r.line_no]: r for r in results if r.line_no in pos_by_line
+                pos_by_line[r.line_no]: r for r in results
+                if r.line_no in pos_by_line and pos_by_line[r.line_no] not in newest_positions
             }
+            newest_positions.update(result_by_pos)
+            if run.status != RUN_STATUS_MATCHED:
+                continue
             if wanted is None:
                 targets = {
                     pid
@@ -2144,6 +2306,7 @@ class CostMatchService:
                         result,
                         MatchDecisionCreate(decision=DECISION_CONFIRMED),
                         decided_by=decided_by,
+                        propagate_duplicates=False,
                     )
                 except (
                     RunClosedError,

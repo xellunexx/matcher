@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_serializer
@@ -63,6 +63,7 @@ class MatchLineInput(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
     description: str = Field(default="", max_length=4000)
+    raw_description: str | None = Field(default=None, max_length=4000)
     unit: str = Field(default="", max_length=40)
     quantity: Decimal | None = Field(default=None, ge=0)
     # The subcontractor's own item code, if their bill carried one. Used to
@@ -166,6 +167,7 @@ class MatchCandidate(BaseModel):
     work_context: list[str] = Field(default_factory=list)
     quotation_rate: Decimal | None = None
     quotation_currency: str = ''
+    semantic_links: list[dict[str, str]] = Field(default_factory=list)
 
     @field_serializer("rate", "confidence", "quotation_rate")
     def _ser_decimal(self, value: Decimal | None) -> str | None:
@@ -396,6 +398,12 @@ class MatchResultPage(BaseModel):
 # ── Deciding ────────────────────────────────────────────────────────────────
 
 
+class SemanticChoice(BaseModel):
+    link_id: str = Field(..., pattern=r'^[a-f0-9]{24}$')
+    verdict: Literal['same', 'different']
+    cost_item_id: UUID | None = None
+
+
 class MatchDecisionCreate(BaseModel):
     """A person's ruling on one result.
 
@@ -413,6 +421,7 @@ class MatchDecisionCreate(BaseModel):
     decision: str = Field(..., pattern=rf"^({DECISION_KIND_PATTERN})$")
     cost_item_id: UUID | None = None
     note: str | None = Field(default=None, max_length=2000)
+    semantic_choices: list[SemanticChoice] = Field(default_factory=list, max_length=18)
     # Only meaningful on ``manual``; the service rejects the combination on
     # any other kind rather than silently ignoring a number a person sent.
     rate: Decimal | None = None

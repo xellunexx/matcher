@@ -58,15 +58,18 @@ testable and safe to run on any input, including regex metacharacters.
 
 from __future__ import annotations
 
+import dataclasses
 import re
 import unicodedata
 from collections.abc import Iterable, Mapping, Sequence
-import dataclasses
 from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from app.modules.cost_match.messages import DEFAULT_LOCALE, translate
+
+if TYPE_CHECKING:
+    from app.modules.cost_match.work_catalog import CanonicalWork
 
 # ── Latin/Cyrillic confusable folding ──────────────────────────────────────
 # Bulgarian bills and price books routinely mix Latin lookalike letters into
@@ -958,13 +961,13 @@ _CONCEPT_SYNONYMS: dict[str, tuple[str, ...]] = {
         "sanierung",
         "reparacion",
         "renovacion",
-        "подмяна",
         "изкърпване",
         "пренареждане",
         "корекция",
         "коригиране",
     ),
     "gypsum_fiber": ("gipsfaser", "феромакел", "фиброгипс"),
+    "replacement": ("подмяна", "смяна", "подменяне", "сменяне"),
     "hpl": ("hpl", "компактплоча"),
     # Delivery/installation verbs Bulgarian bills abbreviate relentlessly
     # ("Дост.и монтаж врата..."). Surface forms stay whole words; the
@@ -1841,16 +1844,9 @@ def units_compatible(a: str | None, b: str | None) -> bool | None:
 
 # ── Brickwork area pricing ──────────────────────────────────────────────────
 #
-# Brick masonry is priced per square metre. A bill line that declares ``м³``
-# for a brick-wall row carries no thickness the volume can be checked
-# against, and the operator price book for this work is always per ``м²``.
-# So for brick-family text - тухл*, зидар*/зидан*/зидам*, иззижд* (all forms
-# of bricklaying), and the ``masonry`` concept ``тухла``/``зидария`` fold
-# into - an area candidate is unit-compatible with a volume query. A volume
-# candidate is eligible only when a thickness spec (``dim_len`` - д=25см,
-# 12см, дебелина …) is declared on either side, the one case where cubic
-# pricing is calculable. Bare ``wall``/``стена`` deliberately does NOT count:
-# stone and reinforced-concrete walls legitimately price per м³.
+# The legacy masonry dimension check rejects unproven м²/м³ substitutions.
+# A separately proven wall thickness is converted by work_rate_factor before
+# reaching this check. Bare "стена" cannot establish brickwork or thickness.
 _MASONRY_WORD_RE = re.compile(r"тухл|зидар|зидан|зидам|иззижд")
 
 
@@ -2055,16 +2051,15 @@ _NEUTRAL_RESIDUAL_TOKENS = frozenset({
     "кот", "кота", "клас", "детайл", "съгласно", "проект", "виж", "част",
     "овк", "конструк", "конструкция", "обрат", "обратно", "ви", "тип",
     "асансьор", "лифт", "окоч", "окач", "новопроектиран", "новопроектира",
-    "детаил", "подходящ", "ролк", "възможн", "кот",
-    "вода", "водопроводн", "инстала", "ел",
+    "детаил", "подходящ", "ролк", "възможн", "вода", "водопроводн", "инстала", "ел",
     # Function words and filler the tokenizer keeps: prepositions,
     # conjunctions, inclusion verbs - they carry no priced content.
-    "към", "да", "се", "със", "всичк", "включе", "включителн",
-    "съгласн", "покрити", "пълн", "открит", "ев",
+    "да", "се", "със", "всичк", "включе", "включителн",
+    "съгласн", "открит",
 })
 
 
-def _missing_class(item: str, q_work, c_work) -> str:
+def _missing_class(item: str, q_work: CanonicalWork, c_work: CanonicalWork) -> str:
     """Classify one missing-evidence item: 'block' keeps the pair at review,
     'neutral' is a gap the unit price does not turn on, 'refine' marks a
     candidate material refinement whose pool ambiguity is checked later."""
@@ -2097,7 +2092,7 @@ def _missing_class(item: str, q_work, c_work) -> str:
             return "neutral" if (c - q) <= _NEUTRAL_LOCATIONS else "block"
         return "block"
     if item == "work_operation_unknown":
-        from app.modules.cost_match.retrieval_bg import ANCILLARY_OPS
+        from app.modules.cost_match.bulgarian import ANCILLARY_OPS
         q, c = set(q_work.operations), set(c_work.operations)
         # Site operations bundled into the line (dig, refill, haul,
         # compact) are priced per object elsewhere - a quote silent about
@@ -2132,10 +2127,65 @@ def _missing_class(item: str, q_work, c_work) -> str:
         # a missing install or demolition is real money.
         return "neutral" if extra <= (_SAFE_CANDIDATE_OPS - {"install"}) else "block"
     if item == "work_scope_unknown":
+        if not q_work.scope and not q_work.operations and c_work.scope:
+            return "block"
         return "neutral" if not q_work.scope else "block"
     if item == "work_inclusions_incomplete":
         return "neutral" if set(q_work.inclusions) <= set(c_work.inclusions) else "block"
     return "block"
+
+
+def _required_work_covered(query: CanonicalWork, candidate: CanonicalWork) -> bool:
+    from app.modules.cost_match.work_catalog import catalog
+
+    context_attributes = next((set(family.get('context_attributes', [])) for family in catalog()['families']
+                               if family['id'] == query.object == candidate.object), set())
+    return bool(
+        query.object and query.object == candidate.object
+        and all(set(values) <= set(candidate.specs.get(key, ()))
+                for key, values in query.specs.items() if key != 'level')
+        and all((key in context_attributes and not candidate.attributes.get(key))
+                or set(values) <= set(candidate.attributes.get(key, ()))
+                for key, values in query.attributes.items())
+        and set(query.materials) <= set(candidate.materials)
+        and set(query.operations) <= set(candidate.operations)
+        and set(query.inclusions) <= set(candidate.inclusions)
+        and set(query.exclusions) <= set(candidate.exclusions)
+        and set(query.secondary_work) <= set(candidate.secondary_work)
+        and (not query.scope or query.scope == candidate.scope)
+    )
+
+
+def work_rate_factor(
+    from_unit: str | None, to_unit: str | None, *, query_text: str = '', candidate_text: str = '',
+) -> Decimal | None:
+    factor = unit_rate_factor(from_unit, to_unit)
+    if factor is not None:
+        return factor
+    source, target = _unit_key(from_unit), _unit_key(to_unit)
+    if source is None or target is None or {source[0], target[0]} != {'area', 'volume'}:
+        return None
+    if source[1] <= 0 or target[1] <= 0:
+        return None
+    from app.modules.cost_match.bulgarian import compare_work, quotation_eligible
+    from app.modules.cost_match.work_catalog import canonical_work
+
+    query, candidate = canonical_work(query_text), canonical_work(candidate_text)
+    if not (query.object == candidate.object == 'masonry'
+            and query.materials == candidate.materials == ('brick',)
+            and quotation_eligible(query_text, candidate_text)):
+        return None
+    widths = query.attributes.get('wall_thickness_cm', ())
+    if len(widths) != 1 or widths != candidate.attributes.get('wall_thickness_cm', ()):
+        return None
+    conflicts, missing = compare_work(query_text, candidate_text)
+    if conflicts or missing or query.residual_terms != candidate.residual_terms:
+        return None
+    thickness = Decimal(widths[0]) / 100
+    if not thickness.is_finite() or thickness <= 0:
+        return None
+    geometry = thickness if source[0] == 'volume' else Decimal(1) / thickness
+    return geometry * target[1] / source[1]
 
 
 def score_match(
@@ -2145,6 +2195,7 @@ def score_match(
     query_unit: str | None = None,
     candidate_unit: str | None = None,
     prior: float = 1.0,
+    raw_query: str | None = None,
 ) -> MatchScore:
     """Score how well ``candidate_text`` answers ``query`` in ``[0, 1]``.
 
@@ -2155,7 +2206,13 @@ def score_match(
     # Both sides read to the boilerplate tail only: "вкл…"/"крайна цена"/
     # "съгласно …" clauses declare price scope, not product identity. A head
     # twin is a twin match; tail words never score, never pool.
-    from app.modules.cost_match.bulgarian import compare_work, is_bulgarian, is_structural
+    from app.modules.cost_match.bulgarian import (
+        compare_work,
+        identity_text,
+        is_bulgarian,
+        is_structural,
+        quotation_eligible,
+    )
 
     q_head = _head_text(query)
     c_head = _head_text(candidate_text)
@@ -2169,6 +2226,8 @@ def score_match(
         "exact": 0.0,
     }
     reasons: list[str] = []
+    if not quotation_eligible(query if raw_query is None else raw_query, candidate_text):
+        return MatchScore(0.0, 'low', {'quotation_ineligible': 1.0}, ['explicit_without_disassembly_required'])
     if is_structural(query) or is_structural(candidate_text):
         factors["structural_row"] = 1.0
         return MatchScore(0.0, "low", factors, ["structural_row"])
@@ -2179,7 +2238,7 @@ def score_match(
         return MatchScore(0.0, 'low', factors, ['work_context_missing'])
     work_conflicts: list[str] = []
     work_missing: list[str] = []
-    if is_bulgarian(query) and q_head != c_head:
+    if is_bulgarian(query):
         work_conflicts, work_missing = compare_work(query, candidate_text)
 
     # Unit relationship first: it can only reduce a score, never inflate it.
@@ -2187,7 +2246,13 @@ def score_match(
     # still answers to the operator's per-м² price, and only a declared
     # thickness keeps per-м³ candidates eligible.
     compat = units_compatible(query_unit, candidate_unit)
-    masonry = _masonry_unit_compat(query_unit, candidate_unit, q_head, c_head)
+    if compat is False and work_rate_factor(candidate_unit, query_unit, query_text=query,
+                                            candidate_text=candidate_text) is not None:
+        compat = True
+        factors['geometric_unit_conversion'] = 1.0
+        reasons.append('masonry_thickness_conversion')
+    masonry = (None if factors.get('geometric_unit_conversion')
+               else _masonry_unit_compat(query_unit, candidate_unit, q_head, c_head))
     if masonry is not None:
         compat = masonry
         if masonry:
@@ -2209,13 +2274,46 @@ def score_match(
     elif query_unit or candidate_unit:
         reasons.append("unit_unknown")
 
+    if work_conflicts:
+        factors['work_conflict'] = 1.0
+        if any(reason.startswith('work_spec_conflict:') for reason in work_conflicts):
+            factors['spec_conflict'] = 1.0
+            reasons.append('spec_conflict')
+        if 'work_operation_bundle_conflict' in work_conflicts:
+            factors['action_factor'] = 0.5
+            reasons.append('action_conflict')
+        return MatchScore(0.0, 'low', factors, reasons + work_conflicts)
+    if is_bulgarian(query) and not work_missing and compat is not False:
+        from app.modules.cost_match.domains import domain_of, domains_conflict
+        from app.modules.cost_match.work_catalog import canonical_work, catalog
+
+        q_work, c_work = canonical_work(query), canonical_work(candidate_text)
+        semantic_family = q_work.definition_id in catalog()['semantic_equivalence_families']
+        if q_work.object == 'cable' and 'cable_model' not in q_work.specs:
+            semantic_family = False
+        if (semantic_family and (q_work.operations or q_work.scope == 'material')
+                and q_work.residual_terms == c_work.residual_terms
+                and not domains_conflict(domain_of(q_head), domain_of(c_head))
+                and (compat is True or not query_unit and not candidate_unit)):
+            exact = identity_text(query) == identity_text(candidate_text)
+            confidence = 1.0 if exact else min(0.99, 0.99 * prior)
+            factors.update({'exact': float(exact), 'semantic_work_equivalent': 1.0,
+                            'work_compatible': 1.0, 'query_coverage': 1.0, 'candidate_coverage': 1.0,
+                            'defaults_applied': float(len(q_work.defaults_applied)),
+                            'term_overlap': 1.0, 'matched_tokens': float(len(set(q_tokens) & set(c_tokens)))})
+            if prior != 1.0:
+                factors['pattern_prior'] = prior
+            return MatchScore(confidence, _band(confidence), factors,
+                              [('exact_match' if exact else 'semantic_work_match'), *reasons],
+                              tuple(sorted(set(q_tokens) & set(c_tokens))))
+
     if not q_tokens or not c_tokens:
         reasons.append("weak_overlap")
         return MatchScore(confidence=0.0, band="low", factors=factors, reasons=reasons)
 
     # Normalised exact equality short-circuits to a perfect content score.
     # Compared on heads: "X, вкл…" and "X. крайна цена" are the same row.
-    if q_head == c_head:
+    if q_head == c_head and (not work_missing or identity_text(query) == identity_text(candidate_text)):
         factors["exact"] = 1.0
         factors["query_coverage"] = 1.0
         factors["term_overlap"] = 1.0
@@ -2300,6 +2398,9 @@ def score_match(
     # marking on the result (no score change - corroboration, not proof).
     q_specs = extract_specs(q_head)
     c_specs = extract_specs(c_head)
+    if is_bulgarian(query):
+        q_specs = {key: set(values) for key, values in q_work.specs.items()}
+        c_specs = {key: set(values) for key, values in c_work.specs.items()}
     conflicts = [
         cls
         for cls, q_vals in q_specs.items()
@@ -2504,6 +2605,7 @@ def best_match(
     query_unit: str | None = None,
     locale: str = DEFAULT_LOCALE,
     top_n: int = 3,
+    raw_query: str | None = None,
 ) -> MatchResult:
     """Find the best cost-database candidate for ``query``, with guards.
 
@@ -2527,7 +2629,18 @@ def best_match(
         )
 
     scored: list[tuple[Candidate, MatchScore]] = []
+    from app.modules.cost_match.bulgarian import quotation_eligible
+    from app.modules.cost_match.work_catalog import operator_pricing_rule
+
+    pricing_rule = operator_pricing_rule(normalized_query)
+
     for cand in candidates:
+        if pricing_rule and (cand.payload or {}).get('code') != pricing_rule['code']:
+            continue
+        if (cand.payload or {}).get('human_semantic_rejection'):
+            continue
+        if not quotation_eligible(normalized_query if raw_query is None else raw_query, cand.text):
+            continue
         prior = 1.0
         if cand.payload:
             try:
@@ -2540,7 +2653,11 @@ def best_match(
             query_unit=query_unit,
             candidate_unit=cand.unit,
             prior=prior,
+            raw_query=raw_query,
         )
+        if pricing_rule:
+            score.factors['operator_pricing_rule'] = 1.0
+            score.reasons.append('operator_pricing_rule:' + pricing_rule['id'])
         scored.append((cand, score))
 
     if not scored:
@@ -2571,6 +2688,7 @@ def best_match(
             -int(str((pair[1][0].payload or {}).get("source") or "")
                  in _OPERATOR_PRICE_SOURCES),
             -pair[1][1].factors.get("pattern_prior", 1.0),
+            -pair[1][1].factors.get("semantic_work_equivalent", 0.0),
             # Brickwork is bought per м²: between otherwise equal rows the
             # area-priced one is the honest evidence for a brick line.
             -pair[1][1].factors.get("masonry_area", 0.0),
@@ -2634,13 +2752,6 @@ def best_match(
                 continue
             if _scope_signature(_head_text(cand.text)) != q_sig:
                 continue
-            if units_compatible(query_unit, cand.unit) is not True and (
-                _masonry_unit_compat(
-                    query_unit, cand.unit, q_head, _head_text(cand.text)
-                )
-                is not True
-            ):
-                continue
             # Pool membership is an identity claim, not a weak lead: the
             # candidate must share at least one content token that is not a
             # bare numeral - "доставка и монтаж на X бр." alone admits every
@@ -2659,14 +2770,7 @@ def best_match(
             min_shared = 1 if len(q_cmp) <= 1 else 2
             if len(shared_content) < min_shared:
                 continue
-            factor = unit_rate_factor(cand.unit, query_unit)
-            if factor is None and _masonry_unit_compat(
-                query_unit, cand.unit, q_head, _head_text(cand.text)
-            ) is True:
-                # An м² rate is pooled as-is for a м³ brick line - there is
-                # no geometric factor without a thickness, so the member's
-                # own per-м² figure is the evidence.
-                factor = Decimal(1)
+            factor = work_rate_factor(cand.unit, query_unit, query_text=normalized_query, candidate_text=cand.text)
             rate = suggestion_rate(cand)
             if factor is None or rate is None or rate <= 0:
                 continue
@@ -2697,17 +2801,20 @@ def best_match(
                 # The member nearest the median is the evidence the
                 # suggestion is reported against - the price is the pool's,
                 # the row is the closest real corpus entry to it.
-                median_candidate = min(
-                    pool, key=lambda pair: abs(pair[1] - median_rate)
-                )[0]
+                middle_rate = rates[mid] if pool_size % 2 else (rates[mid - 1] + rates[mid]) / 2
+                median_candidate = min(pool, key=lambda pair: abs(pair[1] - middle_rate))[0]
 
-    from app.modules.cost_match.bulgarian import compare_work, is_bulgarian
+    from app.modules.cost_match.bulgarian import compare_work, identity_text, is_bulgarian
+    from app.modules.cost_match.work_catalog import canonical_work
 
     if is_bulgarian(normalized_query):
-        from app.modules.cost_match.work_catalog import canonical_work, work_metadata
-
         median_rate = median_candidate = None
-        work = work_metadata(best_cand.text)
+        pool_size = 0
+        pool_min = pool_max = None
+        pool_diverged = False
+        pool_refs = frozenset()
+    if is_bulgarian(normalized_query):
+        median_rate = median_candidate = None
         # Refinement needs the pool to be unambiguous: the bill line says
         # "замазка", the winner says "циментова замазка". If a rival
         # material - or a rival value of any refined dimension - sits in
@@ -2719,7 +2826,7 @@ def best_match(
             refined_dims = [item for item in missing
                             if _missing_class(item, q_w, best_w) == "refine"]
 
-            def _dim_value(item: str, w) -> frozenset:
+            def _dim_value(item: str, w: CanonicalWork) -> frozenset[str]:
                 if item == "work_material_incomplete":
                     return frozenset(w.materials)
                 if item == "work_location_incomplete":
@@ -2744,6 +2851,13 @@ def best_match(
                     continue
                 cw = canonical_work(cand.text)
                 if cw.object != q_w.object:
+                    continue
+                rival_rate = suggestion_rate(cand)
+                if (sc.factors.get('quotation_ineligible') or rival_rate is None
+                        or not rival_rate.is_finite() or rival_rate <= 0
+                        or work_rate_factor(cand.unit, query_unit, query_text=normalized_query,
+                                            candidate_text=cand.text) is None
+                        or not _required_work_covered(q_w, cw)):
                     continue
                 for item in refined_dims:
                     best_v, q_v = _dim_value(item, best_w), _dim_value(item, q_w)
@@ -2772,67 +2886,110 @@ def best_match(
                 demoted.reasons.append("pool_divergence")
                 best_score = demoted
                 is_confident = False
+        cohort_anchor = (best_cand.text if best_score.factors.get('refined')
+                         and not best_score.factors.get('pool_divergence') else normalized_query)
+        target_work = canonical_work(normalized_query)
+        cohort_work = canonical_work(cohort_anchor)
         equivalent_prices: list[tuple[Candidate, Decimal]] = []
-        if work['work']['definition_id']:
-            for cand, sc in scored:
-                if sc.factors.get('work_conflict'):
-                    continue
-                rate = suggestion_rate(cand)
-                factor = unit_rate_factor(cand.unit, query_unit)
-                currency = str((cand.payload or {}).get('currency') or '').upper()
-                if rate is None or not rate.is_finite() or rate <= 0 or factor is None:
-                    continue
-                if currency not in {'EUR', 'BGN'}:
-                    continue
-                if work_metadata(cand.text)['fingerprint'] != work['fingerprint']:
-                    continue
-                if currency == 'BGN':
-                    rate /= Decimal('1.95583')
+        work = canonical_work(best_cand.text)
+        winner_payload = best_cand.payload or {}
+        winner_currency = str(winner_payload.get('currency') or '').upper()
+        for cand, sc in scored:
+            if sc.factors.get('quotation_ineligible') or sc.factors.get('work_conflict'):
+                continue
+            if sc.confidence < HIGH_CONFIDENCE:
+                continue
+            candidate_work = canonical_work(cand.text)
+            if cohort_anchor != normalized_query and not _required_work_covered(target_work, candidate_work):
+                continue
+            conflicts, missing = compare_work(cohort_anchor, cand.text)
+            same_verbatim = identity_text(cohort_anchor) == identity_text(cand.text)
+            if conflicts or missing and not same_verbatim:
+                continue
+            if (candidate_work.residual_terms != cohort_work.residual_terms
+                    and not same_verbatim):
+                continue
+            payload = cand.payload or {}
+            currency = str(payload.get('currency') or '').upper()
+            if currency != winner_currency and {currency, winner_currency} != {'EUR', 'BGN'}:
+                continue
+            if payload.get('vat_included') != winner_payload.get('vat_included'):
+                continue
+            rate = suggestion_rate(cand)
+            factor = work_rate_factor(cand.unit, query_unit, query_text=normalized_query, candidate_text=cand.text)
+            if rate is None or not rate.is_finite() or rate <= 0 or factor is None:
+                continue
+            if currency != winner_currency:
+                rate = rate / Decimal('1.95583') if currency == 'BGN' else rate * Decimal('1.95583')
+            if work.definition_id or same_verbatim:
                 equivalent_prices.append((cand, rate * factor))
-        contest = equivalent_prices
+        confirmed = [(cand, rate) for cand, rate in equivalent_prices
+                     if (cand.payload or {}).get('source') == _CONFIRMED_SOURCE
+                     and (cand.payload or {}).get('auto_pricing_eligible') is not False
+                     and (cand.payload or {}).get('provenance_status') != 'pending_review']
+        if confirmed:
+            days = {cand.ref: _price_day(cand) for cand, _ in confirmed}
+            if all(days.values()):
+                newest = max(days.values())
+                confirmed = [(cand, rate) for cand, rate in confirmed
+                             if days[cand.ref] == newest]
+            equivalent_prices = confirmed
+            if best_cand.ref not in {cand.ref for cand, _ in confirmed}:
+                scores = {cand.ref: sc for cand, sc in scored}
+                best_cand = max((cand for cand, _ in confirmed),
+                                key=lambda cand: scores[cand.ref].confidence)
+                best_score = scores[best_cand.ref]
+                best_score.factors['operator_authority'] = 1.0
+                best_score.reasons.append('operator_authority')
+                is_confident = best_score.confidence >= HIGH_CONFIDENCE
+        if len(equivalent_prices) == 1 and not work.definition_id:
+            equivalent_prices = []
         if equivalent_prices:
-            # An operator ruling is a declared price: reference rows sharing
-            # the fingerprint at other prices are context, never a veto.
-            operator = [(c, r) for c, r in equivalent_prices
-                        if str((c.payload or {}).get('source') or '') in _OPERATOR_PRICE_SOURCES]
-            if operator:
-                contest = operator
-                confirmed = [(c, r) for c, r in operator
-                             if str((c.payload or {}).get('source') or '')
-                             == _CONFIRMED_SOURCE]
-                if confirmed:
-                    contest = confirmed
-                # Rulings append new rows, so the most recently declared
-                # price is the current one: narrow the contest to the newest
-                # day-cohort and a superseded ruling cannot veto a fresh one.
-                # Only when every operator twin is dated - an undated row
-                # cannot be ordered, so nothing may be dropped silently.
-                days = {c.ref: _price_day(c) for c, _ in contest}
-                if all(days.values()):
-                    newest = max(days.values())
-                    contest = [(c, r) for c, r in contest if days[c.ref] == newest]
-                # Promote the strongest same-cohort ruling when the current
-                # best is a reference twin or a superseded operator price.
-                if all(c.ref != best_cand.ref for c, _ in contest):
-                    score_by_ref = {c.ref: s for c, s in scored}
-                    promoted = max((c for c, _ in contest),
-                                   key=lambda c: score_by_ref[c.ref].confidence)
-                    best_cand, best_score = promoted, score_by_ref[promoted.ref]
-                    best_score.factors['operator_authority'] = 1.0
-                    best_score.reasons.append('operator_authority')
-                    is_confident = best_score.confidence >= HIGH_CONFIDENCE
-        if len(contest) > 1:
-            # Disagreement means two sources of equal rank differ: operator
-            # rulings judge operator rulings, references judge references.
-            rates = [rate for _, rate in contest]
-            if max(rates) > min(rates) * Decimal('1.5'):
+            rates = sorted(rate for _, rate in equivalent_prices)
+            pool_size, pool_min, pool_max = len(rates), rates[0], rates[-1]
+            pool_refs = frozenset(cand.ref for cand, _ in equivalent_prices)
+            pool_diverged = pool_max > pool_min * Decimal('1.5')
+            if pool_diverged:
                 best_score.factors['canonical_price_disagreement'] = 1.0
                 best_score.reasons.append('corpus_price_disagreement')
                 is_confident = False
-                pool_diverged = True
-                median_rate = median_candidate = None
-                pool_size, pool_min, pool_max = len(rates), min(rates), max(rates)
-                pool_refs = frozenset(cand.ref for cand, _ in contest)
+            elif pool_size > 1:
+                mid = len(rates) // 2
+                median_rate = rates[mid] if len(rates) % 2 else (rates[mid - 1] + rates[mid]) / 2
+                median_candidate = min(equivalent_prices,
+                                       key=lambda pair: (abs(pair[1] - median_rate), pair[0].ref))[0]
+            if any((cand.payload or {}).get('auto_pricing_eligible') is False
+                   or (cand.payload or {}).get('provenance_status') == 'pending_review'
+                   for cand, _ in equivalent_prices):
+                is_confident = False
+                best_score.factors['reference_price'] = 1.0
+        elif work.definition_id and 'unit_rate' in (best_cand.payload or {}):
+            is_confident = False
+            best_score.reasons.append('no_equivalent_price_evidence')
+
+    if (best_cand.payload or {}).get('auto_pricing_eligible') is False \
+            or (best_cand.payload or {}).get('provenance_status') == 'pending_review':
+        is_confident = False
+
+    if is_bulgarian(normalized_query) and 'unit_rate' in (best_cand.payload or {}):
+        rate = suggestion_rate(best_cand)
+        if (rate is None or not rate.is_finite() or rate <= 0
+                or ('currency' in (best_cand.payload or {})
+                    and str((best_cand.payload or {}).get('currency') or '').upper() not in {'EUR', 'BGN'})
+                or work_rate_factor(best_cand.unit, query_unit, query_text=normalized_query,
+                                    candidate_text=best_cand.text) is None):
+            is_confident = False
+            best_score.factors['price_evidence_invalid'] = 1.0
+
+    if pricing_rule:
+        payload = best_cand.payload or {}
+        rate = suggestion_rate(best_cand)
+        if (payload.get('source') not in _OPERATOR_PRICE_SOURCES
+                or payload.get('currency') not in {'EUR', 'BGN'}
+                or rate is None or not rate.is_finite() or rate <= 0
+                or work_rate_factor(best_cand.unit, query_unit, query_text=normalized_query,
+                                    candidate_text=best_cand.text) is None):
+            is_confident = False
 
     return MatchResult(
         query=normalized_query,
@@ -2863,7 +3020,8 @@ def _price_day(candidate: Candidate) -> str:
     to their ISO day so two rulings on one day stay peers.
     """
     payload = candidate.payload or {}
-    for key in ('price_as_of', 'created_at'):
+    keys = ('price_as_of', 'created_at') if payload.get('source') == _CONFIRMED_SOURCE else ('price_as_of',)
+    for key in keys:
         day = str(payload.get(key) or '')[:10]
         if day:
             return day

@@ -5112,6 +5112,7 @@ export function BOQEditorPage() {
           gracefully — but the source of truth lives in one place now. */}
       {hasPositions && (
         <CorpusMatchBanner
+          key={boq.id}
           boqId={boq.id}
           projectId={boq.project_id}
           disabled={Boolean(boq.is_locked)}

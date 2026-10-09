@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import type { ICellRendererParams, Column, GridApi } from 'ag-grid-community';
 import type { Position } from '../api';
+import { CorpusPriceEvidence } from '../CorpusPriceEvidence';
 import {
   ChevronDown,
   ChevronRight,
@@ -5293,7 +5294,7 @@ function PriceBasisDot({
   data,
   t,
 }: {
-  data: { price_basis?: string | null; id?: string };
+  data: { price_basis?: string | null; id?: string; boq_id?: string; metadata?: Record<string, unknown> };
   t: (key: string, opts?: Record<string, string | number>) => string;
 }) {
   const basis = data.price_basis;
@@ -5302,12 +5303,15 @@ function PriceBasisDot({
   if (!style) return null;
   const label = t(style.key, { defaultValue: style.label });
   return (
+    <>
     <span
       className={`shrink-0 inline-block h-2 w-2 rounded-full ${style.cls}`}
       title={label}
       aria-label={label}
       data-testid={`boq-price-basis-${data.id}`}
     />
+    <CorpusPriceEvidence data={data} t={t} />
+    </>
   );
 }
 

@@ -136,7 +136,7 @@ class TestReviewQueue:
             [
                 {"description": WALL, "unit": "m3", "quantity": "44.3"},
                 {"description": NONSENSE, "unit": "m2", "quantity": "310"},
-                {"description": "Stahlbetonwand", "unit": "m3", "quantity": "12"},
+                {"description": "Stahlbetonwand", "unit": "m2", "quantity": "12"},
             ],
         )
         response = await client.get(f"{BASE}/runs/{run['id']}/review-queue", headers=header)
@@ -236,17 +236,17 @@ class TestDecisions:
         )
         await client.post(
             f"{BASE}/results/{result_id}/decision",
-            json={"decision": "overridden", "cost_item_id": str(cost_base["CM-REBAR"])},
+            json={"decision": "rejected", "note": "not this wall after review"},
             headers=header,
         )
         history = await client.get(f"{BASE}/results/{result_id}/decisions", headers=header)
         assert history.status_code == 200, history.text
         rows = history.json()
         assert [row["seq"] for row in rows] == [1, 2]
-        assert [row["decision"] for row in rows] == ["confirmed", "overridden"]
+        assert [row["decision"] for row in rows] == ["confirmed", "rejected"]
 
         detail = (await client.get(f"{BASE}/results/{result_id}", headers=header)).json()
-        assert detail["decision_state"] == "overridden"
+        assert detail["decision_state"] == "rejected"
         assert len(detail["decisions"]) == 2
         # The original suggestion is not rewritten by the override.
         assert detail["suggested_code"] == "CM-C30-WALL"

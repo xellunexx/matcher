@@ -25,7 +25,7 @@
  * accepts all three together.
  */
 
-import { apiDelete, apiGet, apiPatch, apiPost } from '@/shared/lib/api';
+import { ApiError, apiDelete, apiGet, apiPatch, apiPost } from '@/shared/lib/api';
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
 
@@ -138,6 +138,20 @@ export interface MatchRun {
  * `band` is the matcher's own traffic light for this candidate, already
  * resolved server-side. Render it; do not re-threshold `confidence`.
  */
+export interface SemanticLink {
+  id: string;
+  role: string;
+  label: string;
+  query: string;
+  candidate: string;
+}
+
+export interface SemanticChoice {
+  link_id: string;
+  verdict: 'same' | 'different';
+  cost_item_id?: string | null;
+}
+
 export interface MatchCandidate {
   cost_item_id: string | null;
   code: string;
@@ -158,6 +172,12 @@ export interface MatchCandidate {
   unmatched_tokens?: string[];
   /** True when this row contributed its rate to a pooled median. */
   in_pool?: boolean;
+  canonical_work?: Record<string, unknown> | null;
+  evidence_description?: string;
+  work_context?: string[];
+  quotation_rate?: string | null;
+  quotation_currency?: string;
+  semantic_links?: SemanticLink[];
 }
 
 /** One ruling from the append-only history of a result. */
@@ -201,7 +221,7 @@ export interface MatchResult {
   /** Matcher vocabulary (`exact_match`, `unit_mismatch`). Never rendered raw —
    *  `explanation` is the same thing as a sentence in the reader's language. */
   reason_codes: string[];
-  factors: Record<string, number>;
+  factors: Record<string, unknown>;
   alternatives: MatchCandidate[];
   suggested_cost_item_id: string | null;
   suggested_code: string;
@@ -277,6 +297,7 @@ export interface MatchDecisionBody {
   note?: string | null;
   rate?: string | null;
   currency?: string | null;
+  semantic_choices?: SemanticChoice[];
 }
 
 export interface CostMatchFinding {
@@ -390,8 +411,9 @@ export function getBoqMatchJob(boqId: string, jobId: string): Promise<BoqMatchJo
 export async function getActiveBoqMatchJob(boqId: string): Promise<BoqMatchJob | null> {
   try {
     return await apiGet<BoqMatchJob>(`${BASE}/boq/${boqId}/run-jobs/active`);
-  } catch {
-    return null;
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
   }
 }
 
@@ -570,6 +592,16 @@ export function getRun(runId: string): Promise<MatchRun> {
   return apiGet<MatchRun>(`${BASE}/runs/${runId}`);
 }
 
+export async function listAllRuns(projectId: string): Promise<MatchRun[]> {
+  const runs: MatchRun[] = [];
+  const limit = 50;
+  for (let offset = 0; ; offset += limit) {
+    const page = await listRuns({ projectId, offset, limit });
+    runs.push(...page);
+    if (page.length < limit) return runs;
+  }
+}
+
 /** Rename a run, re-label its source, or open and close its review. */
 export function updateRun(runId: string, body: MatchRunUpdateBody): Promise<MatchRun> {
   return apiPatch<MatchRun, MatchRunUpdateBody>(`${BASE}/runs/${runId}`, body);
@@ -634,8 +666,16 @@ export function listReviewQueue(
  * The only way a suggestion becomes something the project uses. Appended to the
  * line's history rather than replacing it, so a change of mind stays visible.
  */
+export function getResult(resultId: string, locale?: string): Promise<MatchResult> {
+  return apiGet<MatchResult>(`${BASE}/results/${resultId}${qs({ locale })}`);
+}
+
 export function decideResult(resultId: string, body: MatchDecisionBody): Promise<MatchDecision> {
   return apiPost<MatchDecision, MatchDecisionBody>(`${BASE}/results/${resultId}/decision`, body);
+}
+
+export function previewSemanticLinks(resultId: string, costItemId: string): Promise<SemanticLink[]> {
+  return apiGet<SemanticLink[]>(`${BASE}/results/${resultId}/semantic-links${qs({ cost_item_id: costItemId })}`);
 }
 
 /** The `cost_match` rule set over a whole run, both scopes merged. */

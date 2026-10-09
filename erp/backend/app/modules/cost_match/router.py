@@ -31,10 +31,12 @@ from __future__ import annotations
 import asyncio
 import logging
 import uuid
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.permissions import Role, permission_registry
 from app.dependencies import CurrentUserId, RequirePermission, SessionDep, verify_project_access
@@ -89,13 +91,13 @@ logger = logging.getLogger(__name__)
 # ``_ACTIVE_BOQ_JOBS`` pins one running job per BOQ, so a retry (the very
 # thing a client does after its request timed out) returns the existing
 # job instead of stacking a second match on the same positions.
-_BOQ_JOBS: dict[uuid.UUID, dict] = {}
+_BOQ_JOBS: dict[uuid.UUID, dict[str, Any]] = {}
 _ACTIVE_BOQ_JOBS: dict[uuid.UUID, uuid.UUID] = {}
-_JOB_TASKS: set[asyncio.Task] = set()
+_JOB_TASKS: set[asyncio.Task[None]] = set()
 _JOB_TTL = timedelta(hours=1)
 
 
-def _job_response(job: dict) -> BoqMatchJobResponse:
+def _job_response(job: dict[str, Any]) -> BoqMatchJobResponse:
     return BoqMatchJobResponse(
         job_id=job["job_id"],
         boq_id=job["boq_id"],
@@ -121,7 +123,7 @@ def _prune_jobs() -> None:
             _ACTIVE_BOQ_JOBS.pop(job["boq_id"], None)
 
 
-def _job_progress(job: dict):
+def _job_progress(job: dict[str, Any]) -> Callable[[int, int], None]:
     """Return the service's on_progress callback bound to this job dict."""
 
     def _update(done: int, total: int) -> None:
@@ -132,7 +134,7 @@ def _job_progress(job: dict):
 
 
 async def _run_boq_match_job(
-    job: dict,
+    job: dict[str, Any],
     data: BoqMatchRunCreate,
     created_by: uuid.UUID | None,
 ) -> None:
@@ -270,21 +272,21 @@ def _as_uuid(raw: str | None) -> uuid.UUID | None:
         return None
 
 
-async def _load_run_or_404(session, run_id: uuid.UUID) -> MatchRun:
+async def _load_run_or_404(session: AsyncSession, run_id: uuid.UUID) -> MatchRun:
     run = await session.get(MatchRun, run_id)
     if run is None:
         raise HTTPException(status_code=404, detail="Match run not found")
     return run
 
 
-async def _verify_run_access(session, run_id: uuid.UUID, user_id: str) -> MatchRun:
+async def _verify_run_access(session: AsyncSession, run_id: uuid.UUID, user_id: str) -> MatchRun:
     run = await _load_run_or_404(session, run_id)
     await verify_project_access(run.project_id, user_id, session)
     return run
 
 
 async def _verify_result_access(
-    session,
+    session: AsyncSession,
     result_id: uuid.UUID,
     user_id: str,
 ) -> tuple[MatchRun, MatchResult]:
@@ -855,6 +857,22 @@ async def get_result(
             estimate_signature(loaded.source_description, loaded.source_unit)
         ),
     )
+
+
+@router.get("/results/{result_id}/semantic-links", response_model=list[dict[str, str]])
+async def preview_semantic_links(
+    result_id: uuid.UUID,
+    cost_item_id: uuid.UUID,
+    session: SessionDep,
+    user_id: CurrentUserId,
+) -> list[dict[str, str]]:
+    """Show role-by-role evidence for a priced alternative before deciding."""
+    run, result = await _verify_result_access(session, result_id, user_id)
+    service = CostMatchService(session)
+    try:
+        return await service.links_for_item(run, result, cost_item_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail="Cost item not found in this run's cost base") from exc
 
 
 @router.post(

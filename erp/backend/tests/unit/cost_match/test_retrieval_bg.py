@@ -1,5 +1,7 @@
 """Conjunctive retrieval and its non-negotiable price-safety boundary."""
 
+from decimal import Decimal
+
 from app.modules.cost_match.bulgarian import parse_work
 from app.modules.cost_match.matcher import Candidate, best_match
 from app.modules.cost_match.retrieval_bg import retrieval_plan
@@ -50,8 +52,14 @@ def test_dimension_unit_and_price_evidence_remain_final_gates() -> None:
                                                {'unit_rate': '30', 'currency': 'EUR'})],
                         query_unit='м²', locale='bg')
     assert not result.is_confident
-    result = best_match(DEMOLITION, [Candidate('wrong', DEMOLITION, 'м³',
+    result = best_match(DEMOLITION, [Candidate('thickness_volume', DEMOLITION, 'м³',
                                                {'unit_rate': '30', 'currency': 'EUR'})],
+                        query_unit='м²', locale='bg')
+    assert result.is_confident
+    assert result.pool_min == result.pool_max == Decimal('7.5')
+    without_thickness = 'Разваляне на тухлен зид'
+    result = best_match(without_thickness, [Candidate('wrong', without_thickness, 'м³',
+                                                     {'unit_rate': '30', 'currency': 'EUR'})],
                         query_unit='м²', locale='bg')
     assert not result.is_confident
 

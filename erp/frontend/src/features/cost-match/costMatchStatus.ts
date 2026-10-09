@@ -15,7 +15,17 @@
  * do, where every zero is a real answer rather than a missing one.
  */
 
-import type { MatchCandidate, MatchDecision, MatchLineInput, MatchResult } from './api';
+import type { MatchCandidate, MatchDecision, MatchLineInput, MatchResult, MatchRun } from './api';
+
+export function runBoqId(run: Pick<MatchRun, 'notes'>): string | null {
+  try {
+    const notes: unknown = JSON.parse(run.notes ?? '');
+    if (notes && typeof notes === 'object' && 'boq_id' in notes && typeof notes.boq_id === 'string') {
+      return notes.boq_id;
+    }
+  } catch { /* A pasted run may have plain-text notes. */ }
+  return null;
+}
 
 /* ── Vocabulary ────────────────────────────────────────────────────────── */
 

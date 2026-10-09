@@ -25,14 +25,20 @@ def enrich(corpus: Path, output: Path) -> Counter:
     counts = Counter()
     opener = gzip.open if output.suffix == '.gz' else open
     with corpus.open(encoding='utf-8-sig', newline='') as source, opener(output, 'wt', encoding='utf-8') as target:
-        for quotation in csv.DictReader(source):
-            metadata = work_metadata(quotation.get('description') or '')
+        quotations = json.load(source) if corpus.suffix.lower() == '.json' else csv.DictReader(source)
+        if isinstance(quotations, dict):
+            raise ValueError('JSON corpus must contain an array of original quotations.')
+        for quotation in quotations:
+            metadata = work_metadata(quotation.get('description') or quotation.get('desc') or quotation.get('name') or '')
             # Quotation fields, including provenance and money, are unchanged.
             target.write(json.dumps({'quotation': quotation, 'canonical_work': metadata},
                                     ensure_ascii=False) + '\n')
             counts['records'] += 1
             counts['object_known' if metadata['work']['object'] else 'object_unknown'] += 1
             counts['scope_known' if metadata['work']['scope'] else 'scope_unknown'] += 1
+            counts['operation_known' if metadata['work']['operations'] else 'operation_unknown'] += 1
+            if metadata['work']['defaults_applied']:
+                counts['profile_defaults_used'] += 1
     return counts
 
 

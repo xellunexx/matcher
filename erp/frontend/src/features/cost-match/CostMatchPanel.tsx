@@ -31,7 +31,7 @@
  * constants and `ConfidenceBadge`'s `score` prop is not used.
  */
 
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -69,21 +69,28 @@ import {
   type MatchCandidate,
   type MatchResult,
   type MatchRun,
+  type SemanticChoice,
+  type SemanticLink,
   type TierFilter,
   MAX_BATCH_LINES,
   createRun,
   decideResult,
   deleteRun,
+  getResult,
+  getRun,
   listCostBaseRegions,
   listReviewQueue,
   listRunResults,
-  listRuns,
+  listAllRuns,
   searchCostBase,
   startWebVerifyJob,
   pollWebVerifyJob,
+  previewSemanticLinks,
   updateRun,
   validateRun,
 } from './api';
+import { refreshMatchPrices } from './cache';
+import { SemanticLinkReview } from './SemanticLinkReview';
 import {
   type BadgeTone,
   type DecisionState,
@@ -91,6 +98,7 @@ import {
   DECISION_STATE_ORDER,
   TIER_ORDER,
   adoptedItem,
+  runBoqId,
   canConfirm,
   confidenceBand,
   confidencePercent,
@@ -462,7 +470,7 @@ interface OverrideProps {
   run: MatchRun;
   result: MatchResult;
   onCancel: () => void;
-  onPick: (item: { id: string; code: string; description: string }, note: string) => void;
+  onPick: (item: { id: string; code: string; description: string }, note: string, choices: SemanticChoice[]) => void;
   pending: boolean;
 }
 
@@ -479,6 +487,13 @@ function OverridePicker({ run, result, onCancel, onPick, pending }: OverrideProp
   const [query, setQuery] = useState('');
   const [note, setNote] = useState('');
   const [submitted, setSubmitted] = useState('');
+  const [selected, setSelected] = useState<{ id: string; code: string; description: string } | null>(null);
+  const [choices, setChoices] = useState<SemanticChoice[]>([]);
+  const preview = useQuery({
+    queryKey: ['cost-match', 'semantic-preview', result.id, selected?.id],
+    queryFn: () => previewSemanticLinks(result.id, selected!.id),
+    enabled: !!selected,
+  });
 
   const alternatives = useMemo(() => overrideOptions(result), [result]);
 
@@ -581,7 +596,10 @@ function OverridePicker({ run, result, onCancel, onPick, pending }: OverrideProp
               <button
                 type="button"
                 disabled={pending}
-                onClick={() => onPick({ id: row.id, code: row.code, description: row.description }, note)}
+                onClick={() => {
+                  setSelected({ id: row.id, code: row.code, description: row.description });
+                  setChoices([]);
+                }}
                 className="w-full rounded-md border border-border bg-surface-primary px-2 py-1.5 text-left text-xs hover:bg-surface-secondary disabled:opacity-50"
               >
                 <div className="flex items-center justify-between gap-2">
@@ -622,6 +640,19 @@ function OverridePicker({ run, result, onCancel, onPick, pending }: OverrideProp
           ))}
         </ul>
       )}
+      {selected && <div role="region" aria-label="Избрана оферта" className="rounded-md border border-border bg-surface-primary p-2">
+        <p className="text-xs font-medium text-content-primary">{selected.code}: {selected.description}</p>
+        {preview.isError && <p role="alert" className="text-xs text-semantic-error">
+          Не мога да заредя връзките към тази оферта. Избери друга или опитай отново.
+        </p>}
+        {preview.data && <SemanticLinkReview links={preview.data} choices={choices}
+          onChange={setChoices} disabled={pending} />}
+        <Button variant="primary" size="sm"
+          disabled={pending || !preview.data || choices.some((choice) => choice.verdict === 'different')}
+          onClick={() => onPick(selected, note, choices.map((choice) => ({ ...choice, cost_item_id: selected.id })))}>
+          Потвърди тази оферта
+        </Button>
+      </div>}
     </div>
   );
 }
@@ -638,9 +669,11 @@ interface ResultRowProps {
     note: string,
     rate?: string,
     currency?: string,
+    semanticChoices?: SemanticChoice[],
   ) => void;
   pendingId: string | null;
   locked: boolean;
+  onEditing: (id: string, active: boolean) => void;
 }
 
 /**
@@ -766,7 +799,7 @@ function WebEstimateCard({
   );
 }
 
-function ResultRow({ run, result, onDecide, pendingId, locked }: ResultRowProps) {
+function ResultRow({ run, result, onDecide, pendingId, locked, onEditing }: ResultRowProps) {
   const { t } = useTranslation();
   const tierLabels = tierLabelMap(t);
   const decisionLabels = decisionLabelMap(t);
@@ -774,6 +807,16 @@ function ResultRow({ run, result, onDecide, pendingId, locked }: ResultRowProps)
   const [manualOpen, setManualOpen] = useState(false);
   const [manualRate, setManualRate] = useState('');
   const [manualCurrency, setManualCurrency] = useState('EUR');
+  const [semanticChoices, setSemanticChoices] = useState<SemanticChoice[]>([]);
+  const semanticLinks = (Array.isArray(result.factors.semantic_links)
+    ? result.factors.semantic_links : []) as SemanticLink[];
+  const confirmedLinks = (Array.isArray(result.factors.human_semantic_links)
+    ? result.factors.human_semantic_links : []) as SemanticLink[];
+  useEffect(() => setSemanticChoices([]), [result.id, result.updated_at]);
+  useEffect(() => {
+    onEditing(result.id, semanticChoices.length > 0 || overriding || manualOpen);
+    return () => onEditing(result.id, false);
+  }, [result.id, semanticChoices.length, overriding, manualOpen, onEditing]);
 
   const tier = resultTier(result);
   const state = decisionStateOf(result);
@@ -861,6 +904,10 @@ function ResultRow({ run, result, onDecide, pendingId, locked }: ResultRowProps)
       )}
 
       {/* The AI estimate, when a verify job produced one for this line. */}
+      {!locked && result.suggested_cost_item_id && <SemanticLinkReview
+        links={semanticLinks} choices={semanticChoices} onChange={setSemanticChoices} disabled={busy || locked}
+        previouslyConfirmed={confirmedLinks.map((link) => link.id)}
+      />}
       {state === 'pending' && !locked && (
         <WebEstimateCard
           result={result}
@@ -928,9 +975,9 @@ function ResultRow({ run, result, onDecide, pendingId, locked }: ResultRowProps)
             <Button
               variant="secondary"
               size="sm"
-              disabled={busy}
+              disabled={busy || semanticChoices.some((choice) => choice.verdict === 'different')}
               icon={<Check size={13} />}
-              onClick={() => onDecide(result, 'confirmed', null, '')}
+              onClick={() => onDecide(result, 'confirmed', null, '', undefined, undefined, semanticChoices)}
             >
               {t('cost_match.action_confirm', { defaultValue: 'Confirm' })}
             </Button>
@@ -957,7 +1004,7 @@ function ResultRow({ run, result, onDecide, pendingId, locked }: ResultRowProps)
             size="sm"
             disabled={busy}
             icon={<X size={13} />}
-            onClick={() => onDecide(result, 'rejected', null, '')}
+            onClick={() => onDecide(result, 'rejected', null, '', undefined, undefined, semanticChoices)}
           >
             {t('cost_match.action_reject', { defaultValue: 'Nothing here fits' })}
           </Button>
@@ -1015,8 +1062,10 @@ function ResultRow({ run, result, onDecide, pendingId, locked }: ResultRowProps)
           result={result}
           pending={busy}
           onCancel={() => setOverriding(false)}
-          onPick={(item, note) => {
-            onDecide(result, 'overridden', item.id, note);
+          onPick={(item, note, choices) => {
+            onDecide(result, 'overridden', item.id, note, undefined, undefined,
+              [...semanticChoices.map((choice) => ({ ...choice, cost_item_id: result.suggested_cost_item_id })),
+                ...choices]);
             setOverriding(false);
           }}
         />
@@ -1027,17 +1076,41 @@ function ResultRow({ run, result, onDecide, pendingId, locked }: ResultRowProps)
 
 /* ── The panel ─────────────────────────────────────────────────────────── */
 
-export function CostMatchPanel() {
+export function CostMatchPanel({
+  projectId: requestedProjectId,
+  boqId,
+  initialRunId,
+  initialResultId,
+  initialTab = 'queue',
+}: {
+  projectId?: string;
+  boqId?: string;
+  initialRunId?: string;
+  initialResultId?: string;
+  initialTab?: 'queue' | 'all';
+} = {}) {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const addToast = useToastStore((s) => s.addToast);
+  const [editingRows, setEditingRows] = useState<Record<string, boolean>>({});
+  const onEditing = useCallback((id: string, active: boolean) => {
+    setEditingRows((previous) => (previous[id] ?? false) === active
+      ? previous : { ...previous, [id]: active });
+  }, []);
   const activeProjectId = useProjectContextStore((s) => s.activeProjectId);
+  const requestedRunQuery = useQuery({
+    queryKey: ['cost-match', 'run', initialRunId],
+    queryFn: () => getRun(initialRunId as string),
+    enabled: !!initialRunId,
+  });
+  const projectId = requestedProjectId ?? requestedRunQuery.data?.project_id ?? activeProjectId;
   const tierLabels = tierLabelMap(t);
   const decisionLabels = decisionLabelMap(t);
 
-  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(initialRunId ?? null);
   const [composing, setComposing] = useState(false);
-  const [tab, setTab] = useState<'queue' | 'all'>('queue');
+  const [tab, setTab] = useState<'queue' | 'all'>(initialTab);
+  const [page, setPage] = useState({ scope: '', offset: 0 });
   const [tierFilter, setTierFilter] = useState<TierFilter | ''>('');
   const [stateFilter, setStateFilter] = useState<DecisionStateFilter | ''>('');
   const [decidingId, setDecidingId] = useState<string | null>(null);
@@ -1047,33 +1120,55 @@ export function CostMatchPanel() {
   const [verifyProgress, setVerifyProgress] = useState<{ done: number; total: number } | null>(null);
   const [verifyScope, setVerifyScope] = useState<'queue' | 'all'>('queue');
 
+  useEffect(() => setSelectedRunId(initialRunId ?? null), [projectId, boqId, initialRunId]);
+
   const runsQuery = useQuery({
-    queryKey: ['cost-match', 'runs', activeProjectId],
-    queryFn: () => listRuns({ projectId: activeProjectId as string, limit: 50 }),
-    enabled: !!activeProjectId,
+    queryKey: ['cost-match', 'runs', projectId],
+    queryFn: () => listAllRuns(projectId as string),
+    enabled: !!projectId && (!initialRunId || requestedRunQuery.isSuccess),
   });
 
-  const runs = runsQuery.data ?? [];
-  const selectedRun = runs.find((run) => run.id === selectedRunId) ?? runs[0] ?? null;
+  const runs = (runsQuery.data ?? []).filter((run) => !boqId || runBoqId(run) === boqId);
+  const selectedRun = selectedRunId
+    ? runs.find((run) => run.id === selectedRunId) ?? null
+    : runs[0] ?? null;
   const runId = selectedRun?.id ?? null;
   const locked = selectedRun?.status === 'closed';
+  const pageScope = JSON.stringify([runId, tab, tierFilter, stateFilter, i18n.language]);
+  const offset = page.scope === pageScope ? page.offset : 0;
+  useEffect(() => {
+    setPage((previous) => previous.scope === pageScope ? previous : { scope: pageScope, offset: 0 });
+  }, [pageScope]);
 
   const resultsQuery = useQuery({
-    queryKey: ['cost-match', 'results', runId, tab, tierFilter, stateFilter, i18n.language],
+    queryKey: ['cost-match', 'results', runId, tab, tierFilter, stateFilter, i18n.language, offset],
     queryFn: () =>
       tab === 'queue'
-        ? listReviewQueue(runId as string, { locale: i18n.language, limit: PAGE_SIZE })
+        ? listReviewQueue(runId as string, { locale: i18n.language, limit: PAGE_SIZE, offset })
         : listRunResults(runId as string, {
             tier: tierFilter || undefined,
             decisionState: stateFilter || undefined,
             locale: i18n.language,
             limit: PAGE_SIZE,
+            offset,
           }),
     enabled: !!runId,
   });
 
   const results = useMemo(() => resultsQuery.data?.items ?? [], [resultsQuery.data]);
   const shownTally = useMemo(() => tallyResults(results), [results]);
+  const focusedResultQuery = useQuery({
+    queryKey: ['cost-match', 'result', initialResultId, i18n.language],
+    queryFn: () => getResult(initialResultId as string, i18n.language),
+    enabled: !!initialResultId && !!runId,
+  });
+  const focusedResult = focusedResultQuery.data?.run_id === runId ? focusedResultQuery.data : null;
+  const totalResults = resultsQuery.data?.total ?? 0;
+  useEffect(() => {
+    if (resultsQuery.data && offset > 0 && offset >= totalResults) {
+      setPage({ scope: pageScope, offset: Math.max(0, Math.ceil(totalResults / PAGE_SIZE) - 1) * PAGE_SIZE });
+    }
+  }, [resultsQuery.data, offset, totalResults, pageScope]);
 
   const decideMutation = useMutation({
     mutationFn: (args: {
@@ -1083,6 +1178,7 @@ export function CostMatchPanel() {
       note: string;
       rate?: string;
       currency?: string;
+      semanticChoices?: SemanticChoice[];
     }) =>
       decideResult(args.result.id, {
         decision: args.kind,
@@ -1090,10 +1186,10 @@ export function CostMatchPanel() {
         note: args.note.trim() || null,
         rate: args.kind === 'manual' ? args.rate : undefined,
         currency: args.kind === 'manual' ? args.currency : undefined,
+        ...(args.semanticChoices?.length ? { semantic_choices: args.semanticChoices } : {}),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cost-match', 'results'] });
-      queryClient.invalidateQueries({ queryKey: ['cost-match', 'runs', activeProjectId] });
+      refreshMatchPrices(queryClient);
     },
     onError: (err) =>
       addToast({
@@ -1150,7 +1246,7 @@ export function CostMatchPanel() {
 
   const lockMutation = useMutation({
     mutationFn: (status: 'matched' | 'closed') => updateRun(runId as string, { status }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cost-match', 'runs', activeProjectId] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cost-match', 'runs', projectId] }),
     onError: (err) =>
       addToast({
         type: 'error',
@@ -1164,7 +1260,7 @@ export function CostMatchPanel() {
     onSuccess: () => {
       setSelectedRunId(null);
       setConfirmDelete(false);
-      queryClient.invalidateQueries({ queryKey: ['cost-match', 'runs', activeProjectId] });
+      queryClient.invalidateQueries({ queryKey: ['cost-match', 'runs', projectId] });
     },
     onError: (err) => {
       setConfirmDelete(false);
@@ -1183,9 +1279,10 @@ export function CostMatchPanel() {
     note: string,
     rate?: string,
     currency?: string,
+    semanticChoices?: SemanticChoice[],
   ) => {
     setDecidingId(result.id);
-    decideMutation.mutate({ result, kind, costItemId, note, rate, currency });
+    decideMutation.mutate({ result, kind, costItemId, note, rate, currency, semanticChoices });
   };
 
   const confirmableResults = useMemo(
@@ -1206,8 +1303,6 @@ export function CostMatchPanel() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cost-match', 'results'] });
-      queryClient.invalidateQueries({ queryKey: ['cost-match', 'runs', activeProjectId] });
       addToast({
         type: 'success',
         title: t('cost_match.batch_confirmed', { defaultValue: 'Batch confirmed' }),
@@ -1223,12 +1318,21 @@ export function CostMatchPanel() {
         title: t('cost_match.batch_failed', { defaultValue: 'Some confirmations did not go through' }),
         message: getErrorMessage(err),
       }),
-    onSettled: () => setBatchProgress(null),
+    onSettled: () => {
+      refreshMatchPrices(queryClient);
+      setBatchProgress(null);
+    },
   });
 
   /* Every hook is above this line; the guards start here. */
 
-  if (!activeProjectId) {
+  if (requestedRunQuery.isError) {
+    return <p role="alert">{getErrorMessage(requestedRunQuery.error)}</p>;
+  }
+  if (initialRunId && requestedRunQuery.isLoading) {
+    return <p>{t('common.loading', { defaultValue: 'Loading...' })}</p>;
+  }
+  if (!projectId) {
     return (
       <EmptyState
         icon={<Layers size={28} />}
@@ -1261,7 +1365,7 @@ export function CostMatchPanel() {
 
       {composing && (
         <BillComposer
-          projectId={activeProjectId}
+          projectId={projectId}
           onClose={() => setComposing(false)}
           onCreated={(run) => {
             setComposing(false);
@@ -1277,7 +1381,13 @@ export function CostMatchPanel() {
         </p>
       )}
 
-      {!runsQuery.isLoading && runs.length === 0 && !composing && (
+      {runsQuery.isError && <p role="alert" className="text-xs text-red-600">{getErrorMessage(runsQuery.error)}</p>}
+      {!runsQuery.isLoading && !runsQuery.isError && selectedRunId && !selectedRun && (
+        <p role="alert" className="text-xs text-red-600">
+          {t('cost_match.run_unavailable', { defaultValue: 'This match run is not available for this bill. Select a run below.' })}
+        </p>
+      )}
+      {!runsQuery.isLoading && !runsQuery.isError && runs.length === 0 && !composing && (
         <EmptyState
           icon={<Layers size={28} />}
           title={t('cost_match.empty_title', { defaultValue: 'No bill has been matched yet' })}
@@ -1447,6 +1557,8 @@ export function CostMatchPanel() {
                 size="sm"
                 icon={<ListChecks size={13} />}
                 loading={batchConfirm.isPending}
+                disabled={decideMutation.isPending || results.some((row) => editingRows[row.id])}
+                title="Първо запази индивидуалните решения и избраните смислови връзки."
                 onClick={() => batchConfirm.mutate()}
               >
                 {batchProgress
@@ -1510,6 +1622,13 @@ export function CostMatchPanel() {
             </div>
           )}
 
+          {focusedResultQuery.isError && <p role="alert">{getErrorMessage(focusedResultQuery.error)}</p>}
+          {focusedResult && !results.some((row) => row.id === focusedResult.id) && (
+            <ul aria-label={t('cost_match.linked_line', { defaultValue: 'Selected bill line' })}>
+              <ResultRow run={selectedRun} result={focusedResult} onDecide={handleDecide}
+                pendingId={batchConfirm.isPending ? focusedResult.id : decidingId} locked={locked} onEditing={onEditing} />
+            </ul>
+          )}
           {/* Tabs. The queue is the work; all lines is the record. */}
           <div className="flex gap-1 border-b border-border">
             <button
@@ -1620,7 +1739,11 @@ export function CostMatchPanel() {
             </p>
           )}
 
-          {!resultsQuery.isLoading && results.length === 0 && (
+          {resultsQuery.isError && (
+            <p role="alert" className="text-xs text-red-600">{getErrorMessage(resultsQuery.error)}</p>
+          )}
+
+          {!resultsQuery.isLoading && !resultsQuery.isError && results.length === 0 && (
             <p className="rounded-md bg-surface-secondary px-3 py-4 text-center text-xs text-content-tertiary">
               {tab === 'queue'
                 ? t('cost_match.queue_clear', {
@@ -1642,8 +1765,9 @@ export function CostMatchPanel() {
                     run={selectedRun}
                     result={result}
                     onDecide={handleDecide}
-                    pendingId={decidingId}
+                    pendingId={batchConfirm.isPending ? result.id : decidingId}
                     locked={locked}
+                    onEditing={onEditing}
                   />
                 ))}
               </ul>
@@ -1656,6 +1780,16 @@ export function CostMatchPanel() {
                   queue: shownTally.queueLength,
                 })}
               </p>
+              <div className="flex justify-end gap-2">
+                <Button variant="secondary" size="sm" disabled={offset === 0 || resultsQuery.isFetching}
+                  onClick={() => setPage({ scope: pageScope, offset: Math.max(0, offset - PAGE_SIZE) })}>
+                  {t('common.previous', { defaultValue: 'Previous' })}
+                </Button>
+                <Button variant="secondary" size="sm" disabled={offset + PAGE_SIZE >= totalResults || resultsQuery.isFetching}
+                  onClick={() => setPage({ scope: pageScope, offset: offset + PAGE_SIZE })}>
+                  {t('common.next', { defaultValue: 'Next' })}
+                </Button>
+              </div>
             </>
           )}
         </div>
@@ -1676,4 +1810,3 @@ export function CostMatchPanel() {
     </div>
   );
 }
-

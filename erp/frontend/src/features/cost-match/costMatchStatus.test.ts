@@ -572,6 +572,7 @@ describe('tallyResults', () => {
       confirmed: 0,
       overridden: 0,
       rejected: 0,
+      manual: 0,
       queueLength: 0,
     });
   });
