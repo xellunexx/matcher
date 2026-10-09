@@ -1,0 +1,137 @@
+{
+  "implementation": "Bulgarian canonical-signature retrieval v3",
+  "focused_tests": {
+    "passed": 171,
+    "postgres_integration_included": true,
+    "warnings": 3,
+    "warning_cause": "Unavailable async pytest config options"
+  },
+  "ruff_targeted_changed_modules": "passed",
+  "mypy_retrieval_catalog_parser_modules": "passed",
+  "mypy_existing_repository_service_scorer_modules": {
+    "clean": false,
+    "existing_errors": 16,
+    "same_errors_in_v2_baseline": true
+  },
+  "replay_decisions": {
+    "exact": 330,
+    "review": 164,
+    "unmatched": 23,
+    "compatible": 4,
+    "structural_or_nonwork": 90
+  },
+  "all_v2_unit_rates_and_totals_unchanged": true,
+  "highlighted_wrong_positions_withheld": [
+    {
+      "original_position": "2",
+      "input_excel_row": 3,
+      "money_blank": true
+    },
+    {
+      "original_position": "3",
+      "input_excel_row": 4,
+      "money_blank": true
+    },
+    {
+      "original_position": "5",
+      "input_excel_row": 6,
+      "money_blank": true
+    },
+    {
+      "original_position": "12",
+      "input_excel_row": 13,
+      "money_blank": true
+    },
+    {
+      "original_position": "192",
+      "input_excel_row": 24,
+      "money_blank": true
+    },
+    {
+      "original_position": "24",
+      "input_excel_row": 26,
+      "money_blank": true
+    },
+    {
+      "original_position": "26",
+      "input_excel_row": 28,
+      "money_blank": true
+    },
+    {
+      "original_position": "27",
+      "input_excel_row": 29,
+      "money_blank": true
+    },
+    {
+      "original_position": "208",
+      "input_excel_row": 40,
+      "money_blank": true
+    },
+    {
+      "original_position": "39",
+      "input_excel_row": 42,
+      "money_blank": true
+    },
+    {
+      "original_position": "41",
+      "input_excel_row": 44,
+      "money_blank": true
+    },
+    {
+      "original_position": "43",
+      "input_excel_row": 46,
+      "money_blank": true
+    },
+    {
+      "original_position": "46",
+      "input_excel_row": 49,
+      "money_blank": true
+    },
+    {
+      "original_position": "224",
+      "input_excel_row": 56,
+      "money_blank": true
+    },
+    {
+      "original_position": "42.4",
+      "input_excel_row": 480,
+      "money_blank": true
+    },
+    {
+      "original_position": "49.11",
+      "input_excel_row": 512,
+      "money_blank": true
+    },
+    {
+      "original_position": "55.2",
+      "input_excel_row": 566,
+      "money_blank": true
+    },
+    {
+      "original_position": "56.6",
+      "input_excel_row": 577,
+      "money_blank": true
+    },
+    {
+      "original_position": "56.12",
+      "input_excel_row": 583,
+      "money_blank": true
+    }
+  ],
+  "patch_from_v2_validated": true,
+  "patch_from_original_validated": true,
+  "changed_code_files_from_v2": [
+    "app/modules/cost_match/bulgarian.py",
+    "app/modules/cost_match/matcher.py",
+    "app/modules/cost_match/service.py",
+    "app/modules/cost_match/repository.py",
+    "app/modules/cost_match/work_catalog.py",
+    "app/modules/cost_match/work_definitions_bg.json",
+    "scripts/kcc_match_bg.py",
+    "app/modules/cost_match/retrieval_bg.py",
+    "tests/unit/cost_match/test_retrieval_bg.py",
+    "tests/unit/cost_match/test_retrieval_bg_postgres.py"
+  ],
+  "live_erp_verified": false,
+  "independent_price_ground_truth_verified": false
+}

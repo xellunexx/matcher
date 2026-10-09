@@ -1,0 +1,132 @@
+diff --git a/app/modules/cost_match/service.py b/app/modules/cost_match/service.py
+index 5390893..60925ff 100644
+--- a/app/modules/cost_match/service.py
++++ b/app/modules/cost_match/service.py
+@@ -1263,7 +1263,8 @@ class CostMatchService:
+             applied_rate = applied_rate * fx_rate
+             currency_mismatch = False
+         meta = dict(position.metadata_ or {})
+-        meta["cost_match"] = {
++        prior_offer = dict(meta.get("cost_match") or {})
++        offer = {
+             "run_id": str(run.id),
+             "result_id": str(result.id),
+             "cost_item_id": str(result.suggested_cost_item_id) if result.suggested_cost_item_id else None,
+@@ -1278,13 +1279,50 @@ class CostMatchService:
+             "confidence": format(result.confidence, "f"),
+             "state": "pending_review",
+         }
+-        if factor is not None and factor != 1:
+-            meta["cost_match"]["unit_factor"] = format(factor, "f")
+-        if fx_rate is not None:
+-            meta["cost_match"]["fx"] = fx_pair
+-        if applied_rate != rate:
+-            meta["cost_match"]["applied_rate"] = format(applied_rate, "f")
++        # Cascade authority: an unpriced line is offered to every base, and
++        # without this guard the LAST stage rewrites the offer regardless of
++        # quality - an operator латекс row ends up masked by a sek "блажна
++        # боя". A later stage may only replace the stored offer when it is
++        # strictly better: a higher tier, or higher confidence at the same
++        # tier; a unit/currency-conflicted offer ranks below every clean
++        # one. On ties the earlier base keeps the line - that is the order
++        # the operator declared by listing bases first.
++        prior_conflict = bool(
++            prior_offer.get("unit_mismatch") or prior_offer.get("currency_mismatch")
++        )
++        _TIER_RANK = {
++            TIER_EXACT: 4,
++            TIER_HIGH_CONFIDENCE: 3,
++            TIER_NEEDS_REVIEW: 2,
++            TIER_UNMATCHED: 0,
++        }
++
++        def _offer_key(tier: str, confidence: object, conflicted: bool) -> tuple:
++            rank = -1 if conflicted else _TIER_RANK.get(tier, 1)
++            try:
++                conf = float(confidence or 0)
++            except (TypeError, ValueError):
++                conf = 0.0
++            return (rank, conf)
++
++        new_key = _offer_key(
++            result.tier, result.confidence, unit_conflict or currency_mismatch
++        )
++        prior_key = _offer_key(
++            str(prior_offer.get("tier") or ""),
++            prior_offer.get("confidence"),
++            prior_conflict,
++        )
++        keep_prior = bool(prior_offer) and new_key <= prior_key
+         human_basis = (position.price_basis or "") in _HUMAN_BASES
++        if not keep_prior or human_basis:
++            meta["cost_match"] = offer
++            if factor is not None and factor != 1:
++                meta["cost_match"]["unit_factor"] = format(factor, "f")
++            if fx_rate is not None:
++                meta["cost_match"]["fx"] = fx_pair
++            if applied_rate != rate:
++                meta["cost_match"]["applied_rate"] = format(applied_rate, "f")
+         if human_basis:
+             # Keep the ruling already recorded on this line: the fresh offer
+             # stays on the result row, the metadata keeps the human's
+@@ -1302,9 +1340,10 @@ class CostMatchService:
+                 position.unit_rate = "0"
+                 position.total = "0"
+             position.price_basis = BOQ_BASIS_UNIT if unit_conflict else BOQ_BASIS_FX
+-            position.confidence = format(
+-                Decimal(result.confidence).quantize(_CONFIDENCE_PLACES), "f"
+-            )
++            if not keep_prior:
++                position.confidence = format(
++                    Decimal(result.confidence).quantize(_CONFIDENCE_PLACES), "f"
++                )
+             return False
+         if result.tier == TIER_NEEDS_REVIEW:
+             # A review-tier suggestion is a lead, not money. The offer stays
+@@ -1315,9 +1354,15 @@ class CostMatchService:
+                 position.unit_rate = "0"
+                 position.total = "0"
+             position.price_basis = BOQ_BASIS_REVIEW
+-            position.confidence = format(
+-                Decimal(result.confidence).quantize(_CONFIDENCE_PLACES), "f"
+-            )
++            if not keep_prior:
++                position.confidence = format(
++                    Decimal(result.confidence).quantize(_CONFIDENCE_PLACES), "f"
++                )
++            return False
++        if keep_prior:
++            # The earlier base's offer stands; the rejected result stays on
++            # its own run row for the audit trail, and the position keeps
++            # the rate/basis/confidence the better stage already set.
+             return False
+         applied_rate = applied_rate.quantize(_CONFIDENCE_PLACES)
+         position.unit_rate = format(applied_rate, "f")
+diff --git a/tests/modules/cost_match/test_cost_match_boq.py b/tests/modules/cost_match/test_cost_match_boq.py
+index 6c93c0d..db1b6ae 100644
+--- a/tests/modules/cost_match/test_cost_match_boq.py
++++ b/tests/modules/cost_match/test_cost_match_boq.py
+@@ -773,7 +773,10 @@ class TestBaseCascade:
+             f"CM-OP-{tag}",
+             f"Contested thingamajig {tag}",
+             "pcs",
+-            "99.00",
++            # 12 vs sek's 10 stays inside the 1.5x disagreement band - an
++            # exact verbatim hit prices either way, so the test isolates
++            # cascade ordering without the disagreement guard firing.
++            "12.00",
+             "EUR",
+             source="operator_pricelist",
+         )
+@@ -789,9 +792,9 @@ class TestBaseCascade:
+         position = _by_description(
+             await _positions(client, header, boq["id"]), "Contested thingamajig"
+         )
+-        # "operator" ran first, so the 99.00 operator price - not SEK's 10.00 -
++        # "operator" ran first, so the 12.00 operator price - not SEK's 10.00 -
+         # is what landed.
+-        assert Decimal(position["unit_rate"]) == Decimal("99")
++        assert Decimal(position["unit_rate"]) == Decimal("12")
+         assert position["metadata"]["cost_match"]["code"] == f"CM-OP-{tag}"
+         assert summary["positions_priced"] == 1
+ 

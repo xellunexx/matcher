@@ -1,0 +1,1081 @@
+diff --git a/app/modules/cost_match/bulgarian.py b/app/modules/cost_match/bulgarian.py
+new file mode 100644
+--- /dev/null
++++ b/app/modules/cost_match/bulgarian.py
+@@ -0,0 +1,275 @@
++"""Deterministic Bulgarian work identity, independent of lexical confidence."""
++
++from __future__ import annotations
++
++import re
++from dataclasses import dataclass
++from decimal import Decimal
++from functools import lru_cache
++
++
++_BG = re.compile(r"[А-Яа-я]")
++_HEADER = re.compile(
++    r"^(?:смр\s*[-–:]?\s*разпределение\b|разпределение\s+кота\b|"
++    r"(?:част|раздел|глава|подраздел)\s*[:\d]|(?:общо|всичко|междинна сума)\b|"
++    r"строително[- ]монтажни работи\s*$)", re.I,
++)
++_TAIL = re.compile(r"\b(?:вкл\.?|включително|включва\w*|съгласно)\b", re.I)
++_EXCLUDE = re.compile(r"\b(?:без|не\s+включва\w*)\b([^.;]*)", re.I)
++_BOILERPLATE = frozenset(
++    "вкл включително включва съгласно всички свързани свързаните с със това разходи "
++    "разходите изисквания изискванията на за и от тс техническата спецификация "
++    "техническите спецификации крайна цена крайната цената".split()
++)
++_OPERATIONS = (
++    ("demolish", r"\b(?:демонтаж|демонтиране|разваляне|разрушаване|къртене|разбиване|премахване)\b"),
++    ("install", r"\b(?:монтаж|монтиране|направа|изпълнение|изработка|изграждане|полагане|"
++                r"поставяне|зидане|иззиждане|засаждане|засяване|бетониране|"
++                r"боядисване|боядисвене|лакиране|шпакловане|измазване|облицоване)\b"),
++    ("repair", r"\b(?:ремонт|ремонтиране|поправка|възстановяване|преработка)\b"),
++    ("haul", r"\b(?:извозване|транспортиране|превозване|превоз|транспорт)\b"),
++    ("test", r"\b(?:изпитване|тестване|измерване|наладка|пускане)\b"),
++    ("clean", r"\b(?:почистване|измиване|промиване|обезпрашаване)\b"),
++    ("prime", r"\b(?:грундиране|грундира|грунд)\b"),
++    ("excavate", r"\b(?:изкоп|изкопаване)\b"),
++    ("backfill", r"\b(?:засипване|обратен насип|засипка)\b"),
++)
++_OP_RES = tuple((value, re.compile(pattern, re.I)) for value, pattern in _OPERATIONS)
++
++# Each noun phrase names a priced entity, not merely a related trade.
++_OBJECTS = (
++    ("formwork", r"\bкофраж\w*"),
++    ("masonry", r"\b(?:тухл\w*(?:\s+зид\w*)?|зидари\w*|зид\w*|газобетон\w*)"),
++    ("plaster", r"\b(?:(?:варов\w*|вароцимент\w*|гипсов\w*|цимент\w*)\s+)?мазилк\w*"),
++    ("putty", r"\b(?:(?:гипсов\w*|цимент\w*)\s+)?шпаклов\w*"),
++    ("paint", r"\b(?:латекс\w*|боя\b|боядис\w*)"),
++    ("concrete_floor", r"\b(?:шлайфан\w*\s+)?бетон(?:ов|н)\w*\s+настилк\w*"),
++    ("ramp", r"\b(?:бетон(?:ов|н)\w*\s+)?рамп\w*"),
++    ("screed", r"\b(?:(?:цимент\w*|бетонов\w*)\s+)?замазк\w*"),
++    ("concrete_slab", r"\b(?:стоманобетонов\w*|бетонов\w*)\s+плоч\w*"),
++    ("concrete", r"\bбетон\b"),
++    ("granite_stairs", r"\bгранит\s*[- ]?\s*стълб\w*"),
++    ("reinforcement", r"\b(?:арматур\w*|армиров\w*)"),
++    ("fan", r"\b(?:(?:кръгъл|канален|кръгъл канален)\s+)?вентилатор\w*"),
++    ("duct", r"\b(?:(?:кръгъл|спирален|правоъгълен)\s+)?въздуховод\w*"),
++    ("strainer", r"\bмрежест\w*\s+филтър\w*"),
++    ("filter", r"\bфилтър\w*"),
++    ("diffuser", r"\b(?:конусен\s+смукател\w*|дифузер\w*|анемостат\w*)"),
++    ("treatment_plant", r"\b(?:(?:локално|биологично)\s+)?пречиствател\w*\s+(?:съоръжение|станция)"),
++    ("pump", r"\b(?:(?:циркулационн\w*|електронн\w*|потопяем\w*)\s+)*помп\w*"),
++    ("plant", r"\b(?:калистемон\w*|callistemon|pinus|храст\w*|дървет\w*|растителност\w*|трев\w*)"),
++    ("fastener", r"\b(?:крепеж\w*|скоб\w*|анкер\w*|дюбел\w*)"),
++    ("control", r"\b(?:управление|контролер\w*|термостат\w*)"),
++    ("sensor", r"\b(?:датчик\w*|сензор\w*)"),
++    ("valve", r"\b(?:(?:спирател\w*|сферич\w*|обрат\w*|баланс\w*|регулиращ\w*)\s+)?(?:кран\w*|вентил\w*|клапан\w*)"),
++    ("pipe", r"\b(?:тръб\w*|водопровод\w*)"),
++    ("elbow", r"\b(?:коляно\w*|колена)"),
++    ("tee", r"\bтроиник\w*"),
++    ("coupling", r"\b(?:муфа\w*|муфи|холендер\w*)"),
++    ("reducer", r"\b(?:редук\w*|преходник\w*)"),
++    ("collector", r"\bколектор\w*"),
++    ("water_meter", r"\bводомер\w*"),
++    ("toilet", r"\b(?:тоалетн\w*\s+чини\w*|моноблок\w*)"),
++    ("basin", r"\b(?:умивалник\w*|мивк\w*)"),
++    ("siphon", r"\bсифон\w*"),
++    ("radiator", r"\bрадиатор\w*"),
++    ("convector", r"\bконвектор\w*"),
++    ("boiler", r"\bбоилер\w*"),
++    ("chiller", r"\bчилър\w*"),
++    ("air_conditioner", r"\b(?:климатик\w*|климатизатор\w*)"),
++    ("heat_pump", r"\bтермопомп\w*"),
++    ("door", r"\b(?:врат\w*|входна\s+врат\w*)"),
++    ("window", r"\b(?:дограма\w*|прозор\w*|витрин\w*)"),
++    ("drywall", r"\bгипсокартон\w*"),
++    ("skylight", r"\b(?:оберлихт\w*|капандур\w*)"),
++    ("ceiling", r"\bокачен\w*\s+таван\w*"),
++    ("board", r"\b(?:osb|шперплат\w*|мдф|mdf|пдч|плоскост\w*)\b"),
++    ("cladding", r"\b(?:(?:дъсчен\w*|металн\w*)\s+)?обшивк\w*"),
++    ("vapour_barrier", r"\b(?:пароизолацион\w*\s+фолио|пароизолаци\w*)"),
++    ("profile", r"\b(?:металн\w*\s+)?профил\w*"),
++    ("mesh", r"\b(?:(?:армиров\w*|армиращ\w*|стоманен\w*)\s+)?мреж\w*"),
++    ("curb", r"\bбордюр\w*"),
++    ("tiling", r"\b(?:теракот\w*|фаянс\w*|гранитогрес\w*|плочк\w*)"),
++    ("insulation", r"\b(?:топлоизола\w*|изолац\w*|eps\b|xps\b|минералн\w*\s+ват\w*)"),
++    ("waterproofing", r"\b(?:хидроизола\w*|битум\w*\s+мембран\w*)"),
++    ("geotextile", r"\bгеотекстил\w*"),
++    ("geogrid", r"\bгеомреж\w*"),
++    ("cable", r"\b(?:кабел\w*|проводник\w*)"),
++    ("panel", r"\b(?:табло\w*|разпределител\w*\s+табл\w*)"),
++    ("switchgear", r"\b(?:прекъсвач\w*|предпазител\w*)"),
++    ("luminaire", r"\b(?:осветител\w*|ламп\w*|плафон\w*|прожектор\w*)"),
++    ("socket", r"\b(?:контакт\w*|розетк\w*)"),
++    ("switch", r"\b(?:електрически\s+)?ключ\w*"),
++    ("camera", r"\bкамер\w*"),
++    ("earthwork", r"\b(?:изкоп\w*|насип\w*)"),
++    ("roof_tile", r"\bкеремид\w*"),
++    ("gutter", r"\b(?:улук\w*|улуц\w*|водосточн\w*)"),
++    ("railing", r"\b(?:парапет\w*|ограда\w*|ограждение\w*)"),
++)
++_OBJECT_RES = tuple((value, re.compile(pattern, re.I)) for value, pattern in _OBJECTS)
++_MATERIALS = (
++    ("lime_cement", r"\bвароцимент\w*"),
++    ("lime", r"\b(?:варов\w*|вар\b)"),
++    ("gypsum", r"\bгипс\w*"),
++    ("cement", r"\bцимент\w*"),
++    ("pvc", r"\bpvc\b|\bпвц\b"),
++    ("pe", r"\b(?:pe|hdpe|полиетилен\w*)\b"),
++    ("ppr", r"\b(?:ppr|полипропилен\w*)\b"),
++    ("copper", r"\b(?:меден\w*|медни|медна|медта)\b"),
++    ("steel", r"\b(?:стоман\w*|поцинкован\w*)"),
++    ("aluminium", r"\b(?:алумини\w*|ал\s*\.)"),
++    ("wood", r"\b(?:дървен\w*|дървес\w*|дъсчен\w*)"),
++    ("concrete", r"\b(?:бетон\w*|стоманобетон\w*)"),
++)
++_MATERIAL_RES = tuple((value, re.compile(pattern, re.I)) for value, pattern in _MATERIALS)
++
++
++def is_structural(text: str | None) -> bool:
++    return bool(_HEADER.search((text or '').strip()))
++
++
++def identity_text(text: str | None) -> str:
++    from app.modules.cost_match.matcher import normalize_text
++
++    norm = normalize_text(text)
++    norm = re.sub(r"\s+краина цена\s*$", "", norm)
++    marker = _TAIL.search(norm)
++    if marker and set(norm[marker.start():].split()) <= _BOILERPLATE:
++        norm = norm[:marker.start()].strip()
++    return norm
++
++
++@dataclass(frozen=True)
++class WorkIdentity:
++    object: str | None
++    operations: frozenset[str]
++    scope: str | None
++    materials: frozenset[str]
++    specs: tuple[tuple[str, frozenset[str]], ...]
++    tail: frozenset[str]
++    excluded: frozenset[str]
++    locations: frozenset[str]
++
++
++def _number(value: str) -> str:
++    return format(Decimal(value.replace(',', '.')).normalize(), 'f')
++
++
++@lru_cache(maxsize=32768)
++def parse_work(text: str) -> WorkIdentity:
++    from app.modules.cost_match.matcher import (
++        _GENERIC_TERMS, _PROCESS_CONCEPTS, canonical_tokens, extract_specs, fold_accents,
++    )
++
++    norm = fold_accents(text.replace('∅', 'ф').replace('Ø', 'ф').replace('ø', 'ф')).lower()
++    marker = _TAIL.search(norm)
++    main = norm[:marker.start()] if marker else norm
++    entities = [(m.start(), i, value) for i, (value, pattern) in enumerate(_OBJECT_RES)
++                if (m := pattern.search(main))]
++    obj = min(entities)[2] if entities else None
++    exclusions = list(_EXCLUDE.finditer(norm))
++    positive = norm
++    for match in reversed(exclusions):
++        positive = positive[:match.start()] + ' ' + positive[match.end():]
++    operations = {value for value, pattern in _OP_RES if pattern.search(positive)}
++    if 'install' in operations and re.search(r"\b(?:обратен|обратно|повторен|повторно)\b.{0,20}\bмонтаж", norm):
++        operations.remove('install')
++        operations.add('reinstall')
++    supply = bool(re.search(r"\bдоставка\b", norm))
++    no_supply = bool(re.search(r"\b(?:без\s+(?:доставка|материал\w*)|само\s+труд|труд\s+само)\b", norm))
++    work = bool(operations)
++    scope = 'labour' if no_supply else 'supply_install' if supply and work else 'material' if supply else None
++    materials = {value for value, pattern in _MATERIAL_RES if pattern.search(main)}
++    specs = extract_specs(text.replace('∅', 'ф').replace('Ø', 'ф').replace('ø', 'ф'))
++    # Inch punctuation is semantic. Backticks and doubled apostrophes are
++    # common Bulgarian workbook spellings of the inch mark.
++    inches = re.compile(r"(?<!\w)(?:[фФ∅Øø]|DN\s*)?\s*(\d+(?:[.,]\d+)?(?:\s+\d+/\d+|/\d+)?)\s*(?:\"|″|``|''|инч\w*)", re.I)
++    for match in inches.finditer(text):
++        value = match.group(1).replace(',', '.')
++        if ' ' in value.strip():
++            whole, fraction = value.split()
++            numerator, denominator = fraction.split('/')
++            if not Decimal(denominator):
++                continue
++            number = Decimal(whole) + Decimal(numerator) / Decimal(denominator)
++        elif '/' in value:
++            numerator, denominator = value.split('/')
++            if not Decimal(denominator):
++                continue
++            number = Decimal(numerator) / Decimal(denominator)
++        else:
++            number = Decimal(value)
++        specs.setdefault('inch_connection', set()).add(format(number.normalize(), 'f'))
++    for cls, pattern in (
++        ('flow_m3h', r"(\d+(?:[.,]\d+)?)\s*[mм](?:3|³)\s*/\s*(?:h|ч)\b"),
++        ('flow_m3d', r"(\d+(?:[.,]\d+)?)\s*[mм](?:3|³)\s*/\s*(?:d|ден|д)\b"),
++        ('pressure_pa', r"(\d+(?:[.,]\d+)?)\s*pa\b"),
++        ('wattage', r"(\d+(?:[.,]\d+)?)\s*(?:w|вт)\b"),
++        ('voltage', r"(\d+(?:[.,]\d+)?)\s*(?:v|в)\b"),
++        ('protection_ip', r"\bip\s*(\d+)\b"),
++    ):
++        for match in re.finditer(pattern, text, re.I):
++            specs.setdefault(cls, set()).add(_number(match.group(1)))
++    tail = set()
++    if marker:
++        tail_text = norm[marker.end():]
++        if not set(identity_text(tail_text).split()) <= _BOILERPLATE:
++            tail = set(canonical_tokens(tail_text)) - _PROCESS_CONCEPTS - _GENERIC_TERMS
++    excluded = set().union(*(set(canonical_tokens(m.group(1))) - _PROCESS_CONCEPTS - _GENERIC_TERMS
++                             for m in exclusions))
++    locations = {value for value, pattern in (
++        ('wall', r'\b(?:по|на)\s+стен\w*'),
++        ('ceiling', r'\b(?:по|на)\s+таван\w*'),
++        ('floor', r'\b(?:по|на)\s+под\w*'),
++        ('column', r'\b(?:по|на)\s+колон\w*'),
++        ('roof', r'\b(?:по|на)\s+покрив\w*'),
++    ) if re.search(pattern, main)}
++    return WorkIdentity(obj, frozenset(operations), scope, frozenset(materials),
++                        tuple(sorted((k, frozenset(v)) for k, v in specs.items())), frozenset(tail),
++                        frozenset(excluded), frozenset(locations))
++
++
++def compare_work(query: str, candidate: str) -> tuple[list[str], list[str]]:
++    """Return contradictions and missing evidence separately; neither is identity."""
++    q, c = parse_work(query), parse_work(candidate)
++    conflicts: list[str] = []
++    missing: list[str] = []
++    if q.object and c.object and q.object != c.object:
++        conflicts.append(f'work_object_conflict:{q.object}:{c.object}')
++    elif not q.object or not c.object:
++        missing.append('work_object_unknown')
++    if q.operations != c.operations:
++        if q.operations and c.operations:
++            conflicts.append('work_operation_bundle_conflict')
++        else:
++            missing.append('work_operation_unknown')
++    if q.scope and c.scope and q.scope != c.scope:
++        conflicts.append(f'work_scope_conflict:{q.scope}:{c.scope}')
++    elif q.scope != c.scope:
++        missing.append('work_scope_unknown')
++    if q.materials and c.materials and q.materials.isdisjoint(c.materials):
++        conflicts.append('work_material_conflict')
++    elif q.materials != c.materials:
++        missing.append('work_material_incomplete')
++    if q.locations and c.locations and q.locations.isdisjoint(c.locations):
++        conflicts.append('work_location_conflict')
++    elif q.locations != c.locations:
++        missing.append('work_location_incomplete')
++    q_specs, c_specs = dict(q.specs), dict(c.specs)
++    for cls in q_specs.keys() | c_specs.keys():
++        q_values, c_values = q_specs.get(cls, frozenset()), c_specs.get(cls, frozenset())
++        if q_values and c_values and q_values.isdisjoint(c_values):
++            conflicts.append(f'work_spec_conflict:{cls}')
++        elif q_values != c_values:
++            missing.append(f'work_spec_incomplete:{cls}')
++    if q.tail != c.tail:
++        missing.append('work_inclusions_incomplete')
++    if q.excluded != c.excluded:
++        missing.append('work_exclusions_incomplete')
++    if q.excluded & c.tail or c.excluded & q.tail:
++        conflicts.append('work_exclusions_conflict')
++    return conflicts, missing
++
++
++def is_bulgarian(text: str) -> bool:
++    return bool(_BG.search(text))
+diff --git a/app/modules/cost_match/matcher.py b/app/modules/cost_match/matcher.py
+--- a/app/modules/cost_match/matcher.py
++++ b/app/modules/cost_match/matcher.py
+@@ -354,6 +354,10 @@
+     (a line that IS all boilerplate), the full normalised text is kept so
+     nothing ever scores empty.
+     """
++    from app.modules.cost_match.bulgarian import identity_text
++
++    if text and _CYRILLIC_RE.search(text):
++        return identity_text(text)
+     norm = normalize_text(text)
+     if not norm:
+         return ""
+@@ -1829,14 +1833,7 @@
+     q_head: str,
+     c_head: str,
+ ) -> bool | None:
+-    """Brickwork override for area/volume unit mismatch, else ``None``.
+-
+-    ``True`` = eligible under the brickwork rule (м² always; м³ only when a
+-    thickness is declared). ``False`` = the pair IS brickwork and the volume
+-    side names no thickness, so its per-м³ price cannot be verified - this
+-    downgrades even a nominally unit-equal м³ -> м³ pair. ``None`` = not a
+-    brickwork pair - the caller's normal comparison stands.
+-    """
++    """Never price a masonry volume with an area rate (or vice versa)."""
+     q_dim = normalize_unit(query_unit)
+     c_dim = normalize_unit(candidate_unit)
+     if q_dim is None or c_dim is None:
+@@ -1848,14 +1845,7 @@
+         return None
+     if not (_masonry_head(q_head) or _masonry_head(c_head)):
+         return None
+-    # A verbatim twin is the same row twice: its declared unit is the
+-    # answer's unit by definition, thickness or not - the rule gates
+-    # foreign evidence, never word-for-word identity.
+-    if q_head == c_head:
+-        return True
+-    if extract_specs(q_head).get("dim_len") or extract_specs(c_head).get("dim_len"):
+-        return True
+-    return c_dim == "area"
++    return q_dim == c_dim
+ 
+ 
+ # ── Data carriers ───────────────────────────────────────────────────────────
+@@ -2012,6 +2002,8 @@
+     # Both sides read to the boilerplate tail only: "вкл…"/"крайна цена"/
+     # "съгласно …" clauses declare price scope, not product identity. A head
+     # twin is a twin match; tail words never score, never pool.
++    from app.modules.cost_match.bulgarian import is_bulgarian, compare_work, is_structural
++
+     q_head = _head_text(query)
+     c_head = _head_text(candidate_text)
+     q_tokens = canonical_tokens(q_head)
+@@ -2024,6 +2016,13 @@
+         "exact": 0.0,
+     }
+     reasons: list[str] = []
++    if is_structural(query) or is_structural(candidate_text):
++        factors["structural_row"] = 1.0
++        return MatchScore(0.0, "low", factors, ["structural_row"])
++    work_conflicts: list[str] = []
++    work_missing: list[str] = []
++    if is_bulgarian(query) and q_head != c_head:
++        work_conflicts, work_missing = compare_work(query, candidate_text)
+ 
+     # Unit relationship first: it can only reduce a score, never inflate it.
+     # Brickwork bends the dimension rule: a м³ brick line with no thickness
+@@ -2149,7 +2148,9 @@
+         if inter == 0:
+             base = 0.0
+         else:
+-            base = _MATCH_BASE + _MATCH_PER_TOKEN * min(inter, 2) + _MATCH_EXTRA_TOKEN * max(0, inter - 2)
++            evidence = sum(bool(re.search(r"[^\W\d_]", token)) and len(token) > 1 for token in q_shared)
++            base = (_MATCH_BASE + _MATCH_PER_TOKEN * min(evidence, 2)
++                    + _MATCH_EXTRA_TOKEN * max(0, evidence - 2)) if evidence else 0.0
+             if shared_action:
+                 base += _ACTION_BONUS
+             if spec_agree:
+@@ -2221,6 +2222,24 @@
+         factors["domain_conflict"] = 1.0
+         confidence = 0.0
+         reasons.append(f"domain_conflict:{q_domain}:{c_domain}")
++
++    if work_conflicts:
++        factors["work_conflict"] = 1.0
++        reasons.extend(work_conflicts)
++        confidence = 0.0
++    elif is_bulgarian(query):
++        unanswered = q_cmp - q_shared
++        extra = c_cmp - c_shared
++        if work_missing or unanswered or extra:
++            factors["work_incomplete"] = 1.0
++            reasons.extend(work_missing)
++            reasons.append("incomplete_work_identity")
++            confidence = min(confidence, HIGH_CONFIDENCE - 0.01)
++        else:
++            factors["work_compatible"] = 1.0
++            confidence = min(confidence, 0.99)
++        if factors["unit_factor"] < 1.0:
++            confidence = min(confidence, HIGH_CONFIDENCE - 0.01)
+ 
+     if coverage >= 0.99:
+         reasons.insert(0, "strong_overlap")
+@@ -2417,6 +2436,8 @@
+             if sc.confidence < _POOL_CONFIDENCE:
+                 continue
+             if sc.factors.get("spec_conflict"):
++                continue
++            if sc.factors.get("work_conflict") or sc.factors.get("work_incomplete"):
+                 continue
+             if pool_currency and str(
+                 (cand.payload or {}).get("currency") or ""
+diff --git a/app/modules/cost_match/service.py b/app/modules/cost_match/service.py
+--- a/app/modules/cost_match/service.py
++++ b/app/modules/cost_match/service.py
+@@ -562,6 +562,24 @@
+         code never decides the tier on its own - it only widens what the
+         matcher gets to look at.
+         """
++        from app.modules.cost_match.bulgarian import is_bulgarian, is_structural
++
++        if is_structural(description):
++            return {
++                "tier": TIER_UNMATCHED,
++                "confidence": Decimal("0").quantize(_CONFIDENCE_PLACES),
++                "tie": False,
++                "hint_code": "structural_row",
++                "reason_codes": ["structural_row"],
++                "factors": {"structural_row": 1.0},
++                "alternatives": [],
++                "suggested_cost_item_id": None,
++                "suggested_code": "",
++                "suggested_description": "",
++                "suggested_unit": "",
++                "suggested_rate": None,
++                "suggested_currency": "",
++            }
+         items = await self.base_repo.find_candidates(
+             description,
+             cost_source=run.cost_source,
+@@ -728,7 +746,7 @@
+         # mugo pumilio" inside "Pinus mugo pumilio. Планински бор джудже...")
+         # are diluted in embedding space precisely because the candidate is
+         # MORE complete - a vector must not veto lexical identity.
+-        if tier in (TIER_EXACT, TIER_HIGH_CONFIDENCE) and not factors.get("exact"):
++        if tier in (TIER_EXACT, TIER_HIGH_CONFIDENCE) and not factors.get("exact") and not is_bulgarian(description):
+             from app.modules.cost_match import semantic
+             from app.modules.cost_match.matcher import (
+                 _GENERIC_TERMS,
+@@ -884,7 +902,7 @@
+         if not description.strip():
+             return None
+         stmt = (
+-            select(CostItem.rate, CostItem.currency)
++            select(CostItem.rate, CostItem.currency, CostItem.unit)
+             .where(CostItem.is_active.is_(True))
+             .where(
+                 func.lower(func.btrim(CostItem.description))
+@@ -892,14 +910,15 @@
+             )
+             .where(CostItem.rate.op("~")("^[0-9]+(\\.[0-9]+)?$"))
+         )
+-        if unit:
+-            stmt = stmt.where(CostItem.unit == unit)
+         rows = (await self.session.execute(stmt)).all()
+         # Rates are restated in EUR before comparing - a BGN figure is the
+         # same money at the statutory peg, a foreign denomination is left
+         # out of the spread rather than mixed in as if it were euros.
+         rates: list[Decimal] = []
+-        for rate_raw, currency in rows:
++        for rate_raw, currency, row_unit in rows:
++            factor = unit_rate_factor(row_unit, unit) if unit else Decimal(1)
++            if factor is None:
++                continue
+             parsed = _parse_rate(rate_raw)
+             if parsed is None:
+                 continue
+@@ -908,7 +927,7 @@
+                 parsed = parsed / BGN_PER_EUR
+             elif cur != "EUR":
+                 continue
+-            rates.append(parsed)
++            rates.append(parsed * factor)
+         if not rates:
+             return None
+         return {
+@@ -932,7 +951,9 @@
+         The pool stays capped at ``run.candidate_limit``; semantic hits are
+         appended after the lexical ones so a full lexical pool is unchanged.
+         """
+-        if not description.strip() or len(items) >= run.candidate_limit:
++        from app.modules.cost_match.bulgarian import is_bulgarian
++
++        if is_bulgarian(description) or not description.strip() or len(items) >= run.candidate_limit:
+             return items
+         try:
+             from app.modules.costs import vector_adapter
+@@ -1006,6 +1027,7 @@
+         """
+         from app.modules.boq.models import BOQ
+         from app.modules.projects.models import Project
++        from app.modules.cost_match.bulgarian import is_structural
+ 
+         boq = await self.session.get(BOQ, boq_id)
+         if boq is None:
+@@ -1020,11 +1042,17 @@
+ 
+         # Sections and header rows are not priceable lines - same filter the
+         # import-side callers apply.
++        for position in boq.positions:
++            if is_structural(position.description) and (position.price_basis or "") in _AUTO_WRITTEN_BASES:
++                position.unit_rate = "0"
++                position.total = "0"
++                position.price_basis = BOQ_BASIS_NO_MATCH
+         positions = [
+             p
+             for p in boq.positions
+             if (p.unit or "").strip().lower() not in ("", "section")
+             and (p.description or "").strip()
++            and not is_structural(p.description)
+         ]
+         if not positions:
+             return BoqMatchRunResponse(
+diff --git a/app/modules/cost_match/repository.py b/app/modules/cost_match/repository.py
+--- a/app/modules/cost_match/repository.py
++++ b/app/modules/cost_match/repository.py
+@@ -145,6 +145,10 @@
+     pool but lexical retrieval must never depend on it, so this helper
+     swallows every failure and stays advisory.
+     """
++    from app.modules.cost_match.bulgarian import is_bulgarian
++
++    if is_bulgarian(text):
++        return []
+     try:
+         from app.modules.costs import vector_adapter  # noqa: PLC0415
+ 
+@@ -178,6 +182,8 @@
+     """
+     terms: dict[str, None] = {}
+     for word in _WORD_RE.findall(text or ""):
++        if word.isdecimal():
++            continue
+         if len(word) >= _MIN_TERM_LENGTH and normalize_text(word) not in _STOPWORDS:
+             terms.setdefault(word, None)
+             # The corpus stores folded text (й->и), the bill carries the raw
+@@ -200,7 +206,7 @@
+         ):
+             terms.setdefault(word, None)
+     for token in canonical_tokens(text):
+-        if len(token) >= _MIN_TERM_LENGTH:
++        if len(token) >= _MIN_TERM_LENGTH and not token.isdecimal():
+             terms.setdefault(token, None)
+     return list(terms)[:_MAX_TERMS]
+ 
+diff --git a/app/modules/cost_match/bases.py b/app/modules/cost_match/bases.py
+--- a/app/modules/cost_match/bases.py
++++ b/app/modules/cost_match/bases.py
+@@ -22,11 +22,10 @@
+ * ``web`` - web-anchored prices that are NOT the SEK/Buildly dataset
+   (supplier anchors and supplier lists).
+ * ``operator`` - the operator's own dictated price list and manual entries.
+-* ``opr`` - only the operator price *files* (the
++* ``opr`` - the operator price *files* (the
+   ``costdb_seed_user_operator_prices*.json`` / ``costdb_seed_operator*.json``
+-  seeds): operator-sourced rows whose code is a numbered ``OPR-``/``OPR2-``/
+-  ``OPR3-`` id. Learned rulings keyed ``OPR-<uuid>`` are excluded, so this
+-  base is exactly the uploaded price books and nothing else.
++  seeds): numbered ``OPR-``/``OPR2-``/``OPR3-`` rows and operator-sourced
++  ``OPR-<uuid>`` rulings, which must remain reachable by the same base.
+ * ``cwicr`` - the main CWICR corpus.
+ * ``tenders`` - prices confirmed through won/filed tenders.
+ * ``learned`` - rows confirmed into the corpus by reviewer rulings.
+@@ -72,7 +71,9 @@
+     "operator": lambda: CostItem.source.in_(_OPERATOR_SOURCES),
+     "opr": lambda: and_(
+         CostItem.source.in_(_OPERATOR_SOURCES),
+-        CostItem.code.op("~")("^OPR[0-9]*-[0-9]{6}$"),
++        CostItem.code.op("~")(
++            r"^OPR[0-9]*-([0-9]{6}|[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})$"
++        ),
+     ),
+     "cwicr": lambda: CostItem.source == "cwicr",
+     "corpus": lambda: CostItem.source == "cwicr",
+diff --git a/tests/unit/cost_match/test_bulgarian_work_identity.py b/tests/unit/cost_match/test_bulgarian_work_identity.py
+new file mode 100644
+--- /dev/null
++++ b/tests/unit/cost_match/test_bulgarian_work_identity.py
+@@ -0,0 +1,127 @@
++import pytest
++
++from app.modules.cost_match.bulgarian import compare_work, parse_work
++from app.modules.cost_match.matcher import HIGH_CONFIDENCE, Candidate, best_match, score_match
++
++
++@pytest.mark.parametrize(('query', 'candidate', 'unit'), [
++    ('Кръгъл канален вентилатор Vсм=300 m³/h Р=150 Pa', 'Callistemon laevis. Калистемон H=125-150', 'бр'),
++    ('Кръгъл канален вентилатор Vсм=300 m³/h Р=150 Pa', 'Callistemon laevis H=125-150', 'бр'),
++    ('Разваляне на 25 см. тухлен зид', 'Направа и разваляне на кофраж за стени', 'м2'),
++    ('Полагане на варова мазилка по стени', 'Направа на гипсова мазилка по стени', 'м2'),
++    ('Полагане на гипсова шпакловка по стени', 'Направа на гипсова мазилка по стени', 'м2'),
++    ('Полагане на латекс по стени включително грундиране', 'Направа на гипсова мазилка по стени', 'м2'),
++    ('Шлайфана бетонова настилка d=50mm C30/37', 'Направа на замазка за основа на настилки', 'м2'),
++    ('Доставка и монтаж на кръгъл въздуховод Ø160 вкл. фасонни части', 'Доставка и монтаж на спирален въздуховод Ø 400', 'м'),
++    ('Мрежест филтър ф2``', 'Доставка и монтаж на мрежест филтър ∅1"', 'бр'),
++    ('Доставка и монтаж на конусен смукател DVS100', 'Помпа с RDM/DMX управление, смукател 1 1/2"', 'бр'),
++    ('Локално пречиствателно съоръжение 1,2 m3/d включително изкоп и засипване', 'Циркулационна помпа 6,2 m3/h', 'бр'),
++])
++def test_reported_wrong_work_is_rejected_even_with_prior(query, candidate, unit):
++    score = score_match(query, candidate, query_unit=unit, candidate_unit=unit, prior=100)
++    assert score.confidence == 0
++    assert any(reason.startswith('work_') for reason in score.reasons)
++
++
++@pytest.mark.parametrize('header', ['СМР-РАЗПРЕДЕЛЕНИЕ КОТА +0.80', 'СМР- РАЗПРЕДЕЛЕНИЕ КОТА +3.60', 'Общо СМР'])
++def test_header_cannot_match_even_itself(header):
++    assert score_match(header, header, query_unit='м2', candidate_unit='м2').confidence == 0
++
++
++def test_included_work_is_not_boilerplate():
++    score = score_match('Доставка и монтаж въздуховод ф160, вкл. фасонни части',
++                        'Доставка и монтаж въздуховод ф160', query_unit='м', candidate_unit='м')
++    assert score.factors['exact'] == 0
++    assert score.confidence < HIGH_CONFIDENCE
++    assert 'work_inclusions_incomplete' in score.reasons
++
++
++def test_bundle_requires_all_operations():
++    q = 'Демонтаж и обратен монтаж на радиатор'
++    c = 'Демонтаж на радиатор'
++    assert parse_work(q).operations == {'demolish', 'reinstall'}
++    assert score_match(q, c, query_unit='бр', candidate_unit='бр').confidence == 0
++
++
++def test_accessory_is_not_the_host_object():
++    assert parse_work('Доставка и монтаж на скоба за вентилатор').object == 'fastener'
++    assert parse_work('Доставка и монтаж на вентилатор с крепежи').object == 'fan'
++    assert compare_work('Доставка и монтаж на скоба за вентилатор', 'Доставка и монтаж вентилатор')[0]
++
++
++def test_included_secondary_object_is_not_primary_object():
++    frame = parse_work('Полагане на гранит-стълби включително грундиране и замазка')
++    assert frame.object == 'granite_stairs'
++    assert 'prime' in frame.operations
++
++
++def test_unstated_supply_is_not_invented():
++    assert parse_work('Монтаж на радиатор').scope is None
++    assert 'work_scope_unknown' in compare_work('Монтаж на радиатор', 'Доставка и монтаж радиатор')[1]
++
++
++def test_missing_specs_need_review_despite_huge_prior():
++    score = score_match('Доставка и монтаж на въздуховод ф160', 'Доставка и монтаж на въздуховод',
++                        query_unit='м', candidate_unit='м', prior=100)
++    assert score.confidence < HIGH_CONFIDENCE
++    assert 'work_spec_incomplete:diameter' in score.reasons
++
++
++def test_numbers_alone_are_not_object_evidence():
++    score = score_match('Кръгъл канален вентилатор Р=150 Pa', 'Калистемон H=150',
++                        query_unit='бр', candidate_unit='бр', prior=100)
++    assert score.confidence == 0
++
++
++def test_different_measurement_dimensions_never_reach_high_tier_with_prior():
++    score = score_match('Зидане на отвори с тухла', 'Иззиждане на отвори с тухла',
++                        query_unit='м³', candidate_unit='м²', prior=100)
++    assert score.confidence < HIGH_CONFIDENCE
++
++
++def test_conflicting_exclusion_cannot_be_hidden_by_stopwords():
++    score = score_match('Доставка и монтаж на мазилка без грунд', 'Доставка и монтаж на мазилка вкл грунд',
++                        query_unit='м2', candidate_unit='м2')
++    assert score.confidence == 0
++
++
++def test_unknown_scope_and_words_do_not_enter_price_pool():
++    result = best_match('Доставка и монтаж на тръба ф50 вкл изолация', [
++        Candidate('partial', 'Доставка и монтаж на тръба ф50', 'м', {'unit_rate': '10', 'currency': 'EUR'}),
++    ], query_unit='м')
++    assert not result.is_confident
++    assert result.median_rate is None
++
++
++def test_genuine_paraphrase_can_be_confident_without_llm():
++    score = score_match('Полагане на варова мазилка по стени', 'Направа на варова мазилка по стени',
++                        query_unit='м2', candidate_unit='м2')
++    assert HIGH_CONFIDENCE <= score.confidence < 1
++    assert score.factors['work_compatible'] == 1
++
++
++def test_same_material_different_location_is_a_conflict():
++    score = score_match('Полагане на варова мазилка по стени', 'Направа на варова мазилка по тавани',
++                        query_unit='м2', candidate_unit='м2')
++    assert score.confidence == 0
++    assert 'work_location_conflict' in score.reasons
++
++
++def test_painting_and_laying_paint_share_the_positive_operation():
++    assert parse_work('Боядисване с латексова боя по стени').operations == {'install'}
++    assert parse_work('Бордюр - включително изкоп и бетониране').operations == {'excavate', 'install'}
++
++
++def test_exact_learned_volume_row_keeps_real_price():
++    result = best_match('Иззиждане на отвори с тухла', [
++        Candidate('learned', 'Иззиждане на отвори с тухла', 'м³', {'unit_rate': '8.0000'}),
++    ], query_unit='м³')
++    assert result.is_confident
++    assert result.score.confidence == 1
++
++
++def test_inch_fraction_equivalence_and_invalid_fraction():
++    a = dict(parse_work('Мрежест филтър 1 1/2"').specs)['inch_connection']
++    b = dict(parse_work('Мрежест филтър 1,5"').specs)['inch_connection']
++    assert a == b == {'1.5'}
++    parse_work('Мрежест филтър 1 1/0"')
+diff --git a/tests/unit/cost_match/test_matcher_understanding.py b/tests/unit/cost_match/test_matcher_understanding.py
+--- a/tests/unit/cost_match/test_matcher_understanding.py
++++ b/tests/unit/cost_match/test_matcher_understanding.py
+@@ -129,7 +129,7 @@
+             ],
+             query_unit="м2",
+         )
+-        assert result.pool_diverged is True
++        assert result.pool_size == 0  # missing thickness is not a price pool
+         assert result.median_rate is None  # no blended 77.4 fiction
+         assert result.candidate is not None
+ 
+diff --git a/tests/unit/test_cost_match_matcher.py b/tests/unit/test_cost_match_matcher.py
+--- a/tests/unit/test_cost_match_matcher.py
++++ b/tests/unit/test_cost_match_matcher.py
+@@ -520,13 +520,14 @@
+         assert score.confidence == pytest.approx(1.0)
+         assert "exact_match" in score.reasons
+ 
+-    def test_vkl_abbreviation_also_cuts(self) -> None:
++    def test_vkl_abbreviation_keeps_included_work(self) -> None:
+         score = score_match(
+             "ДЕМОНТАЖ НА КЕРЕМИДИ ВКЛ. СВАЛЯНЕ",
+             "Демонтаж на керемиди",
+             query_unit="м2", candidate_unit="м2",
+         )
+-        assert score.factors["exact"] == 1.0
++        assert score.factors["exact"] == 0.0
++        assert score.confidence < HIGH_CONFIDENCE
+ 
+     def test_head_twin_beats_pooled_partial(self) -> None:
+         # The lamination row shares the "включително всички…" boilerplate but
+@@ -604,31 +605,28 @@
+             assert not usd_in_pool
+ 
+ 
+-class TestMasonryAreaPricing:
++class TestMasonrySafeUnits:
+     """Brickwork is bought per м². A м³ brick line with no declared
+     thickness still answers to the per-м² price book, and a per-м³ brick
+     candidate is only eligible when a thickness makes the volume real."""
+ 
+-    def test_area_candidate_is_compatible_with_a_volume_brick_line(self) -> None:
++    def test_area_candidate_cannot_price_a_volume_brick_line(self) -> None:
+         score = score_match(
+             "Иззиждане на отвори с тухла",
+             "Зидане на преградни стени от тухла",
+             query_unit="м³", candidate_unit="м²",
+         )
+-        assert score.factors["unit_factor"] == 1.0
+-        assert score.factors["masonry_area"] == 1.0
+-        assert "masonry_m2_equiv" in score.reasons
+-        assert "unit_match" in score.reasons
+-
+-    def test_volume_candidate_without_thickness_is_penalized(self) -> None:
++        assert score.factors["unit_factor"] < 1.0
++        assert "unit_mismatch" in score.reasons
++
++    def test_volume_candidate_uses_the_same_declared_dimension(self) -> None:
+         score = score_match(
+             "Иззиждане на отвори с тухла",
+             "Зидане на преградни стени от тухла",
+             query_unit="м³", candidate_unit="м³",
+         )
+-        assert score.factors["unit_factor"] < 1.0
+-        assert "masonry_m3_no_thickness" in score.reasons
+-        assert "unit_mismatch" in score.reasons
++        assert score.factors["unit_factor"] == 1.0
++        assert "unit_match" in score.reasons
+ 
+     def test_volume_candidate_with_thickness_stays_eligible(self) -> None:
+         score = score_match(
+@@ -656,10 +654,10 @@
+             "Зидане на отвори в прегради",
+             query_unit="м³", candidate_unit="м²",
+         )
+-        assert score.factors["unit_factor"] == 1.0
+-        assert "masonry_m2_equiv" in score.reasons
+-
+-    def test_area_rows_win_the_tie_over_volume_rows(self) -> None:
++        assert score.factors["unit_factor"] < 1.0
++        assert "unit_mismatch" in score.reasons
++
++    def test_same_dimension_row_wins_over_area_row(self) -> None:
+         result = best_match(
+             "Иззиждане на отвори с тухла",
+             [
+@@ -670,7 +668,7 @@
+             ],
+             query_unit="м³",
+         )
+-        assert result.candidate is not None and result.candidate.ref == "m2"
++        assert result.candidate is not None and result.candidate.ref == "m3"
+ 
+     def test_non_masonry_volume_pairs_are_untouched(self) -> None:
+         # Reinforced-concrete walls legitimately price per м³: the brickwork
+diff --git a/scripts/kcc_match_bg.py b/scripts/kcc_match_bg.py
+new file mode 100644
+--- /dev/null
++++ b/scripts/kcc_match_bg.py
+@@ -0,0 +1,173 @@
++"""Offline Bulgarian KCC replay against a CSV export, using the ERP matcher.
++
++The export has no DB metadata or pattern priors; this is not a PostgreSQL
++integration test. Only operator-origin prices are automatically applied.
++"""
++
++from __future__ import annotations
++
++import argparse
++import csv
++import json
++import sys
++from collections import Counter, defaultdict
++from decimal import Decimal, InvalidOperation
++from pathlib import Path
++
++sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
++
++from openpyxl import load_workbook
++
++from app.modules.cost_match.bulgarian import identity_text, is_structural, parse_work
++from app.modules.cost_match.matcher import (
++    _GENERIC_TERMS, _PROCESS_CONCEPTS, Candidate, best_match,
++    canonical_tokens, suggestion_rate, unit_rate_factor,
++)
++
++
++OPERATOR_SOURCES = {'operator_pricelist', 'manual_entry', 'user_upload', 'client_directive', 'custom'}
++
++
++def decimal(value):
++    try:
++        result = Decimal(str(value).replace(' ', '').replace(',', '.'))
++        return result if result.is_finite() else None
++    except (InvalidOperation, ValueError, TypeError):
++        return None
++
++
++def content(text):
++    return {t for t in canonical_tokens(identity_text(text))
++            if t not in _GENERIC_TERMS and t not in _PROCESS_CONCEPTS
++            and len(t) > 1 and any(c.isalpha() for c in t)}
++
++
++def run(corpus, input_path, output_path, limit):
++    if input_path.resolve() == output_path.resolve():
++        raise ValueError('Output must not overwrite the original input workbook.')
++    candidates = []
++    postings = defaultdict(set)
++    exact = defaultdict(set)
++    price_spreads = defaultdict(list)
++    objects = []
++    tokens = []
++    scanned = 0
++    with corpus.open(encoding='utf-8-sig', newline='') as handle:
++        for row in csv.DictReader(handle):
++            scanned += 1
++            if str(row.get('is_active', 'true')).lower() not in {'true', '1'}:
++                continue
++            rate = decimal(row.get('rate'))
++            currency = row.get('currency', '').strip().upper()
++            if rate is None or rate <= 0 or currency not in {'EUR', 'BGN'}:
++                continue
++            if currency == 'BGN':
++                rate /= Decimal('1.95583')
++            text, unit = row.get('description', ''), row.get('unit', '')
++            price_spreads[text.strip().lower()].append((rate, unit))
++            if row.get('source') not in OPERATOR_SOURCES:
++                continue
++            index = len(candidates)
++            candidates.append(Candidate(str(index), text, unit, {
++                'code': row['code'], 'source': row['source'],
++                'unit_rate': str(rate), 'currency': 'EUR',
++            }))
++            exact[identity_text(text)].add(index)
++            terms = content(text)
++            tokens.append(terms)
++            objects.append(parse_work(text).object)
++            for term in terms:
++                postings[term].add(index)
++    print(f'CSV rows scanned: {scanned}; operator price records: {len(candidates)}', flush=True)
++
++    workbook = load_workbook(input_path)
++    sheet = workbook.active
++    audit = workbook.create_sheet('BG_MATCH_AUDIT')
++    audit.append(['Excel row', 'Position', 'Query', 'Unit', 'Decision', 'EUR unit rate',
++                  'Source code', 'Source', 'Source description', 'Confidence',
++                  'Reasons', 'Object', 'Operations', 'Scope', 'Specifications', 'Alternatives'])
++    sheet.cell(1, 5, 'Единична цена EUR')
++    sheet.cell(1, 6, 'Обща цена EUR')
++    counts = Counter()
++    cache = {}
++    for row_no in range(2, sheet.max_row + 1):
++        position = str(sheet.cell(row_no, 1).value or '')
++        description = str(sheet.cell(row_no, 2).value or '').strip()
++        unit = str(sheet.cell(row_no, 3).value or '').strip()
++        quantity = decimal(sheet.cell(row_no, 4).value)
++        if not description or not unit or unit.lower() == 'section' or is_structural(description):
++            if description:
++                counts['structural_or_nonwork'] += 1
++            continue
++        if sheet.cell(row_no, 5).value not in (None, ''):
++            counts['existing_rate_preserved'] += 1
++            continue
++        key = (description, unit)
++        if key not in cache:
++            terms = content(description)
++            possible = set(exact.get(identity_text(description), ()))
++            for term in terms:
++                possible.update(postings.get(term, ()))
++            obj = parse_work(description).object
++            ordered = sorted(possible, key=lambda i: (
++                i not in exact.get(identity_text(description), ()),
++                objects[i] != obj,
++                unit_rate_factor(candidates[i].unit, unit) is None,
++                -len(terms & tokens[i]),
++                candidates[i].payload['code'],
++            ))[:limit]
++            cache[key] = best_match(description, [candidates[i] for i in ordered], query_unit=unit, locale='bg')
++        outcome = cache[key]
++        frame = parse_work(description)
++        selected = outcome.candidate
++        score = outcome.score
++        reason = list(score.reasons) if score else ['no_candidates']
++        applied = None
++        decision = 'review' if selected else 'unmatched'
++        if selected:
++            factor = unit_rate_factor(selected.unit, unit)
++            rate = suggestion_rate(selected)
++            spread = [rate * f for rate, source_unit in price_spreads[selected.text.strip().lower()]
++                      if (f := unit_rate_factor(source_unit, selected.unit)) is not None]
++            disagreement = spread and max(spread) > min(spread) * Decimal('1.5')
++            if disagreement:
++                reason.append('corpus_price_disagreement')
++            if (outcome.is_confident and not disagreement and not outcome.pool_diverged
++                    and rate is not None and factor is not None and quantity is not None
++                    and quantity >= 0):
++                applied = (rate * factor).quantize(Decimal('0.0001'))
++                decision = 'exact' if score.factors.get('exact') else 'compatible'
++                sheet.cell(row_no, 5, float(applied))
++                sheet.cell(row_no, 6, float((applied * quantity).quantize(Decimal('0.01'))))
++        counts[decision] += 1
++        payload = selected.payload if selected else {}
++        alternatives = [{
++            'code': c.payload['code'], 'description': c.text, 'confidence': s.confidence,
++            'unit': c.unit, 'EUR_source_rate': c.payload['unit_rate'], 'reasons': s.reasons,
++        } for c, s in outcome.alternatives]
++        audit.append([row_no, position, description, unit, decision,
++                      float(applied) if applied is not None else None,
++                      payload.get('code'), payload.get('source'), selected.text if selected else None,
++                      score.confidence if score else 0, '; '.join(reason), frame.object,
++                      ', '.join(sorted(frame.operations)), frame.scope,
++                      json.dumps({k: sorted(v) for k, v in frame.specs}, ensure_ascii=False),
++                      json.dumps(alternatives, ensure_ascii=False)])
++    audit.freeze_panes = 'A2'
++    audit.auto_filter.ref = audit.dimensions
++    output_path.parent.mkdir(parents=True, exist_ok=True)
++    workbook.save(output_path)
++    print(json.dumps(dict(counts), ensure_ascii=False), flush=True)
++    print(str(output_path.resolve()), flush=True)
++    return counts
++
++
++if __name__ == '__main__':
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('--corpus', type=Path, required=True)
++    parser.add_argument('--input', type=Path, required=True)
++    parser.add_argument('--output', type=Path, required=True)
++    parser.add_argument('--limit', type=int, default=100)
++    args = parser.parse_args()
++    if args.limit <= 0:
++        parser.error('--limit must be positive')
++    run(args.corpus, args.input, args.output, args.limit)
+diff --git a/tests/unit/cost_match/test_kcc_csv_replay.py b/tests/unit/cost_match/test_kcc_csv_replay.py
+new file mode 100644
+--- /dev/null
++++ b/tests/unit/cost_match/test_kcc_csv_replay.py
+@@ -0,0 +1,52 @@
++import csv
++from pathlib import Path
++
++from openpyxl import Workbook, load_workbook
++import pytest
++
++from scripts.kcc_match_bg import run
++
++
++def test_replay_prices_evidence_not_headers_or_partial_work(tmp_path: Path):
++    corpus = tmp_path / 'prices.csv'
++    with corpus.open('w', encoding='utf-8-sig', newline='') as stream:
++        writer = csv.DictWriter(stream, fieldnames=['code', 'description', 'unit', 'rate', 'currency', 'source', 'is_active'])
++        writer.writeheader()
++        for code, text, unit, rate in [
++            ('OPR-brick', 'Иззиждане на отвори с тухла', 'м³', '8'),
++            ('OPR-duct', 'Доставка и монтаж на въздуховод ф160', 'м', '20'),
++            ('OPR-header', 'СМР-РАЗПРЕДЕЛЕНИЕ КОТА +3.60', 'м2', '999'),
++            ('OPR-rampA', 'Бетонна рампа', 'м²', '85'),
++            ('OPR-rampB', 'Бетонна рампа', 'кв.м.', '25'),
++        ]:
++            writer.writerow(dict(code=code, description=text, unit=unit, rate=rate,
++                                 currency='EUR', source='operator_pricelist', is_active='True'))
++    input_path, output_path = tmp_path / 'input.xlsx', tmp_path / 'output.xlsx'
++    workbook = Workbook()
++    sheet = workbook.active
++    sheet.append(['№', 'Описание', 'Ед. мярка', 'Количество'])
++    sheet.append([1, 'Иззиждане на отвори с тухла', 'м³', 6])
++    sheet.append([2, 'Доставка и монтаж на въздуховод ф160 вкл. фасонни части', 'м', 10])
++    sheet.append([3, 'СМР-РАЗПРЕДЕЛЕНИЕ КОТА +3.60', 'м2', 1])
++    sheet.append([4, 'Бетонна рампа', 'м²', 1])
++    sheet.append([5, 'Ръчно зададена цена', 'бр', 1, 12])
++    workbook.save(input_path)
++    counts = run(corpus, input_path, output_path, 100)
++    priced = load_workbook(output_path, data_only=True)
++    assert priced.active['E2'].value == 8
++    assert priced.active['F2'].value == 48
++    assert priced.active['E3'].value is None
++    assert priced.active['E4'].value is None
++    assert priced.active['E5'].value is None
++    assert priced.active['E6'].value == 12
++    assert counts['exact'] == 1
++    assert counts['review'] == 2
++    assert counts['structural_or_nonwork'] == 1
++    assert 'BG_MATCH_AUDIT' in priced.sheetnames
++    assert load_workbook(input_path, data_only=True).active['E2'].value is None
++
++
++def test_replay_refuses_to_overwrite_input(tmp_path):
++    source = tmp_path / 'book.xlsx'
++    with pytest.raises(ValueError, match='overwrite'):
++        run(tmp_path / 'missing.csv', source, source, 100)
+diff --git a/tests/modules/cost_match/test_cost_match_boq.py b/tests/modules/cost_match/test_cost_match_boq.py
+--- a/tests/modules/cost_match/test_cost_match_boq.py
++++ b/tests/modules/cost_match/test_cost_match_boq.py
+@@ -795,11 +795,10 @@
+         assert position["metadata"]["cost_match"]["code"] == f"CM-OP-{tag}"
+         assert summary["positions_priced"] == 1
+ 
+-    async def test_opr_base_covers_seed_files_not_learned_rows(
+-        self, client: AsyncClient, header, project_id, cost_base
+-    ) -> None:
+-        """bases=["opr"] sees numbered OPR/OPR2/OPR3 seed codes only -
+-        a learned ``OPR-<uuid>`` ruling is operator data but not a file."""
++    async def test_opr_base_covers_seed_files_and_learned_rows(
++        self, client: AsyncClient, header, project_id, cost_base
++    ) -> None:
++        """Operator rulings remain reachable alongside uploaded price books."""
+         tag, tag2 = uuid.uuid4().hex[:6], uuid.uuid4().hex[:6]
+         seed_code = f"OPR3-9{int(tag, 16) % 100000:05d}"
+         await _seed_item(
+@@ -829,12 +828,29 @@
+         learned_pos = _by_description(positions, "Learned-only contraption")
+         assert Decimal(seed_pos["unit_rate"]) == Decimal("12")
+         assert seed_pos["metadata"]["cost_match"]["code"] == seed_code
+-        assert Decimal(learned_pos["unit_rate"]) == 0
+-        assert summary["positions_priced"] == 1
+-        assert summary["positions_unpriced"] == 1
++        assert Decimal(learned_pos["unit_rate"]) == Decimal("7")
++        assert summary["positions_priced"] == 2
++        assert summary["positions_unpriced"] == 0
+ 
+ 
+ class TestPriceSpread:
++    async def test_equivalent_unit_spellings_cannot_hide_a_price_disagreement(
++        self, client: AsyncClient, header, cost_base
++    ) -> None:
++        from app.database import async_session_factory
++        from app.modules.cost_match.service import CostMatchService
++
++        tag = uuid.uuid4().hex[:6]
++        desc = f"Бетонна рампа {tag}"
++        await _seed_item(f"CM-ALIAS-A-{tag}", desc, "м²", "85", "EUR")
++        await _seed_item(f"CM-ALIAS-B-{tag}", desc, "кв.м.", "25", "EUR")
++        async with async_session_factory() as session:
++            spread = await CostMatchService(session)._price_spread(desc, unit="м²")
++        assert spread is not None
++        assert spread["dup_count"] == 2
++        assert spread["dup_rate_min"] == 25
++        assert spread["dup_rate_max"] == 85
++
+     async def test_cyrillic_duplicate_names_report_a_spread(
+         self, client: AsyncClient, header, cost_base
+     ) -> None:

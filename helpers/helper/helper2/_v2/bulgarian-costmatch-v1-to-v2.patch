@@ -1,0 +1,2605 @@
+diff --git a/app/modules/cost_match/bulgarian.py b/app/modules/cost_match/bulgarian.py
+--- a/app/modules/cost_match/bulgarian.py
++++ b/app/modules/cost_match/bulgarian.py
+@@ -6,6 +6,8 @@
+ from dataclasses import dataclass
+ from decimal import Decimal
+ from functools import lru_cache
++
++from app.modules.cost_match.work_catalog import concept_patterns, extra_object_patterns, notation
+ 
+ 
+ _BG = re.compile(r"[А-Яа-я]")
+@@ -21,107 +23,11 @@
+     "разходите изисквания изискванията на за и от тс техническата спецификация "
+     "техническите спецификации крайна цена крайната цената".split()
+ )
+-_OPERATIONS = (
+-    ("demolish", r"\b(?:демонтаж|демонтиране|разваляне|разрушаване|къртене|разбиване|премахване)\b"),
+-    ("install", r"\b(?:монтаж|монтиране|направа|изпълнение|изработка|изграждане|полагане|"
+-                r"поставяне|зидане|иззиждане|засаждане|засяване|бетониране|"
+-                r"боядисване|боядисвене|лакиране|шпакловане|измазване|облицоване)\b"),
+-    ("repair", r"\b(?:ремонт|ремонтиране|поправка|възстановяване|преработка)\b"),
+-    ("haul", r"\b(?:извозване|транспортиране|превозване|превоз|транспорт)\b"),
+-    ("test", r"\b(?:изпитване|тестване|измерване|наладка|пускане)\b"),
+-    ("clean", r"\b(?:почистване|измиване|промиване|обезпрашаване)\b"),
+-    ("prime", r"\b(?:грундиране|грундира|грунд)\b"),
+-    ("excavate", r"\b(?:изкоп|изкопаване)\b"),
+-    ("backfill", r"\b(?:засипване|обратен насип|засипка)\b"),
+-)
+-_OP_RES = tuple((value, re.compile(pattern, re.I)) for value, pattern in _OPERATIONS)
++_OP_RES = tuple((value, re.compile(pattern, re.I)) for value, pattern in concept_patterns('operations'))
+ 
+ # Each noun phrase names a priced entity, not merely a related trade.
+-_OBJECTS = (
+-    ("formwork", r"\bкофраж\w*"),
+-    ("masonry", r"\b(?:тухл\w*(?:\s+зид\w*)?|зидари\w*|зид\w*|газобетон\w*)"),
+-    ("plaster", r"\b(?:(?:варов\w*|вароцимент\w*|гипсов\w*|цимент\w*)\s+)?мазилк\w*"),
+-    ("putty", r"\b(?:(?:гипсов\w*|цимент\w*)\s+)?шпаклов\w*"),
+-    ("paint", r"\b(?:латекс\w*|боя\b|боядис\w*)"),
+-    ("concrete_floor", r"\b(?:шлайфан\w*\s+)?бетон(?:ов|н)\w*\s+настилк\w*"),
+-    ("ramp", r"\b(?:бетон(?:ов|н)\w*\s+)?рамп\w*"),
+-    ("screed", r"\b(?:(?:цимент\w*|бетонов\w*)\s+)?замазк\w*"),
+-    ("concrete_slab", r"\b(?:стоманобетонов\w*|бетонов\w*)\s+плоч\w*"),
+-    ("concrete", r"\bбетон\b"),
+-    ("granite_stairs", r"\bгранит\s*[- ]?\s*стълб\w*"),
+-    ("reinforcement", r"\b(?:арматур\w*|армиров\w*)"),
+-    ("fan", r"\b(?:(?:кръгъл|канален|кръгъл канален)\s+)?вентилатор\w*"),
+-    ("duct", r"\b(?:(?:кръгъл|спирален|правоъгълен)\s+)?въздуховод\w*"),
+-    ("strainer", r"\bмрежест\w*\s+филтър\w*"),
+-    ("filter", r"\bфилтър\w*"),
+-    ("diffuser", r"\b(?:конусен\s+смукател\w*|дифузер\w*|анемостат\w*)"),
+-    ("treatment_plant", r"\b(?:(?:локално|биологично)\s+)?пречиствател\w*\s+(?:съоръжение|станция)"),
+-    ("pump", r"\b(?:(?:циркулационн\w*|електронн\w*|потопяем\w*)\s+)*помп\w*"),
+-    ("plant", r"\b(?:калистемон\w*|callistemon|pinus|храст\w*|дървет\w*|растителност\w*|трев\w*)"),
+-    ("fastener", r"\b(?:крепеж\w*|скоб\w*|анкер\w*|дюбел\w*)"),
+-    ("control", r"\b(?:управление|контролер\w*|термостат\w*)"),
+-    ("sensor", r"\b(?:датчик\w*|сензор\w*)"),
+-    ("valve", r"\b(?:(?:спирател\w*|сферич\w*|обрат\w*|баланс\w*|регулиращ\w*)\s+)?(?:кран\w*|вентил\w*|клапан\w*)"),
+-    ("pipe", r"\b(?:тръб\w*|водопровод\w*)"),
+-    ("elbow", r"\b(?:коляно\w*|колена)"),
+-    ("tee", r"\bтроиник\w*"),
+-    ("coupling", r"\b(?:муфа\w*|муфи|холендер\w*)"),
+-    ("reducer", r"\b(?:редук\w*|преходник\w*)"),
+-    ("collector", r"\bколектор\w*"),
+-    ("water_meter", r"\bводомер\w*"),
+-    ("toilet", r"\b(?:тоалетн\w*\s+чини\w*|моноблок\w*)"),
+-    ("basin", r"\b(?:умивалник\w*|мивк\w*)"),
+-    ("siphon", r"\bсифон\w*"),
+-    ("radiator", r"\bрадиатор\w*"),
+-    ("convector", r"\bконвектор\w*"),
+-    ("boiler", r"\bбоилер\w*"),
+-    ("chiller", r"\bчилър\w*"),
+-    ("air_conditioner", r"\b(?:климатик\w*|климатизатор\w*)"),
+-    ("heat_pump", r"\bтермопомп\w*"),
+-    ("door", r"\b(?:врат\w*|входна\s+врат\w*)"),
+-    ("window", r"\b(?:дограма\w*|прозор\w*|витрин\w*)"),
+-    ("drywall", r"\bгипсокартон\w*"),
+-    ("skylight", r"\b(?:оберлихт\w*|капандур\w*)"),
+-    ("ceiling", r"\bокачен\w*\s+таван\w*"),
+-    ("board", r"\b(?:osb|шперплат\w*|мдф|mdf|пдч|плоскост\w*)\b"),
+-    ("cladding", r"\b(?:(?:дъсчен\w*|металн\w*)\s+)?обшивк\w*"),
+-    ("vapour_barrier", r"\b(?:пароизолацион\w*\s+фолио|пароизолаци\w*)"),
+-    ("profile", r"\b(?:металн\w*\s+)?профил\w*"),
+-    ("mesh", r"\b(?:(?:армиров\w*|армиращ\w*|стоманен\w*)\s+)?мреж\w*"),
+-    ("curb", r"\bбордюр\w*"),
+-    ("tiling", r"\b(?:теракот\w*|фаянс\w*|гранитогрес\w*|плочк\w*)"),
+-    ("insulation", r"\b(?:топлоизола\w*|изолац\w*|eps\b|xps\b|минералн\w*\s+ват\w*)"),
+-    ("waterproofing", r"\b(?:хидроизола\w*|битум\w*\s+мембран\w*)"),
+-    ("geotextile", r"\bгеотекстил\w*"),
+-    ("geogrid", r"\bгеомреж\w*"),
+-    ("cable", r"\b(?:кабел\w*|проводник\w*)"),
+-    ("panel", r"\b(?:табло\w*|разпределител\w*\s+табл\w*)"),
+-    ("switchgear", r"\b(?:прекъсвач\w*|предпазител\w*)"),
+-    ("luminaire", r"\b(?:осветител\w*|ламп\w*|плафон\w*|прожектор\w*)"),
+-    ("socket", r"\b(?:контакт\w*|розетк\w*)"),
+-    ("switch", r"\b(?:електрически\s+)?ключ\w*"),
+-    ("camera", r"\bкамер\w*"),
+-    ("earthwork", r"\b(?:изкоп\w*|насип\w*)"),
+-    ("roof_tile", r"\bкеремид\w*"),
+-    ("gutter", r"\b(?:улук\w*|улуц\w*|водосточн\w*)"),
+-    ("railing", r"\b(?:парапет\w*|ограда\w*|ограждение\w*)"),
+-)
+-_OBJECT_RES = tuple((value, re.compile(pattern, re.I)) for value, pattern in _OBJECTS)
+-_MATERIALS = (
+-    ("lime_cement", r"\bвароцимент\w*"),
+-    ("lime", r"\b(?:варов\w*|вар\b)"),
+-    ("gypsum", r"\bгипс\w*"),
+-    ("cement", r"\bцимент\w*"),
+-    ("pvc", r"\bpvc\b|\bпвц\b"),
+-    ("pe", r"\b(?:pe|hdpe|полиетилен\w*)\b"),
+-    ("ppr", r"\b(?:ppr|полипропилен\w*)\b"),
+-    ("copper", r"\b(?:меден\w*|медни|медна|медта)\b"),
+-    ("steel", r"\b(?:стоман\w*|поцинкован\w*)"),
+-    ("aluminium", r"\b(?:алумини\w*|ал\s*\.)"),
+-    ("wood", r"\b(?:дървен\w*|дървес\w*|дъсчен\w*)"),
+-    ("concrete", r"\b(?:бетон\w*|стоманобетон\w*)"),
+-)
+-_MATERIAL_RES = tuple((value, re.compile(pattern, re.I)) for value, pattern in _MATERIALS)
++_OBJECT_RES = tuple((value, re.compile(pattern, re.I)) for value, pattern in extra_object_patterns())
++_MATERIAL_RES = tuple((value, re.compile(pattern, re.I)) for value, pattern in concept_patterns('materials'))
+ 
+ 
+ def is_structural(text: str | None) -> bool:
+@@ -181,6 +87,18 @@
+     scope = 'labour' if no_supply else 'supply_install' if supply and work else 'material' if supply else None
+     materials = {value for value, pattern in _MATERIAL_RES if pattern.search(main)}
+     specs = extract_specs(text.replace('∅', 'ф').replace('Ø', 'ф').replace('ø', 'ф'))
++    canonical_values, _ = notation(text, obj)
++    if obj == 'cable' and {'cores', 'section'} <= dict(canonical_values).keys():
++        # The generic pair extractor can recognize only one of 3x1,5mm²
++        # and 3х1,5мм2. Its cable interpretation is replaced, never dropped
++        # for a different physical dimension in the same row.
++        layout = {f'{n}x{s}' for n in dict(canonical_values)['cores']
++                  for s in dict(canonical_values)['section']}
++        if specs.get('dim_pair') == layout:
++            specs.pop('dim_pair')
++    for name, values in canonical_values:
++        if name != 'diameter':
++            specs.setdefault(f'cable_{name}', set()).update(values)
+     # Inch punctuation is semantic. Backticks and doubled apostrophes are
+     # common Bulgarian workbook spellings of the inch mark.
+     inches = re.compile(r"(?<!\w)(?:[фФ∅Øø]|DN\s*)?\s*(\d+(?:[.,]\d+)?(?:\s+\d+/\d+|/\d+)?)\s*(?:\"|″|``|''|инч\w*)", re.I)
+@@ -220,9 +138,11 @@
+     locations = {value for value, pattern in (
+         ('wall', r'\b(?:по|на)\s+стен\w*'),
+         ('ceiling', r'\b(?:по|на)\s+таван\w*'),
+-        ('floor', r'\b(?:по|на)\s+под\w*'),
++        ('floor', r'\b(?:по|на)\s+под(?:а|ове|овете)?\b'),
+         ('column', r'\b(?:по|на)\s+колон\w*'),
+         ('roof', r'\b(?:по|на)\s+покрив\w*'),
++        ('facade', r'\bфасад\w*'),
++        ('interior', r'\bвътрешн\w*'),
+     ) if re.search(pattern, main)}
+     return WorkIdentity(obj, frozenset(operations), scope, frozenset(materials),
+                         tuple(sorted((k, frozenset(v)) for k, v in specs.items())), frozenset(tail),
+diff --git a/app/modules/cost_match/matcher.py b/app/modules/cost_match/matcher.py
+--- a/app/modules/cost_match/matcher.py
++++ b/app/modules/cost_match/matcher.py
+@@ -2019,6 +2019,11 @@
+     if is_structural(query) or is_structural(candidate_text):
+         factors["structural_row"] = 1.0
+         return MatchScore(0.0, "low", factors, ["structural_row"])
++    from app.modules.cost_match.work_context import is_work_fragment
++
++    if is_work_fragment(query) or is_work_fragment(candidate_text):
++        factors['work_context_missing'] = 1.0
++        return MatchScore(0.0, 'low', factors, ['work_context_missing'])
+     work_conflicts: list[str] = []
+     work_missing: list[str] = []
+     if is_bulgarian(query) and q_head != c_head:
+@@ -2097,6 +2102,19 @@
+     # content - it widens the denominator instead of bridging the numerator.
+     q_content = q_set - _PROCESS_CONCEPTS - _GENERIC_TERMS
+     c_content = c_set - _PROCESS_CONCEPTS - _GENERIC_TERMS
++    if is_bulgarian(query) and not work_conflicts:
++        from app.modules.cost_match.work_catalog import canonical_work, notation
++
++        q_work, c_work = canonical_work(query), canonical_work(candidate_text)
++        if q_work.definition_id and q_work.definition_id == c_work.definition_id:
++            q_values, q_remainder = notation(query, q_work.definition_id)
++            c_values, c_remainder = notation(candidate_text, c_work.definition_id)
++            if q_values and c_values:
++                q_content = (set(canonical_tokens(_head_text(q_remainder))) - _PROCESS_CONCEPTS - _GENERIC_TERMS)
++                c_content = (set(canonical_tokens(_head_text(c_remainder))) - _PROCESS_CONCEPTS - _GENERIC_TERMS)
++                q_content.update(f'work:{name}:{value}' for name, values in q_values for value in values)
++                c_content.update(f'work:{name}:{value}' for name, values in c_values for value in values)
++                factors['canonical_definition'] = 1.0
+     q_cmp = q_content or q_set
+     c_cmp = c_content or c_set
+     q_shared, c_shared = _shared_tokens(q_cmp, c_cmp)
+@@ -2512,6 +2530,41 @@
+                     pool, key=lambda pair: abs(pair[1] - median_rate)
+                 )[0]
+ 
++    from app.modules.cost_match.bulgarian import is_bulgarian
++
++    if is_bulgarian(normalized_query):
++        from app.modules.cost_match.work_catalog import work_metadata
++
++        median_rate = median_candidate = None
++        work = work_metadata(best_cand.text)
++        equivalent_prices: list[tuple[Candidate, Decimal]] = []
++        if work['work']['definition_id']:
++            for cand, sc in scored:
++                if sc.confidence < HIGH_CONFIDENCE or sc.factors.get('work_incomplete'):
++                    continue
++                rate = suggestion_rate(cand)
++                factor = unit_rate_factor(cand.unit, query_unit)
++                currency = str((cand.payload or {}).get('currency') or '').upper()
++                if rate is None or not rate.is_finite() or rate <= 0 or factor is None:
++                    continue
++                if currency not in {'EUR', 'BGN'}:
++                    continue
++                if work_metadata(cand.text)['fingerprint'] != work['fingerprint']:
++                    continue
++                if currency == 'BGN':
++                    rate /= Decimal('1.95583')
++                equivalent_prices.append((cand, rate * factor))
++        if len(equivalent_prices) > 1:
++            rates = [rate for _, rate in equivalent_prices]
++            if max(rates) > min(rates) * Decimal('1.5'):
++                best_score.factors['canonical_price_disagreement'] = 1.0
++                best_score.reasons.append('corpus_price_disagreement')
++                is_confident = False
++                pool_diverged = True
++                median_rate = median_candidate = None
++                pool_size, pool_min, pool_max = len(rates), min(rates), max(rates)
++                pool_refs = frozenset(cand.ref for cand, _ in equivalent_prices)
++
+     return MatchResult(
+         query=normalized_query,
+         candidate=best_cand,
+diff --git a/app/modules/cost_match/service.py b/app/modules/cost_match/service.py
+--- a/app/modules/cost_match/service.py
++++ b/app/modules/cost_match/service.py
+@@ -312,20 +312,31 @@
+ 
+ 
+ def _dedupe_pool(items: list[CostItem], locale: str) -> list[CostItem]:
+-    """Collapse same-name candidates to their median-priced row.
++    """Collapse same-name non-Bulgarian candidates to their median-priced row.
+ 
+     The corpus holds duplicate items - identical description, unit and
+     scope at several rates - and input order used to pick which one
+     priced the line (a price lottery). The median is deterministic and
+     central; the losing duplicates still reach the reviewer through the
+     ``dup_*`` spread factors on the result. Ties break on the lowest
+-    code so repeated runs pick the same representative.
++    code so repeated runs pick the same representative. Bulgarian quotations
++    are kept separate so canonical price disagreement cannot be hidden here.
+     """
++    from app.modules.cost_match.bulgarian import is_bulgarian
++
++    if locale.split('-')[0].split('_')[0] == 'bg' or any(
++        is_bulgarian(_localized_description(item, locale)) for item in items
++    ):
++        return list(items)
+     groups: dict[tuple[str, str, str], list[CostItem]] = {}
++    from app.modules.cost_match.work_context import effective_work
++
+     for item in items:
+         meta = item.metadata_ or {}
++        context = meta.get('work_context')
++        parents = [value for value in context if isinstance(value, str)] if isinstance(context, list) else []
+         key = (
+-            normalize_text(_localized_description(item, locale)),
++            normalize_text(effective_work(_localized_description(item, locale), parents)),
+             (item.unit or "").strip().lower(),
+             str(meta.get("scope") or ""),
+         )
+@@ -356,14 +367,12 @@
+     """
+     meta = item.metadata_ or {}
+     desc = _localized_description(item, locale)
+-    # Bill-language aliases the corpus row carries (``metadata.bill_terms``)
+-    # join the scored text: a row describing "Монтаж на спирателен кран" must
+-    # still answer a bill line that says "СК ф2". The visible suggestion stays
+-    # the real description - ``display_text`` - so the alias never impersonates
+-    # evidence, it only tells the scorer this row owns that wording too.
+-    bill = meta.get("bill_terms")
+-    extra = " ".join(bill) if isinstance(bill, (list, tuple)) else str(bill or "")
+-    score_text = f"{desc} {extra}".strip() if extra.strip() else desc
++    from app.modules.cost_match.work_catalog import work_metadata
++    from app.modules.cost_match.work_context import effective_work
++
++    context = meta.get('work_context')
++    parents = [value for value in context if isinstance(value, str)] if isinstance(context, list) else []
++    evidence = effective_work(desc, parents)
+     # Bulgaria is euro: a corpus row still quoted in BGN is a legacy lev
+     # figure, carried at the irrevocable peg. Converting here - once, at
+     # candidate build - means pooling, median, suggestion and writeback all
+@@ -377,17 +386,23 @@
+             currency = "EUR"
+     return Candidate(
+         ref=str(item.id),
+-        text=score_text,
++        text=evidence,
+         unit=item.unit,
+         payload={
+             "unit_rate": rate,
+             "currency": currency,
++            "quotation_rate": None if item.rate is None else str(item.rate),
++            "quotation_currency": item.currency or "",
+             "code": item.code,
+             "source": item.source,
+             "scope": str(meta.get("scope") or ""),
+             "provenance_status": str(meta.get("tenderops_status") or ""),
+             "origin_kind": str(meta.get("origin_kind") or item.source or ""),
+             "display_text": desc,
++            "canonical_work": work_metadata(evidence),
++            "evidence_description": evidence,
++            "work_context": parents,
++            "bill_terms": meta.get("bill_terms"),
+         },
+     )
+ 
+@@ -433,12 +448,17 @@
+         "unit": candidate.unit or "",
+         "rate": None if rate is None else format(rate, "f"),
+         "currency": str(payload.get("currency") or ""),
++        "quotation_rate": payload.get("quotation_rate"),
++        "quotation_currency": str(payload.get("quotation_currency") or ""),
+         "confidence": format(_quantise_confidence(score.confidence), "f"),
+         "band": score.band,
+         "reason_codes": list(score.reasons),
+         "matched_tokens": list(score.shared_tokens),
+         "unmatched_tokens": list(score.unanswered_tokens),
+         "in_pool": in_pool,
++        "canonical_work": payload.get("canonical_work"),
++        "evidence_description": payload.get("evidence_description", candidate.text),
++        "work_context": payload.get("work_context", []),
+         "reference": bool(
+             payload.get("provenance_status") == "pending_review"
+             or payload.get("origin_kind") in _REFERENCE_ORIGINS
+@@ -563,15 +583,17 @@
+         matcher gets to look at.
+         """
+         from app.modules.cost_match.bulgarian import is_bulgarian, is_structural
+-
+-        if is_structural(description):
++        from app.modules.cost_match.work_context import is_work_fragment
++
++        if is_structural(description) or is_work_fragment(description):
++            reason = 'work_context_missing' if is_work_fragment(description) else 'structural_row'
+             return {
+                 "tier": TIER_UNMATCHED,
+                 "confidence": Decimal("0").quantize(_CONFIDENCE_PLACES),
+                 "tie": False,
+-                "hint_code": "structural_row",
+-                "reason_codes": ["structural_row"],
+-                "factors": {"structural_row": 1.0},
++                "hint_code": reason,
++                "reason_codes": [reason],
++                "factors": {reason: 1.0},
+                 "alternatives": [],
+                 "suggested_cost_item_id": None,
+                 "suggested_code": "",
+@@ -1054,6 +1076,13 @@
+             and (p.description or "").strip()
+             and not is_structural(p.description)
+         ]
++        from app.modules.cost_match.work_context import effective_work, position_contexts
++
++        contexts = position_contexts(boq.positions)
++        for position in positions:
++            meta = dict(position.metadata_ or {})
++            meta['cost_match_work_context'] = contexts.get(position.id, [])
++            position.metadata_ = meta
+         if not positions:
+             return BoqMatchRunResponse(
+                 boq_id=boq.id,
+@@ -1093,7 +1122,7 @@
+                 chunk = stage_positions[start : start + MAX_BATCH_LINES]
+                 lines = [
+                     MatchLineInput(
+-                        description=(p.description or "")[:4000],
++                        description=effective_work(p.description or '', contexts.get(p.id, []))[:4000],
+                         unit=(p.unit or "")[:40],
+                         quantity=_parse_rate(p.quantity),
+                         source_ref=(p.reference_code or "")[:100],
+@@ -1110,7 +1139,11 @@
+                         region=data.region,
+                         catalog_id=data.catalog_id,
+                         candidate_limit=data.candidate_limit,
+-                        notes=json.dumps({"boq_id": str(boq.id), "base": base, "positions": [str(p.id) for p in chunk]}),
++                        notes=json.dumps({"boq_id": str(boq.id), "base": base,
++                                          "positions": [str(p.id) for p in chunk],
++                                          "work_context": {str(p.id): {'original': p.description,
++                                                                      'parents': contexts.get(p.id, [])}
++                                                           for p in chunk if contexts.get(p.id)}}),
+                         lines=lines,
+                     ),
+                     created_by=created_by,
+@@ -1410,6 +1443,12 @@
+             "boq_id": str(position.boq_id),
+             "position_id": str(position.id),
+         }
++        from app.modules.cost_match.work_catalog import work_metadata
++        from app.modules.cost_match.work_context import effective_work
++
++        context = (position.metadata_ or {}).get('cost_match_work_context')
++        meta['work_context'] = [s for s in context if isinstance(s, str)] if isinstance(context, list) else []
++        meta['canonical_work'] = work_metadata(effective_work(description, meta['work_context']))
+         if existing is not None:
+             existing.description = description
+             existing.unit = position.unit or ""
+@@ -2058,6 +2097,19 @@
+         code = f"CONF-{position.id}"
+         currency = (project.currency or "").strip().upper() if project else ""
+         region = project.region if project else None
++        from app.modules.cost_match.work_catalog import work_metadata
++        from app.modules.cost_match.work_context import effective_work
++
++        context = (position.metadata_ or {}).get('cost_match_work_context')
++        parents = [s for s in context if isinstance(s, str)] if isinstance(context, list) else []
++        meta = {
++            "learned_from": "operator_declared",
++            "price_basis": basis,
++            "boq_id": str(boq.id),
++            "position_id": str(position.id),
++            "work_context": parents,
++            "canonical_work": work_metadata(effective_work(description, parents)),
++        }
+         existing = await self.session.scalar(
+             select(CostItem).where(
+                 CostItem.code == code, CostItem.source == "estimate_confirmed"
+@@ -2069,6 +2121,9 @@
+             existing.rate = format(rate, "f")
+             existing.currency = currency
+             existing.region = region
++            updated_meta = dict(existing.metadata_ or {})
++            updated_meta.update(meta)
++            existing.metadata_ = updated_meta
+         else:
+             self.session.add(
+                 CostItem(
+@@ -2084,12 +2139,7 @@
+                     tags=[],
+                     region=region,
+                     catalog_id=None,
+-                    metadata_={
+-                        "learned_from": "operator_declared",
+-                        "price_basis": basis,
+-                        "boq_id": str(boq.id),
+-                        "position_id": str(position.id),
+-                    },
++                    metadata_=meta,
+                 )
+             )
+         await self.session.flush()
+diff --git a/app/modules/cost_match/schemas.py b/app/modules/cost_match/schemas.py
+new file mode 100644
+--- /dev/null
++++ b/app/modules/cost_match/schemas.py
+@@ -0,0 +1,492 @@
++# DDC-CWICR-OE: DataDrivenConstruction · OpenConstructionERP
++# Copyright (c) 2026 Artem Boiko / DataDrivenConstruction
++"""Cost-match Pydantic schemas - request / response models.
++
++Money and quantities are ``Decimal`` in memory and serialise as strings, per
++the platform's "Decimal as string" contract: a unit rate that crosses the wire
++as a JSON number loses precision in every JavaScript client that reads it.
++
++Confidence is also serialised as a string for the same reason. It is a
++four-decimal ``Decimal`` in the database and a float in the pure matcher, and
++letting it drift between the two representations is how a "0.75" boundary
++becomes 0.7499999999999999 in a client-side comparison.
++"""
++
++from __future__ import annotations
++
++from datetime import datetime
++from decimal import Decimal
++from typing import Any
++from uuid import UUID
++
++from pydantic import BaseModel, ConfigDict, Field, field_serializer
++
++from app.modules.cost_match.models import (
++    DECISION_KINDS,
++    DECISION_STATES,
++    RUN_STATUSES,
++    TIERS,
++)
++
++# Patterns built from the model vocabulary so the API and the database can
++# never drift apart on what a tier or a decision is called.
++TIER_PATTERN = "|".join(TIERS)
++DECISION_STATE_PATTERN = "|".join(DECISION_STATES)
++DECISION_KIND_PATTERN = "|".join(DECISION_KINDS)
++RUN_STATUS_PATTERN = "|".join(RUN_STATUSES)
++
++# A pasted bill is reviewed by a person, one line at a time. Beyond this the
++# submission stops being a review queue and becomes a data migration, which
++# wants a different (asynchronous) shape than a request/response endpoint.
++MAX_BATCH_LINES = 500
++
++
++def _decimal_to_str(value: Decimal | None) -> str | None:
++    """Serialise a Decimal without float coercion (``None`` stays ``None``)."""
++    if value is None:
++        return None
++    return format(Decimal(value), "f")
++
++
++# ── Submitting a batch ──────────────────────────────────────────────────────
++
++
++class MatchLineInput(BaseModel):
++    """One free-text line from the foreign bill.
++
++    ``description`` is deliberately allowed to be blank. A pasted bill really
++    does contain empty and header-only rows, and dropping them at the schema
++    boundary would hide them from the reviewer and from the
++    ``cost_match.source_description_present`` rule that exists to report them.
++    """
++
++    model_config = ConfigDict(str_strip_whitespace=True)
++
++    description: str = Field(default="", max_length=4000)
++    unit: str = Field(default="", max_length=40)
++    quantity: Decimal | None = Field(default=None, ge=0)
++    # The subcontractor's own item code, if their bill carried one. Used to
++    # widen retrieval (a code hit is pulled into the candidate pool) but never
++    # to decide a tier on its own - a code that matches with a description
++    # that does not is exactly the case a reviewer must see.
++    source_ref: str = Field(default="", max_length=100)
++
++
++class MatchRunCreate(BaseModel):
++    """Submit a batch of descriptions for matching against one cost base.
++
++    The base is pinned by ``cost_source`` plus optionally ``region`` and
++    ``catalog_id``. There is no server-side "currently active base" to inherit
++    from - the platform tracks that client side - so the caller states which
++    base the bill is being priced against and the run remembers it.
++    """
++
++    model_config = ConfigDict(str_strip_whitespace=True)
++
++    project_id: UUID
++    name: str = Field(default="", max_length=255)
++    source_label: str = Field(default="", max_length=255)
++    source_locale: str = Field(default="en", max_length=12)
++    cost_source: str = Field(default="cwicr", min_length=1, max_length=50)
++    region: str | None = Field(default=None, max_length=50)
++    catalog_id: UUID | None = None
++    candidate_limit: int = Field(default=40, ge=5, le=200)
++    notes: str | None = None
++    tenant_id: UUID | None = None
++    lines: list[MatchLineInput] = Field(..., min_length=1, max_length=MAX_BATCH_LINES)
++
++
++class BoqMatchRunCreate(BaseModel):
++    """Match every priced-eligible position of one BOQ against a cost base.
++
++    The one-click path: an uploaded bill is matched in 500-line runs and each
++    suggestion is written back onto its position with the evidence tier as the
++    price basis, so the estimate is populated immediately while the review
++    queue still holds every ruling for a person.
++    """
++
++    model_config = ConfigDict(str_strip_whitespace=True)
++
++    source_locale: str = Field(default="bg", max_length=12)
++    cost_source: str = Field(default="all", min_length=1, max_length=50)
++    # Ordered base cascade: when set, each entry is matched in turn and a
++    # stage only receives the positions the earlier stages left unpriced.
++    # Overrides ``cost_source``; a single base still runs as one stage.
++    bases: list[str] | None = Field(default=None, max_length=8)
++    region: str | None = Field(default=None, max_length=50)
++    catalog_id: UUID | None = None
++    candidate_limit: int = Field(default=200, ge=5, le=200)
++
++
++class MatchRunUpdate(BaseModel):
++    """Patch the reviewer-editable metadata of a run.
++
++    The pinned base, the line count and every scored figure are not patchable:
++    they are what the run *is*. Re-pointing a finished review at a different
++    cost base would invalidate every snapshot already taken.
++    """
++
++    model_config = ConfigDict(str_strip_whitespace=True)
++
++    name: str | None = Field(default=None, max_length=255)
++    source_label: str | None = Field(default=None, max_length=255)
++    status: str | None = Field(default=None, pattern=rf"^({RUN_STATUS_PATTERN})$")
++    notes: str | None = None
++
++
++# ── Reading results ─────────────────────────────────────────────────────────
++
++
++class MatchCandidate(BaseModel):
++    """A runner-up cost item kept on the result so an override is a pick.
++
++    Mirrors the snapshot shape of the winning suggestion, so the reviewer
++    compares like with like and the override endpoint can be handed an id
++    straight out of this list.
++    """
++
++    cost_item_id: UUID | None = None
++    code: str = ""
++    description: str = ""
++    unit: str = ""
++    rate: Decimal | None = None
++    currency: str = ""
++    confidence: Decimal = Decimal("0")
++    band: str = ""
++    reason_codes: list[str] = Field(default_factory=list)
++    # Canonical tokens that bridged line and candidate - the evidence the
++    # reviewer validates with each ruling.
++    matched_tokens: list[str] = Field(default_factory=list)
++    # Line tokens this candidate never answered.
++    unmatched_tokens: list[str] = Field(default_factory=list)
++    # True when this row contributed its rate to a pooled median.
++    in_pool: bool = False
++    canonical_work: dict[str, Any] | None = None
++    evidence_description: str = ''
++    work_context: list[str] = Field(default_factory=list)
++    quotation_rate: Decimal | None = None
++    quotation_currency: str = ''
++
++    @field_serializer("rate", "confidence", "quotation_rate")
++    def _ser_decimal(self, value: Decimal | None) -> str | None:
++        return _decimal_to_str(value)
++
++
++class MatchDecisionResponse(BaseModel):
++    """One ruling from the append-only history of a result."""
++
++    model_config = ConfigDict(from_attributes=True)
++
++    id: UUID
++    result_id: UUID
++    run_id: UUID
++    seq: int
++    decision: str
++    tier_at_decision: str
++    confidence_at_decision: Decimal
++    decided_cost_item_id: UUID | None = None
++    decided_code: str
++    decided_description: str
++    decided_unit: str
++    decided_rate: Decimal | None = None
++    decided_currency: str
++    decided_by: UUID | None = None
++    note: str | None = None
++    created_at: datetime
++
++    @field_serializer("confidence_at_decision", "decided_rate")
++    def _ser_decimal(self, value: Decimal | None) -> str | None:
++        return _decimal_to_str(value)
++
++
++class WebEstimateResponse(BaseModel):
++    """One AI-extracted market estimate, attached to the line it answered.
++
++    Advisory by construction: ``price_median`` becomes money on the bill only
++    through a ``manual`` ruling a person records. ``source`` is always
++    ``ai_estimate`` - generated, not observed - and the UI should say so.
++    """
++
++    model_config = ConfigDict(from_attributes=True)
++
++    id: UUID
++    signature: str
++    result_id: UUID | None = None
++    description: str
++    unit: str
++    eligible: bool
++    family_words: list[str] = Field(default_factory=list)
++    price_min: Decimal | None = None
++    price_max: Decimal | None = None
++    price_median: Decimal | None = None
++    currency: str = "EUR"
++    breakdown: list[dict[str, Any]] = Field(default_factory=list)
++    variants: list[dict[str, Any]] = Field(default_factory=list)
++    ai_confidence: str = ""
++    reason: str = ""
++    model: str = ""
++    status: str = ""
++    sources: list[dict[str, Any]] = Field(default_factory=list)
++    source: str = "ai_estimate"
++    created_at: datetime
++
++    @field_serializer("price_min", "price_max", "price_median")
++    def _ser_decimal(self, value: Decimal | None) -> str | None:
++        return _decimal_to_str(value)
++
++
++class MatchResultResponse(BaseModel):
++    """One source line with its suggestion, its evidence and its rulings."""
++
++    model_config = ConfigDict(from_attributes=True)
++
++    id: UUID
++    run_id: UUID
++    project_id: UUID
++    line_no: int
++    source_ref: str
++    source_description: str
++    source_unit: str
++    source_quantity: Decimal | None = None
++    tier: str
++    confidence: Decimal
++    tie: bool
++    hint_code: str
++    reason_codes: list[str] = Field(default_factory=list)
++    factors: dict[str, Any] = Field(default_factory=dict)
++    alternatives: list[MatchCandidate] = Field(default_factory=list)
++    suggested_cost_item_id: UUID | None = None
++    suggested_code: str
++    suggested_description: str
++    suggested_unit: str
++    suggested_rate: Decimal | None = None
++    suggested_currency: str
++    decision_state: str
++    decisions: list[MatchDecisionResponse] = Field(default_factory=list)
++    # The AI web-verify record for this line's signature, when a verify job
++    # has produced one. Never a price that was applied - a lead to rule on.
++    web_estimate: WebEstimateResponse | None = None
++    # Rendered from ``reason_codes`` in the caller's locale. Not stored:
++    # persisting the sentence would freeze one language into the database.
++    explanation: str = ""
++    hint: str | None = None
++    created_at: datetime
++    updated_at: datetime
++
++    @field_serializer("confidence", "source_quantity", "suggested_rate")
++    def _ser_decimal(self, value: Decimal | None) -> str | None:
++        return _decimal_to_str(value)
++
++
++class MatchRunCounts(BaseModel):
++    """Aggregated state of one run, computed from its results in SQL.
++
++    Never stored. A persisted counter and the rows it summarises drift the
++    first time anything writes outside the service, and a review screen that
++    says "3 pending" over an empty queue destroys trust in the whole feature.
++    """
++
++    total: int = 0
++    exact: int = 0
++    high_confidence: int = 0
++    needs_review: int = 0
++    unmatched: int = 0
++    pending: int = 0
++    confirmed: int = 0
++    overridden: int = 0
++    rejected: int = 0
++    manual: int = 0
++    # Pending results in the tiers that require a person before anything can
++    # be priced. This is the length of the review queue.
++    queue_length: int = 0
++
++
++class BoqMatchRunResponse(BaseModel):
++    """What a BOQ match produced: the runs, the tier split and the write-back."""
++
++    boq_id: UUID
++    run_ids: list[UUID]
++    lines: int
++    counts: MatchRunCounts
++    positions_priced: int
++    positions_unpriced: int
++
++
++class BoqConfirmRequest(BaseModel):
++    """Bulk confirmation of the machine's suggestions on a bill.
++
++    ``position_ids=None`` confirms every still-pending result across the
++    bill's match runs; a list scopes the rulings to the selected rows.
++    ``learn_to_corpus`` additionally writes each confirmed price into the
++    cost corpus as an ``estimate_confirmed`` item keyed ``CONF-<position
++    id>`` - a confirmed price is company evidence, and re-confirming the
++    same position updates that row instead of duplicating it.
++    """
++
++    position_ids: list[UUID] | None = None
++    learn_to_corpus: bool = True
++
++
++class BoqConfirmResponse(BaseModel):
++    """What a bulk confirm applied: rulings written, rows learned."""
++
++    boq_id: UUID
++    confirmed: int = 0
++    skipped: int = 0
++    learned: int = 0
++
++
++class BoqMatchJobResponse(BaseModel):
++    """Handle for a whole-BOQ match running outside the request round trip.
++
++    ``POST /boq/{id}/run`` blocks for the whole bill - minutes on a large one,
++    past every proxy timeout on the way.  ``/run-async`` returns this handle
++    immediately and the caller polls ``GET /boq/{id}/run-jobs/{job_id}`` until
++    ``status`` leaves ``running``; ``result`` then carries the same payload the
++    sync endpoint would have returned.
++    """
++
++    job_id: UUID
++    boq_id: UUID
++    status: str  # "running" | "done" | "failed"
++    started_at: datetime
++    finished_at: datetime | None = None
++    # Per-line progress while running: positions scored so far and the
++    # total the job will touch.  None until the first line lands.
++    lines_done: int | None = None
++    lines_total: int | None = None
++    result: BoqMatchRunResponse | None = None
++    error: str | None = None
++
++
++class MatchRunResponse(BaseModel):
++    """A run header with its aggregated counts."""
++
++    model_config = ConfigDict(from_attributes=True)
++
++    id: UUID
++    project_id: UUID
++    name: str
++    source_label: str
++    source_locale: str
++    cost_source: str
++    region: str | None = None
++    catalog_id: UUID | None = None
++    status: str
++    item_count: int
++    candidate_limit: int
++    created_by: UUID | None = None
++    tenant_id: UUID | None = None
++    notes: str | None = None
++    counts: MatchRunCounts = Field(default_factory=MatchRunCounts)
++    created_at: datetime
++    updated_at: datetime
++
++
++class MatchResultPage(BaseModel):
++    """One page of results plus the totals the pager needs."""
++
++    run_id: UUID
++    total: int
++    offset: int
++    limit: int
++    items: list[MatchResultResponse] = Field(default_factory=list)
++
++
++# ── Deciding ────────────────────────────────────────────────────────────────
++
++
++class MatchDecisionCreate(BaseModel):
++    """A person's ruling on one result.
++
++    ``confirmed`` accepts the suggestion as it stands and needs no item id.
++    ``overridden`` requires ``cost_item_id`` - that is what makes it an
++    override rather than a confirmation. ``rejected`` records that nothing in
++    this base fits, which is a real and useful answer: it takes the line out
++    of the queue without inventing a rate for it. ``manual`` is the same
++    human pass with a number the reviewer supplies themselves - ``rate``
++    (and optionally ``currency``) instead of a corpus item.
++    """
++
++    model_config = ConfigDict(str_strip_whitespace=True)
++
++    decision: str = Field(..., pattern=rf"^({DECISION_KIND_PATTERN})$")
++    cost_item_id: UUID | None = None
++    note: str | None = Field(default=None, max_length=2000)
++    # Only meaningful on ``manual``; the service rejects the combination on
++    # any other kind rather than silently ignoring a number a person sent.
++    rate: Decimal | None = None
++    currency: str | None = Field(default=None, max_length=10)
++
++
++# ── Web-verify job ──────────────────────────────────────────────────────────
++
++
++class WebVerifyRequest(BaseModel):
++    """What a verify-with-AI job covers.
++
++    ``queue`` (default): every still-pending review-queue line of the run.
++    ``all``: every line of the run, including priced ones - the same check
++    doubles as a discrepancy pass over already-priced rows.
++    """
++
++    scope: str = Field(default="queue", pattern="^(queue|all)$")
++
++
++class WebVerifyResult(BaseModel):
++    """What a finished verify job produced."""
++
++    run_id: UUID
++    lines_seen: int = 0
++    unique_lines: int = 0
++    estimates_written: int = 0
++    estimates_reused: int = 0
++    failed: int = 0
++
++
++class WebVerifyJobResponse(BaseModel):
++    """Handle for a verify job running outside the request round trip.
++
++    Same shape as :class:`BoqMatchJobResponse` - the caller polls until
++    ``status`` leaves ``running``; ``result`` then carries the totals.
++    """
++
++    job_id: UUID
++    run_id: UUID
++    status: str  # "running" | "done" | "failed"
++    started_at: datetime
++    finished_at: datetime | None = None
++    lines_done: int | None = None
++    lines_total: int | None = None
++    result: WebVerifyResult | None = None
++    error: str | None = None
++
++
++# ── Validation report ───────────────────────────────────────────────────────
++
++
++class CostMatchFinding(BaseModel):
++    """One failing rule, ready for the traffic-light review panel."""
++
++    rule_id: str
++    severity: str
++    category: str
++    message: str
++    key: str
++    element_ref: str | None = None
++    suggestion: str | None = None
++    context: dict[str, Any] = Field(default_factory=dict)
++
++
++class CostMatchValidationReport(BaseModel):
++    """The ``cost_match`` rule set collapsed into the module's response shape."""
++
++    target_type: str
++    target_id: Any = None
++    status: str
++    error_count: int = 0
++    warning_count: int = 0
++    info_count: int = 0
++    passed_count: int = 0
++    findings: list[CostMatchFinding] = Field(default_factory=list)
++    unsupported_rule_sets: list[str] = Field(default_factory=list)
+diff --git a/app/modules/cost_match/work_catalog.py b/app/modules/cost_match/work_catalog.py
+new file mode 100644
+--- /dev/null
++++ b/app/modules/cost_match/work_catalog.py
+@@ -0,0 +1,121 @@
++"""Versioned Bulgarian work definitions shared by bills and original quotations."""
++
++from __future__ import annotations
++
++import json
++import re
++from hashlib import sha256
++from dataclasses import asdict, dataclass
++from decimal import Decimal
++from functools import lru_cache
++from pathlib import Path
++from typing import Any
++
++
++@dataclass(frozen=True)
++class WorkDefinition:
++    id: str
++    object_patterns: tuple[str, ...]
++    notation: tuple[dict[str, Any], ...]
++
++
++@dataclass(frozen=True)
++class CanonicalWork:
++    definition_id: str | None
++    object: str | None
++    operations: tuple[str, ...]
++    scope: str | None
++    materials: tuple[str, ...]
++    specs: dict[str, tuple[str, ...]]
++    inclusions: tuple[str, ...]
++    exclusions: tuple[str, ...]
++    locations: tuple[str, ...]
++    residual_terms: tuple[str, ...]
++
++    def as_dict(self) -> dict[str, Any]:
++        return asdict(self)
++
++
++@lru_cache(maxsize=1)
++def catalog() -> dict[str, Any]:
++    path = Path(__file__).with_name('work_definitions_bg.json')
++    data: dict[str, Any] = json.loads(path.read_text(encoding='utf-8'))
++    if data['version'] != 1:
++        raise ValueError('Unsupported Bulgarian work-definition version')
++    return data
++
++
++@lru_cache(maxsize=1)
++def definitions() -> dict[str, WorkDefinition]:
++    data = catalog()
++    return {entry['id']: WorkDefinition(entry['id'], tuple(entry['object_patterns']),
++                                         tuple(entry['notation'])) for entry in data['families']}
++
++
++def extra_object_patterns() -> tuple[tuple[str, str], ...]:
++    return tuple((entry.id, pattern) for entry in definitions().values()
++                 for pattern in entry.object_patterns)
++
++
++def concept_patterns(section: str) -> tuple[tuple[str, str], ...]:
++    return tuple((entry['id'], entry['pattern']) for entry in catalog()[section])
++
++
++@lru_cache(maxsize=16384)
++def notation(text: str, family: str | None) -> tuple[tuple[tuple[str, tuple[str, ...]], ...], str]:
++    """Return typed parameters and text with *only recognized* notation masked.
++
++    Technical parameters remain in the signature; masking prevents two
++    spellings of the same dimension from becoming unexplained lexical words.
++    An unsupported model or unit is never masked or silently translated.
++    """
++    definition = definitions().get(family or '')
++    values: dict[str, set[str]] = {}
++    spans: list[tuple[int, int]] = []
++    if definition is not None:
++        for rule in definition.notation:
++            for match in re.finditer(rule['pattern'], text, re.I):
++                spans.append(match.span())
++                for name in rule['fields']:
++                    value = match.group(name).lower()
++                    if name != 'model':
++                        value = format(Decimal(value.replace(',', '.')).normalize(), 'f')
++                    values.setdefault(name, set()).add(value)
++    remainder = text
++    for start, end in sorted(spans, reverse=True):
++        remainder = remainder[:start] + ' ' + remainder[end:]
++    return tuple(sorted((name, tuple(sorted(v))) for name, v in values.items())), remainder
++
++
++@lru_cache(maxsize=16384)
++def canonical_work(text: str) -> CanonicalWork:
++    from app.modules.cost_match.bulgarian import parse_work
++    from app.modules.cost_match.matcher import _GENERIC_TERMS, _PROCESS_CONCEPTS, _head_text, canonical_tokens
++
++    parsed = parse_work(text)
++    _, remainder = notation(text, parsed.object)
++    residual = set(canonical_tokens(_head_text(remainder))) - _PROCESS_CONCEPTS - _GENERIC_TERMS
++    return CanonicalWork(
++        definition_id=parsed.object if parsed.object in definitions() else None,
++        object=parsed.object,
++        operations=tuple(sorted(parsed.operations)), scope=parsed.scope,
++        materials=tuple(sorted(parsed.materials)),
++        specs={key: tuple(sorted(values)) for key, values in parsed.specs},
++        inclusions=tuple(sorted(parsed.tail)), exclusions=tuple(sorted(parsed.excluded)),
++        locations=tuple(sorted(parsed.locations)),
++        residual_terms=tuple(sorted(residual)),
++    )
++
++
++@lru_cache(maxsize=1)
++def catalog_digest() -> str:
++    encoded = json.dumps(catalog(), sort_keys=True, separators=(',', ':'), ensure_ascii=False)
++    return sha256(encoded.encode('utf-8')).hexdigest()
++
++
++def work_metadata(text: str) -> dict[str, Any]:
++    work = canonical_work(text).as_dict()
++    encoded = json.dumps(work, sort_keys=True, separators=(',', ':'), ensure_ascii=False)
++    return {'schema_version': catalog()['version'], 'catalog_digest': catalog_digest(), 'work': work,
++            'fingerprint': sha256(encoded.encode('utf-8')).hexdigest(),
++            'interpretation_status': 'deterministic_unverified'}
+diff --git a/app/modules/cost_match/work_context.py b/app/modules/cost_match/work_context.py
+new file mode 100644
+--- /dev/null
++++ b/app/modules/cost_match/work_context.py
+@@ -0,0 +1,60 @@
++"""Resolve subordinate dimensions from explicit work headings, never from trades."""
++
++from __future__ import annotations
++
++import re
++from collections.abc import Sequence
++from typing import Any
++
++from app.modules.cost_match.bulgarian import is_structural, parse_work
++
++
++_DIMENSION_ONLY = re.compile(r'^\s*[фФØø∅]\s*\d+(?:[.,]\d+)?\s*(?:mm|мм)?\s*$', re.I)
++_TRADE_HEADING = re.compile(r'^(?:част\b.*|водопровод|канализация|арматури|овк|електро|'
++                            r'сградно водопроводно отклонение)$', re.I)
++
++
++def is_work_fragment(description: str) -> bool:
++    return bool(_DIMENSION_ONLY.fullmatch(description))
++
++
++def effective_work(description: str, parents: Sequence[str] = ()) -> str:
++    if not is_work_fragment(description):
++        return description
++    for parent in reversed(parents):
++        text = parent.strip()
++        if is_structural(text) or _TRADE_HEADING.fullmatch(text):
++            break
++        if parse_work(text).object:
++            return f'{text}; {description}'
++        break
++    return description
++
++
++def position_contexts(positions: Sequence[Any]) -> dict[Any, list[str]]:
++    """Use a BOQ's explicit parent tree; flat imports use only section rows."""
++    by_id = {position.id: position for position in positions}
++    contexts = {}
++    flat_parent = ''
++    for position in positions:
++        description = position.description or ''
++        if (position.unit or '').strip().lower() in ('', 'section'):
++            flat_parent = description
++        parents: list[str] = []
++        visited = {position.id}
++        parent_id = getattr(position, 'parent_id', None)
++        while parent_id in by_id and parent_id not in visited and len(parents) < 8:
++            visited.add(parent_id)
++            parent = by_id[parent_id]
++            parents.append(parent.description or '')
++            parent_id = getattr(parent, 'parent_id', None)
++        if parent_id in visited:
++            parents = []
++        if parents:
++            parents.reverse()
++        elif getattr(position, 'parent_id', None) is None and flat_parent:
++            parents = [flat_parent]
++        contexts[position.id] = parents if is_work_fragment(description) else []
++        if (position.unit or '').strip().lower() not in ('', 'section') and not is_work_fragment(description):
++            flat_parent = ''
++    return contexts
+diff --git a/app/modules/cost_match/work_definitions_bg.json b/app/modules/cost_match/work_definitions_bg.json
+new file mode 100644
+--- /dev/null
++++ b/app/modules/cost_match/work_definitions_bg.json
+@@ -0,0 +1,861 @@
++{
++  "version": 1,
++  "families": [
++    {
++      "id": "primer",
++      "object_patterns": [
++        "\\bгрунд\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "roof_ridge_cap",
++      "object_patterns": [
++        "\\bкапа[кц]\\w*\\s*(?:(?:по|на|за)\\s*|[-–]\\s*)?бил\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "fascia_board",
++      "object_patterns": [
++        "\\bчелн\\w*\\s+д[ъа]ск\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "drip_edge",
++      "object_patterns": [
++        "\\bнадулучн\\w*\\s+пол\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "lift_platform",
++      "object_patterns": [
++        "\\bподемн\\w*\\s+платформ\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "steel_beam",
++      "object_patterns": [
++        "\\bстоманен\\w*\\s+гред\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "steel_column",
++      "object_patterns": [
++        "\\bстоманен\\w*\\s+колон\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "steel_purlin",
++      "object_patterns": [
++        "\\bстоманен\\w*\\s+столиц\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "earthing",
++      "object_patterns": [
++        "\\bзаземл\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "niche",
++      "object_patterns": [
++        "\\bниш[аa]\\b"
++      ],
++      "notation": []
++    },
++    {
++      "id": "wall_opening",
++      "object_patterns": [
++        "\\b(?:направа|пробиване)\\s+(?:на\\s+)?отвор\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "router",
++      "object_patterns": [
++        "\\bрутер\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "network_switch",
++      "object_patterns": [
++        "\\bсуич\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "server",
++      "object_patterns": [
++        "\\bсървър\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "storage_drive",
++      "object_patterns": [
++        "\\bтвърд\\w*\\s+диск\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "ups",
++      "object_patterns": [
++        "\\b(?:ups|непрекъсваем\\w*\\s+токозахранващ\\w*\\s+източник)\\b"
++      ],
++      "notation": []
++    },
++    {
++      "id": "fire_detector",
++      "object_patterns": [
++        "\\bпожароизвестител\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "sounder",
++      "object_patterns": [
++        "\\bсигнализатор\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "lightning_terminal",
++      "object_patterns": [
++        "\\bмълниеприемник\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "terminal_clamp",
++      "object_patterns": [
++        "\\b(?:контролна\\s+)?клем\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "inverter",
++      "object_patterns": [
++        "\\bинвертор\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "compensator",
++      "object_patterns": [
++        "\\bкомпенсатор\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "anchor_block",
++      "object_patterns": [
++        "\\bопорен\\w*\\s+блок\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "vrf_indoor_unit",
++      "object_patterns": [
++        "\\bвътрешн\\w*\\s+тел[ао]\\b"
++      ],
++      "notation": []
++    },
++    {
++      "id": "pressure_test",
++      "object_patterns": [
++        "\\b(?:тест\\w*|изпитван\\w*)\\s+за\\s+херметичност\\b"
++      ],
++      "notation": []
++    },
++    {
++      "id": "evacuation",
++      "object_patterns": [
++        "\\bвакуумиран\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "commissioning",
++      "object_patterns": [
++        "\\bпуск\\b.*\\bналадк\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "drain_grate",
++      "object_patterns": [
++        "\\bотводнител\\w*\\s+решетк\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "drain_channel",
++      "object_patterns": [
++        "\\bотводнител\\w*\\s+канал\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "downpipe",
++      "object_patterns": [
++        "\\bводосточн\\w*\\s+тръб\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "bracket",
++      "object_patterns": [
++        "\\bконзол\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "mounting_plate",
++      "object_patterns": [
++        "\\bпланк\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "cable_tray",
++      "object_patterns": [
++        "\\b(?:каб(?:елн\\w*|\\.)\\s*)?скар\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "roof_vent_cap",
++      "object_patterns": [
++        "\\bшапк\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "window_sill",
++      "object_patterns": [
++        "\\bпрозоречн\\w*\\s+перваз\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "window_reveal",
++      "object_patterns": [
++        "\\bобръщан\\w*\\s+(?:на\\s+)?отвор\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "formwork",
++      "object_patterns": [
++        "\\bкофраж\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "masonry",
++      "object_patterns": [
++        "\\b(?:тухл\\w*(?:\\s+зид\\w*)?|зидари\\w*|зид\\w*|газобетон\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "plaster",
++      "object_patterns": [
++        "\\b(?:(?:варов\\w*|вароцимент\\w*|гипсов\\w*|цимент\\w*)\\s+)?мазилк\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "putty",
++      "object_patterns": [
++        "\\b(?:(?:гипсов\\w*|цимент\\w*)\\s+)?шпаклов\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "paint",
++      "object_patterns": [
++        "\\b(?:латекс\\w*|боя\\b|боядис\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "concrete_floor",
++      "object_patterns": [
++        "\\b(?:шлайфан\\w*\\s+)?бетон(?:ов|н)\\w*\\s+настилк\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "ramp",
++      "object_patterns": [
++        "\\b(?:бетон(?:ов|н)\\w*\\s+)?рамп\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "screed",
++      "object_patterns": [
++        "\\b(?:(?:цимент\\w*|бетонов\\w*)\\s+)?замазк\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "concrete_slab",
++      "object_patterns": [
++        "\\b(?:стоманобетонов\\w*|бетонов\\w*)\\s+плоч\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "concrete",
++      "object_patterns": [
++        "\\bбетон\\b"
++      ],
++      "notation": []
++    },
++    {
++      "id": "granite_stairs",
++      "object_patterns": [
++        "\\bгранит\\s*[- ]?\\s*стълб\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "reinforcement",
++      "object_patterns": [
++        "\\b(?:арматур\\w*|армиров\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "fan",
++      "object_patterns": [
++        "\\b(?:(?:кръгъл|канален|кръгъл канален)\\s+)?вентилатор\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "duct",
++      "object_patterns": [
++        "\\b(?:(?:кръгъл|спирален|правоъгълен)\\s+)?въздуховод\\w*"
++      ],
++      "notation": [
++        {
++          "name": "declared_diameter",
++          "pattern": "(?<!\\w)[фФ∅Øø]\\s*(?P<diameter>\\d+(?:[.,]\\d+)?)\\b",
++          "fields": [
++            "diameter"
++          ]
++        }
++      ]
++    },
++    {
++      "id": "strainer",
++      "object_patterns": [
++        "\\bмрежест\\w*\\s+филтър\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "filter",
++      "object_patterns": [
++        "\\bфилтър\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "diffuser",
++      "object_patterns": [
++        "\\b(?:конусен\\s+смукател\\w*|дифузер\\w*|анемостат\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "treatment_plant",
++      "object_patterns": [
++        "\\b(?:(?:локално|биологично)\\s+)?пречиствател\\w*\\s+(?:съоръжение|станция)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "pump",
++      "object_patterns": [
++        "\\b(?:(?:циркулационн\\w*|електронн\\w*|потопяем\\w*)\\s+)*помп\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "plant",
++      "object_patterns": [
++        "\\b(?:калистемон\\w*|callistemon|pinus|храст\\w*|дървет\\w*|растителност\\w*|трев\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "fastener",
++      "object_patterns": [
++        "\\b(?:крепеж\\w*|скоб\\w*|анкер\\w*|дюбел\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "control",
++      "object_patterns": [
++        "\\b(?:управление|контролер\\w*|термостат\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "sensor",
++      "object_patterns": [
++        "\\b(?:датчик\\w*|сензор\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "valve",
++      "object_patterns": [
++        "\\b(?:кран\\w*|вентил(?:и|ите|ът|а)?\\b|клапан\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "pipe",
++      "object_patterns": [
++        "\\b(?:тръб\\w*|водопровод\\w*)",
++        "\\bпевп\\b"
++      ],
++      "notation": [
++        {
++          "name": "declared_diameter",
++          "pattern": "(?<!\\w)[фФ∅Øø]\\s*(?P<diameter>\\d+(?:[.,]\\d+)?)\\b",
++          "fields": [
++            "diameter"
++          ]
++        }
++      ]
++    },
++    {
++      "id": "elbow",
++      "object_patterns": [
++        "\\b(?:коляно\\w*|колена)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "tee",
++      "object_patterns": [
++        "\\bтроиник\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "coupling",
++      "object_patterns": [
++        "\\b(?:муфа\\w*|муфи|холендер\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "reducer",
++      "object_patterns": [
++        "\\b(?:редук\\w*|преходник\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "collector",
++      "object_patterns": [
++        "\\bколектор\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "water_meter",
++      "object_patterns": [
++        "\\bводомер\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "toilet",
++      "object_patterns": [
++        "\\b(?:тоалетн\\w*\\s+чини\\w*|моноблок\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "basin",
++      "object_patterns": [
++        "\\b(?:умивалник\\w*|мивк\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "siphon",
++      "object_patterns": [
++        "\\bсифон\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "radiator",
++      "object_patterns": [
++        "\\bрадиатор\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "convector",
++      "object_patterns": [
++        "\\bконвектор\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "boiler",
++      "object_patterns": [
++        "\\bбоилер\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "chiller",
++      "object_patterns": [
++        "\\bчилър\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "air_conditioner",
++      "object_patterns": [
++        "\\b(?:климатик\\w*|климатизатор\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "heat_pump",
++      "object_patterns": [
++        "\\bтермопомп\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "door",
++      "object_patterns": [
++        "\\b(?:врат\\w*|входна\\s+врат\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "window",
++      "object_patterns": [
++        "\\b(?:дограма\\w*|прозор\\w*|витрин\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "drywall",
++      "object_patterns": [
++        "\\bгипсокартон\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "skylight",
++      "object_patterns": [
++        "\\b(?:оберлихт\\w*|капандур\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "ceiling",
++      "object_patterns": [
++        "\\bокачен\\w*\\s+таван\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "board",
++      "object_patterns": [
++        "\\b(?:osb|шперплат\\w*|мдф|mdf|пдч|плоскост\\w*)\\b"
++      ],
++      "notation": []
++    },
++    {
++      "id": "cladding",
++      "object_patterns": [
++        "\\b(?:(?:дъсчен\\w*|металн\\w*)\\s+)?обшивк\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "vapour_barrier",
++      "object_patterns": [
++        "\\b(?:пароизолацион\\w*\\s+фолио|пароизолаци\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "profile",
++      "object_patterns": [
++        "\\b(?:металн\\w*\\s+)?профил\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "mesh",
++      "object_patterns": [
++        "\\b(?:(?:армиров\\w*|армиращ\\w*|стоманен\\w*)\\s+)?мреж\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "curb",
++      "object_patterns": [
++        "\\bбордюр\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "tiling",
++      "object_patterns": [
++        "\\b(?:теракот\\w*|фаянс\\w*|гранитогрес\\w*|плочк\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "insulation",
++      "object_patterns": [
++        "\\b(?:топлоизола\\w*|изолац\\w*|eps\\b|xps\\b|минералн\\w*\\s+ват\\w*)",
++        "\\bтоплозолац\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "waterproofing",
++      "object_patterns": [
++        "\\b(?:хидроизола\\w*|битум\\w*\\s+мембран\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "geotextile",
++      "object_patterns": [
++        "\\bгеотекстил\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "geogrid",
++      "object_patterns": [
++        "\\bгеомреж\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "cable",
++      "object_patterns": [
++        "\\b(?:кабел\\w*|проводник\\w*)"
++      ],
++      "notation": [
++        {
++          "name": "cable_model_and_section",
++          "pattern": "(?<!\\w)(?P<model>свт)\\s*(?P<cores>[1-9]\\d?)\\s*[xх×]\\s*(?P<section>\\d+(?:[.,]\\d+)?)\\s*(?:mm|мм)(?:²|2)(?!\\w)",
++          "fields": [
++            "model",
++            "cores",
++            "section"
++          ],
++          "corpus_evidence": [
++            "OPR2-000328",
++            "OPR3-000328"
++          ]
++        }
++      ]
++    },
++    {
++      "id": "panel",
++      "object_patterns": [
++        "\\b(?:табло\\w*|разпределител\\w*\\s+табл\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "switchgear",
++      "object_patterns": [
++        "\\b(?:прекъсвач\\w*|предпазител\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "luminaire",
++      "object_patterns": [
++        "\\b(?:осветител\\w*|ламп\\w*|плафон\\w*|прожектор\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "socket",
++      "object_patterns": [
++        "\\b(?:контакт\\w*|розетк\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "switch",
++      "object_patterns": [
++        "\\b(?:електрически\\s+)?ключ\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "camera",
++      "object_patterns": [
++        "\\bкамер\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "earthwork",
++      "object_patterns": [
++        "\\b(?:изкоп\\w*|насип\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "roof_tile",
++      "object_patterns": [
++        "\\bкеремид\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "gutter",
++      "object_patterns": [
++        "\\b(?:улук\\w*|улуц\\w*|олук\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "railing",
++      "object_patterns": [
++        "\\b(?:парапет\\w*|ограда\\w*|ограждение\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "scaffold",
++      "object_patterns": [
++        "\\bскел\\w*"
++      ],
++      "notation": []
++    }
++  ],
++  "operations": [
++    {
++      "id": "demolish",
++      "pattern": "\\b(?:демонтаж|демонтиране|разваляне|разрушаване|къртене|разбиване|премахване)\\b"
++    },
++    {
++      "id": "install",
++      "pattern": "\\b(?:монтаж|монтиране|направа|изпълнение|изработка|изграждане|полагане|поставяне|зидане|иззиждане|засаждане|засяване|бетониране|боядисване|боядисвене|лакиране|шпакловане|измазване|облицоване)\\b"
++    },
++    {
++      "id": "repair",
++      "pattern": "\\b(?:ремонт|ремонтиране|поправка|възстановяване|преработка)\\b"
++    },
++    {
++      "id": "haul",
++      "pattern": "\\b(?:извозване|транспортиране|превозване|превоз|транспорт)\\b"
++    },
++    {
++      "id": "test",
++      "pattern": "\\b(?:изпитване|тестване|измерване|наладка|пускане)\\b"
++    },
++    {
++      "id": "clean",
++      "pattern": "\\b(?:почистване|измиване|промиване|обезпрашаване)\\b"
++    },
++    {
++      "id": "prime",
++      "pattern": "\\b(?:грундиране|грундира|грунд)\\b"
++    },
++    {
++      "id": "excavate",
++      "pattern": "\\b(?:изкоп|изкопаване)\\b"
++    },
++    {
++      "id": "backfill",
++      "pattern": "\\b(?:засипване|обратен насип|засипка)\\b"
++    }
++  ],
++  "materials": [
++    {
++      "id": "lime_cement",
++      "pattern": "\\bвароцимент\\w*"
++    },
++    {
++      "id": "lime",
++      "pattern": "\\b(?:варов\\w*|вар\\b)"
++    },
++    {
++      "id": "gypsum",
++      "pattern": "\\bгипс\\w*"
++    },
++    {
++      "id": "cement",
++      "pattern": "\\bцимент\\w*"
++    },
++    {
++      "id": "pvc",
++      "pattern": "\\bpvc\\b|\\bпвц\\b"
++    },
++    {
++      "id": "pe",
++      "pattern": "\\b(?:pe|hdpe|полиетилен\\w*)\\b|\\bпевп\\b"
++    },
++    {
++      "id": "ppr",
++      "pattern": "\\b(?:ppr|полипропилен\\w*)\\b"
++    },
++    {
++      "id": "copper",
++      "pattern": "\\b(?:меден\\w*|медни|медна|медта)\\b"
++    },
++    {
++      "id": "steel",
++      "pattern": "\\b(?:стоман\\w*|поцинкован\\w*)"
++    },
++    {
++      "id": "aluminium",
++      "pattern": "\\b(?:алумини\\w*|ал\\s*\\.)"
++    },
++    {
++      "id": "wood",
++      "pattern": "\\b(?:дървен\\w*|дървес\\w*|дъсчен\\w*)"
++    },
++    {
++      "id": "concrete",
++      "pattern": "\\b(?:бетон\\w*|стоманобетон\\w*)"
++    },
++    {
++      "id": "bitumen",
++      "pattern": "\\bбитум\\w*"
++    },
++    {
++      "id": "silicone",
++      "pattern": "\\bсиликон\\w*"
++    }
++  ]
++}
+diff --git a/tests/unit/cost_match/test_canonical_corpus.py b/tests/unit/cost_match/test_canonical_corpus.py
+new file mode 100644
+--- /dev/null
++++ b/tests/unit/cost_match/test_canonical_corpus.py
+@@ -0,0 +1,157 @@
++from __future__ import annotations
++
++import csv
++import gzip
++import json
++import re
++from types import SimpleNamespace
++
++import pytest
++
++from app.modules.cost_match.bulgarian import parse_work
++from app.modules.cost_match.matcher import Candidate, HIGH_CONFIDENCE, best_match, score_match
++from app.modules.cost_match.work_catalog import catalog, definitions, work_metadata
++from app.modules.cost_match.work_context import effective_work, position_contexts
++from scripts.enrich_bg_corpus import enrich
++
++
++def score(query, candidate):
++    return score_match(query, candidate, query_unit='м', candidate_unit='м')
++
++
++@pytest.mark.parametrize(('query', 'candidate'), [
++    ('Доставка на кабел СВТ3x1,5mm²', 'Доставка кабелоподобен проводник СВТ 3х1,5мм2'),
++    ('Доставка на кабел СВТ3x2,5mm²', 'Доставка кабелоподобен проводник СВТ 3х2,5мм2'),
++    ('Доставка на кабел СВТ3x6,0mm²', 'Доставка кабелоподобен проводник СВТ 3х6мм2'),
++    ('Доставка на кабел СВТ5x4,0mm²', 'Доставка кабелоподобен проводник СВТ 5х4мм2'),
++    ('Полагане на PVC тръба ф50', 'Монтаж на ПВЦ тръба Ø50'),
++])
++def test_equivalent_notation_shares_meaning_without_changing_prices(query, candidate):
++    assert score(query, candidate).confidence >= HIGH_CONFIDENCE
++    assert work_metadata(query)['fingerprint'] == work_metadata(candidate)['fingerprint']
++
++
++@pytest.mark.parametrize('query', [
++    'Доставка на кабел СВТ3x2,5mm²',
++    'Доставка на кабел СВТ5x1,5mm²',
++    'Доставка и монтаж на кабел СВТ3x1,5mm²',
++    'Доставка на кабел СВТ3x1,5mm², огнеустойчив',
++    'Доставка на кабел СВТ3x1,5mm² в тръба',
++])
++def test_notation_never_bridges_different_work(query):
++    assert score(query, 'Доставка кабелоподобен проводник СВТ 3х1,5мм2').confidence < HIGH_CONFIDENCE
++
++
++def test_diameter_stays_a_requirement():
++    assert score('Полагане на PVC тръба ф63', 'Монтаж на ПВЦ тръба Ø50').confidence == 0
++
++
++def test_dimension_fragment_is_not_a_verbatim_work_twin():
++    assert score('Ф20', 'Ф20').reasons == ['work_context_missing']
++    assert score('Ф20', 'Ф20').confidence == 0
++
++
++def test_explicit_parent_pressure_is_preserved_and_never_replaced():
++    query = effective_work('Ф25', ['Полипропиленови тръби за студена вода - PN16'])
++    candidate = effective_work('Ф25', ['Полипропиленови тръби за топла вода - PN20'])
++    assert parse_work(query).object == 'pipe'
++    assert dict(parse_work(query).specs)['pressure'] == {'16'}
++    assert score(query, candidate).confidence == 0
++
++
++def test_compensator_and_pipe_fragments_have_different_meaning():
++    query = effective_work('Ф20', ['Точков компенсатор'])
++    candidate = effective_work('Ф20', ['Полипропиленови тръби за студена вода - PN16'])
++    assert parse_work(query).object == 'compensator'
++    assert score(query, candidate).confidence == 0
++
++
++def test_trade_heading_cannot_supply_work_or_operation():
++    assert effective_work('Ф25', ['ЧАСТ ВиК', 'ВОДОПРОВОД']) == 'Ф25'
++    text = effective_work('Ф25', ['Полипропиленови тръби - PN16'])
++    assert not parse_work(text).operations
++    assert parse_work(text).scope is None
++
++
++def test_unknown_nearest_parent_cannot_borrow_a_different_ancestor_work():
++    assert effective_work('Ф25', ['Полипропиленови тръби - PN16', 'Непозната подгрупа']) == 'Ф25'
++
++
++def test_cyclic_boq_parent_context_is_not_pricing_evidence():
++    header = SimpleNamespace(id=1, parent_id=2, unit='section', description='Полипропиленови тръби - PN16')
++    child = SimpleNamespace(id=2, parent_id=1, unit='м', description='Ф25')
++    assert position_contexts([header, child])[2] == []
++
++
++def test_boq_parent_tree_preserves_two_different_phi25_rows():
++    parents = [SimpleNamespace(id=1, parent_id=None, unit='section', description='Полипропиленови тръби - PN16'),
++               SimpleNamespace(id=3, parent_id=None, unit='section', description='Полипропиленови тръби - PN20')]
++    children = [SimpleNamespace(id=2, parent_id=1, unit='м', description='Ф25'),
++                SimpleNamespace(id=4, parent_id=3, unit='м', description='Ф25')]
++    contexts = position_contexts([parents[0], children[0], parents[1], children[1]])
++    assert effective_work('Ф25', contexts[2]) != effective_work('Ф25', contexts[4])
++
++
++@pytest.mark.parametrize(('query', 'candidate'), [
++    ('Демонтаж на улуци', 'Демонтаж на водосточни тръби'),
++    ('Изготвяне доставка и монтаж на стоманени греди', 'Изготвяне доставка и монтаж на стоманени колони'),
++    ('Фасадно скеле - монтаж и демонтаж', 'Монтаж и демонтаж на вътрешно работно скеле'),
++    ('Доставка и монтаж на безжичен рутер', 'Доставка и монтаж на безжичен паник бутон'),
++])
++def test_new_work_families_reject_related_but_distinct_evidence(query, candidate):
++    assert score(query, candidate).confidence < HIGH_CONFIDENCE
++
++
++def test_all_catalog_patterns_compile_and_ids_are_unique():
++    assert len(definitions()) == len(catalog()['families'])
++    for definition in definitions().values():
++        for pattern in definition.object_patterns:
++            re.compile(pattern, re.I)
++        for rule in definition.notation:
++            compiled = re.compile(rule['pattern'], re.I)
++            assert set(rule['fields']) <= compiled.groupindex.keys()
++
++
++def test_enrichment_preserves_every_original_quotation_field(tmp_path):
++    original = {'code': 'OPR2-000328', 'description': 'Доставка кабелоподобен проводник СВТ 3х1,5мм2',
++                'unit': 'м', 'rate': '0.820000', 'currency': 'EUR', 'source': 'operator_pricelist'}
++    corpus = tmp_path / 'corpus.csv'
++    with corpus.open('w', encoding='utf-8', newline='') as handle:
++        writer = csv.DictWriter(handle, fieldnames=list(original))
++        writer.writeheader()
++        writer.writerow(original)
++    output = tmp_path / 'corpus.jsonl.gz'
++    assert enrich(corpus, output)['records'] == 1
++    with gzip.open(output, 'rt', encoding='utf-8') as handle:
++        record = json.loads(handle.readline())
++    assert record['quotation'] == original
++    assert record['canonical_work']['work']['scope'] == 'material'
++    assert record['canonical_work']['interpretation_status'] == 'deterministic_unverified'
++    assert record['canonical_work']['fingerprint'] == work_metadata('Доставка на кабел СВТ3x1,5mm²')['fingerprint']
++
++
++def test_metadata_is_not_a_shared_mutable_price_lesson():
++    text = 'Доставка на кабел СВТ3x1,5mm²'
++    metadata = work_metadata(text)
++    metadata['work']['scope'] = 'supply_install'
++    assert work_metadata(text)['work']['scope'] == 'material'
++
++
++def test_equivalent_notation_cannot_hide_conflicting_prices():
++    query = 'Доставка на кабел СВТ3x1,5mm²'
++    candidates = [Candidate('a', query, 'м', {'unit_rate': '1', 'currency': 'EUR'}),
++                  Candidate('b', 'Доставка кабелоподобен проводник СВТ 3х1,5мм2', 'м',
++                            {'unit_rate': '5', 'currency': 'EUR'})]
++    result = best_match(query, candidates, query_unit='м')
++    assert not result.is_confident
++    assert result.pool_diverged
++    assert result.median_rate is None
++    assert 'corpus_price_disagreement' in result.score.reasons
++
++
++def test_equal_euro_and_lev_quotes_are_not_a_price_conflict():
++    query = 'Доставка на кабел СВТ3x1,5mm²'
++    candidates = [Candidate('a', query, 'м', {'unit_rate': '10', 'currency': 'EUR'}),
++                  Candidate('b', 'Доставка кабелоподобен проводник СВТ 3х1,5мм2', 'м',
++                            {'unit_rate': '19.5583', 'currency': 'BGN'})]
++    assert best_match(query, candidates, query_unit='м').is_confident
+diff --git a/tests/unit/cost_match/test_canonical_service_helpers.py b/tests/unit/cost_match/test_canonical_service_helpers.py
+new file mode 100644
+--- /dev/null
++++ b/tests/unit/cost_match/test_canonical_service_helpers.py
+@@ -0,0 +1,91 @@
++"""Exercise actual pure service functions without claiming a DB integration test."""
++
++from __future__ import annotations
++
++import ast
++import asyncio
++import uuid
++from decimal import Decimal, InvalidOperation
++from pathlib import Path
++from types import SimpleNamespace
++
++import pytest
++
++from app.modules.cost_match import matcher
++
++
++@pytest.fixture
++def helpers():
++    source = Path(__file__).resolve().parents[3] / 'app/modules/cost_match/service.py'
++    parsed = ast.parse(source.read_text(encoding='utf-8-sig'))
++    names = {'_parse_rate', '_localized_description', '_to_candidate',
++             '_quantise_confidence', '_candidate_snapshot', '_dedupe_pool'}
++    nodes = ast.parse('from __future__ import annotations').body
++    nodes += [node for node in parsed.body if isinstance(node, ast.Assign)
++              and any(isinstance(target, ast.Name) and target.id == '_REFERENCE_ORIGINS'
++                      for target in node.targets)]
++    nodes += [node for node in parsed.body if isinstance(node, ast.FunctionDef) and node.name in names]
++    service = next(node for node in parsed.body if isinstance(node, ast.ClassDef) and node.name == 'CostMatchService')
++    nodes += [node for node in service.body if isinstance(node, ast.AsyncFunctionDef) and node.name == '_score_line']
++    namespace = dict(vars(matcher))
++    namespace.update({'Decimal': Decimal, 'InvalidOperation': InvalidOperation, 'uuid': uuid,
++                      'BGN_PER_EUR': Decimal('1.95583'), '_CONFIDENCE_PLACES': Decimal('0.0001'),
++                      'TIER_UNMATCHED': 'unmatched'})
++    exec(compile(ast.Module(body=nodes, type_ignores=[]), str(source), 'exec'), namespace)
++    return namespace
++
++
++def item(description, metadata=None):
++    return SimpleNamespace(id=uuid.uuid4(), code='OPR-test', description=description,
++                           descriptions={}, metadata_=metadata or {}, unit='м',
++                           rate='0.820000', currency='EUR', source='operator_pricelist')
++
++
++def test_corpus_builder_keeps_original_quote_and_does_not_score_unverified_aliases(helpers):
++    quote = item('Доставка кабелоподобен проводник СВТ 3х1,5мм2',
++                 {'bill_terms': {'bg': 'Доставка и монтаж на вентилатор'}})
++    candidate = helpers['_to_candidate'](quote, 'bg')
++    assert candidate.text == quote.description
++    assert candidate.payload['display_text'] == quote.description
++    assert candidate.payload['unit_rate'] == '0.820000'
++    assert candidate.payload['quotation_rate'] == '0.820000'
++    score = matcher.score_match(candidate.text, candidate.text, query_unit='м', candidate_unit='м')
++    snapshot = helpers['_candidate_snapshot'](candidate, score)
++    assert snapshot['canonical_work'] == candidate.payload['canonical_work']
++    assert snapshot['description'] == quote.description
++    assert snapshot['quotation_rate'] == '0.820000'
++
++
++def test_quote_context_is_separate_from_original_wording_and_price(helpers):
++    quote = item('Ф25', {'work_context': ['Полипропиленови тръби - PN16']})
++    candidate = helpers['_to_candidate'](quote, 'bg')
++    assert candidate.payload['display_text'] == 'Ф25'
++    assert candidate.text == 'Полипропиленови тръби - PN16; Ф25'
++    assert candidate.payload['unit_rate'] == quote.rate
++    assert candidate.payload['canonical_work']['work']['specs']['pressure'] == ('16',)
++
++
++def test_lev_to_euro_keeps_unconverted_quotation(helpers):
++    quote = item('Доставка на кабел СВТ3x1,5mm²')
++    quote.currency = 'BGN'
++    quote.rate = '19.5583'
++    candidate = helpers['_to_candidate'](quote, 'bg')
++    assert Decimal(candidate.payload['unit_rate']) == Decimal('10')
++    assert candidate.payload['currency'] == 'EUR'
++    assert candidate.payload['quotation_rate'] == '19.5583'
++    assert candidate.payload['quotation_currency'] == 'BGN'
++
++
++def test_bg_consolidation_cannot_erase_conflicting_price_evidence(helpers):
++    quotes = [item('Доставка на кабел СВТ3x1,5mm²') for _ in range(3)]
++    quotes[1].rate = '100'
++    assert helpers['_dedupe_pool'](quotes, 'bg') == quotes
++
++
++@pytest.mark.parametrize('description', ['Ф20', 'Ф25', 'Ø50'])
++def test_unqualified_fragment_stops_before_db_or_model_retrieval(helpers, description):
++    result = asyncio.run(helpers['_score_line'](None, description=description,
++                                              unit='м', source_ref='', run=None))
++    assert result['tier'] == 'unmatched'
++    assert result['suggested_rate'] is None
++    assert result['reason_codes'] == ['work_context_missing']
+diff --git a/scripts/kcc_match_bg.py b/scripts/kcc_match_bg.py
+--- a/scripts/kcc_match_bg.py
++++ b/scripts/kcc_match_bg.py
+@@ -19,6 +19,8 @@
+ from openpyxl import load_workbook
+ 
+ from app.modules.cost_match.bulgarian import identity_text, is_structural, parse_work
++from app.modules.cost_match.work_catalog import work_metadata
++from app.modules.cost_match.work_context import effective_work, is_work_fragment
+ from app.modules.cost_match.matcher import (
+     _GENERIC_TERMS, _PROCESS_CONCEPTS, Candidate, best_match,
+     canonical_tokens, suggestion_rate, unit_rate_factor,
+@@ -37,9 +39,14 @@
+ 
+ 
+ def content(text):
+-    return {t for t in canonical_tokens(identity_text(text))
++    from app.modules.cost_match.work_catalog import notation
++
++    values, remainder = notation(text, parse_work(text).object)
++    terms = {t for t in canonical_tokens(identity_text(remainder))
+             if t not in _GENERIC_TERMS and t not in _PROCESS_CONCEPTS
+             and len(t) > 1 and any(c.isalpha() for c in t)}
++    terms.update(f'work:{name}:{value}' for name, items in values for value in items)
++    return terms
+ 
+ 
+ def run(corpus, input_path, output_path, limit):
+@@ -71,6 +78,7 @@
+             candidates.append(Candidate(str(index), text, unit, {
+                 'code': row['code'], 'source': row['source'],
+                 'unit_rate': str(rate), 'currency': 'EUR',
++                'canonical_work': work_metadata(text),
+             }))
+             exact[identity_text(text)].add(index)
+             terms = content(text)
+@@ -85,40 +93,52 @@
+     audit = workbook.create_sheet('BG_MATCH_AUDIT')
+     audit.append(['Excel row', 'Position', 'Query', 'Unit', 'Decision', 'EUR unit rate',
+                   'Source code', 'Source', 'Source description', 'Confidence',
+-                  'Reasons', 'Object', 'Operations', 'Scope', 'Specifications', 'Alternatives'])
++                  'Reasons', 'Object', 'Operations', 'Scope', 'Specifications', 'Alternatives',
++                  'KCC work identity', 'Quote work identity', 'Inherited work context',
++                  'Effective work description'])
+     sheet.cell(1, 5, 'Единична цена EUR')
+     sheet.cell(1, 6, 'Обща цена EUR')
+     counts = Counter()
+     cache = {}
++    parent_work = ''
+     for row_no in range(2, sheet.max_row + 1):
+         position = str(sheet.cell(row_no, 1).value or '')
+         description = str(sheet.cell(row_no, 2).value or '').strip()
+         unit = str(sheet.cell(row_no, 3).value or '').strip()
+         quantity = decimal(sheet.cell(row_no, 4).value)
++        if description and (not unit or unit.lower() == 'section' or quantity is None):
++            parent_work = description
++            counts['structural_or_nonwork'] += 1
++            continue
+         if not description or not unit or unit.lower() == 'section' or is_structural(description):
++            parent_work = description
+             if description:
+                 counts['structural_or_nonwork'] += 1
+             continue
++        inherited = [parent_work] if parent_work and is_work_fragment(description) else []
++        effective = effective_work(description, inherited)
++        if not is_work_fragment(description):
++            parent_work = ''
+         if sheet.cell(row_no, 5).value not in (None, ''):
+             counts['existing_rate_preserved'] += 1
+             continue
+-        key = (description, unit)
++        key = (effective, unit)
+         if key not in cache:
+-            terms = content(description)
+-            possible = set(exact.get(identity_text(description), ()))
++            terms = content(effective)
++            possible = set(exact.get(identity_text(effective), ()))
+             for term in terms:
+                 possible.update(postings.get(term, ()))
+-            obj = parse_work(description).object
++            obj = parse_work(effective).object
+             ordered = sorted(possible, key=lambda i: (
+-                i not in exact.get(identity_text(description), ()),
++                i not in exact.get(identity_text(effective), ()),
+                 objects[i] != obj,
+                 unit_rate_factor(candidates[i].unit, unit) is None,
+                 -len(terms & tokens[i]),
+                 candidates[i].payload['code'],
+             ))[:limit]
+-            cache[key] = best_match(description, [candidates[i] for i in ordered], query_unit=unit, locale='bg')
++            cache[key] = best_match(effective, [candidates[i] for i in ordered], query_unit=unit, locale='bg')
+         outcome = cache[key]
+-        frame = parse_work(description)
++        frame = parse_work(effective)
+         selected = outcome.candidate
+         score = outcome.score
+         reason = list(score.reasons) if score else ['no_candidates']
+@@ -151,7 +171,10 @@
+                       score.confidence if score else 0, '; '.join(reason), frame.object,
+                       ', '.join(sorted(frame.operations)), frame.scope,
+                       json.dumps({k: sorted(v) for k, v in frame.specs}, ensure_ascii=False),
+-                      json.dumps(alternatives, ensure_ascii=False)])
++                      json.dumps(alternatives, ensure_ascii=False),
++                      json.dumps(work_metadata(effective), ensure_ascii=False),
++                      json.dumps(payload.get('canonical_work'), ensure_ascii=False),
++                      json.dumps(inherited, ensure_ascii=False), effective])
+     audit.freeze_panes = 'A2'
+     audit.auto_filter.ref = audit.dimensions
+     output_path.parent.mkdir(parents=True, exist_ok=True)
+diff --git a/scripts/enrich_bg_corpus.py b/scripts/enrich_bg_corpus.py
+new file mode 100644
+--- /dev/null
++++ b/scripts/enrich_bg_corpus.py
+@@ -0,0 +1,44 @@
++"""Keep original price records intact and attach versioned Bulgarian work meaning.
++
++The JSONL sidecar is derived metadata, not newly verified price evidence.
++It can be rebuilt after a reviewed vocabulary change. No database is changed.
++"""
++
++from __future__ import annotations
++
++import argparse
++import csv
++import gzip
++import json
++import sys
++from collections import Counter
++from pathlib import Path
++
++sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
++
++from app.modules.cost_match.work_catalog import work_metadata
++
++
++def enrich(corpus: Path, output: Path) -> Counter:
++    if output.resolve() == corpus.resolve():
++        raise ValueError('Enrichment must not overwrite the original corpus.')
++    counts = Counter()
++    opener = gzip.open if output.suffix == '.gz' else open
++    with corpus.open(encoding='utf-8-sig', newline='') as source, opener(output, 'wt', encoding='utf-8') as target:
++        for quotation in csv.DictReader(source):
++            metadata = work_metadata(quotation.get('description') or '')
++            # Quotation fields, including provenance and money, are unchanged.
++            target.write(json.dumps({'quotation': quotation, 'canonical_work': metadata},
++                                    ensure_ascii=False) + '\n')
++            counts['records'] += 1
++            counts['object_known' if metadata['work']['object'] else 'object_unknown'] += 1
++            counts['scope_known' if metadata['work']['scope'] else 'scope_unknown'] += 1
++    return counts
++
++
++if __name__ == '__main__':
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('--corpus', type=Path, required=True)
++    parser.add_argument('--output', type=Path, required=True)
++    args = parser.parse_args()
++    print(json.dumps(dict(enrich(args.corpus, args.output)), ensure_ascii=False))
+diff --git a/scripts/audit_bg_gaps.py b/scripts/audit_bg_gaps.py
+new file mode 100644
+--- /dev/null
++++ b/scripts/audit_bg_gaps.py
+@@ -0,0 +1,73 @@
++"""Classify unresolved KCC2 lines without mistaking missing prices for synonyms."""
++
++from __future__ import annotations
++
++import csv
++import sys
++from collections import Counter
++from pathlib import Path
++
++sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
++
++from openpyxl import load_workbook
++
++from app.modules.cost_match.bulgarian import parse_work
++
++
++def categorize(description: str, candidate: str, reasons: str) -> str:
++    if 'corpus_price_disagreement' in reasons:
++        return 'conflicting_prices'
++    if 'work_context_missing' in reasons:
++        return 'work_context_missing'
++    if not candidate:
++        return 'no_retrieved_candidate'
++    if any(reason in reasons for reason in ('work_object_conflict', 'work_operation_bundle_conflict',
++                                            'work_material_conflict', 'work_spec_conflict', 'spec_conflict')):
++        return 'incompatible_candidate'
++    q, c = parse_work(description), parse_work(candidate)
++    q_specs, c_specs = dict(q.specs), dict(c.specs)
++    if any(key not in c_specs for key in q_specs):
++        return 'candidate_missing_required_spec'
++    if any(key not in q_specs for key in c_specs):
++        return 'candidate_has_unrequested_spec'
++    if q.operations != c.operations or q.scope != c.scope:
++        return 'operation_or_scope_unverified'
++    if q.tail != c.tail or q.excluded != c.excluded:
++        return 'inclusions_unverified'
++    if q.object != c.object or not q.object:
++        return 'object_unknown_or_mismatch'
++    if q.materials != c.materials or q.locations != c.locations:
++        return 'material_or_location_unverified'
++    return 'wording_or_retrieval_gap'
++
++
++def audit(workbook_path: Path, output_path: Path) -> Counter:
++    sheet = load_workbook(workbook_path, read_only=True, data_only=True)['BG_MATCH_AUDIT']
++    rows = iter(sheet.values)
++    columns = next(rows)
++    counts = Counter()
++    with output_path.open('w', encoding='utf-8-sig', newline='') as stream:
++        writer = csv.writer(stream)
++        writer.writerow(['Excel row', 'Position', 'Family', 'Gap type', 'KCC description',
++                         'Nearest quote description', 'Source code', 'Reasons'])
++        for values in rows:
++            row = dict(zip(columns, values))
++            if row['Decision'] in ('exact', 'compatible'):
++                continue
++            kind = categorize(row.get('Effective work description') or row['Query'],
++                              row['Source description'] or '', row['Reasons'] or '')
++            counts[kind] += 1
++            writer.writerow([row['Excel row'], row['Position'], row['Object'] or '', kind,
++                             row['Query'], row['Source description'] or '',
++                             row['Source code'] or '', row['Reasons'] or ''])
++    return counts
++
++
++if __name__ == '__main__':
++    import argparse
++
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('workbook', type=Path)
++    parser.add_argument('output', type=Path)
++    args = parser.parse_args()
++    print(dict(audit(args.workbook, args.output)))
+diff --git a/scripts/audit_bg_coverage.py b/scripts/audit_bg_coverage.py
+new file mode 100644
+--- /dev/null
++++ b/scripts/audit_bg_coverage.py
+@@ -0,0 +1,102 @@
++"""Check the original unresolved set against unbounded, known-family price evidence.
++
++This diagnoses recall versus evidence gaps. It does not approve any price.
++"""
++
++from __future__ import annotations
++
++import argparse
++import csv
++import sys
++from collections import Counter, defaultdict
++from pathlib import Path
++
++sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
++
++from openpyxl import load_workbook
++
++from app.modules.cost_match.bulgarian import parse_work
++from app.modules.cost_match.matcher import Candidate, HIGH_CONFIDENCE, score_match, unit_rate_factor
++from scripts.kcc_match_bg import OPERATOR_SOURCES, decimal
++
++
++def audit_rows(path: Path) -> dict[int, dict]:
++    workbook = load_workbook(path, read_only=True, data_only=True)
++    rows = iter(workbook['BG_MATCH_AUDIT'].values)
++    columns = next(rows)
++    result = {row['Excel row']: row for values in rows if (row := dict(zip(columns, values)))}
++    workbook.close()
++    return result
++
++
++def audit(corpus: Path, baseline: Path, current: Path, output: Path) -> Counter:
++    pool = defaultdict(list)
++    with corpus.open(encoding='utf-8-sig', newline='') as handle:
++        for row in csv.DictReader(handle):
++            rate = decimal(row.get('rate'))
++            if (str(row.get('is_active', '')).lower() not in {'true', '1'}
++                    or rate is None or rate <= 0 or row.get('currency') not in {'EUR', 'BGN'}):
++                continue
++            family = parse_work(row['description']).object
++            if family:
++                pool[family].append(Candidate(row['code'], row['description'], row['unit'], row))
++    before, after = audit_rows(baseline), audit_rows(current)
++    counts = Counter()
++    with output.open('w', encoding='utf-8-sig', newline='') as handle:
++        writer = csv.writer(handle)
++        writer.writerow(['Excel row', 'Position', 'Original KCC row', 'Effective work', 'Family',
++                         'Current decision', 'Evidence diagnosis', 'Full-family pool size',
++                         'Best operator code', 'Best operator description', 'Operator confidence',
++                         'Operator reasons', 'Compatible reference code'])
++        for row_no, original in before.items():
++            if original['Decision'] in {'exact', 'compatible'}:
++                continue
++            row = after.get(row_no)
++            effective = row['Effective work description'] if row else original['Query']
++            family = parse_work(effective).object
++            candidates = pool.get(family, [])
++            best = None
++            reference = ''
++            for candidate in candidates:
++                if unit_rate_factor(candidate.unit, original['Unit']) is None:
++                    continue
++                match = score_match(effective, candidate.text, query_unit=original['Unit'],
++                                    candidate_unit=candidate.unit)
++                if candidate.payload['source'] in OPERATOR_SOURCES:
++                    if best is None or match.confidence > best[1].confidence:
++                        best = (candidate, match)
++                elif match.confidence >= HIGH_CONFIDENCE:
++                    reference = reference or candidate.ref
++            if row is None:
++                kind = 'work_heading_not_priceable'
++            elif row['Decision'] in {'exact', 'compatible'}:
++                kind = 'representation_fixed'
++            elif 'corpus_price_disagreement' in (row['Reasons'] or ''):
++                kind = 'conflicting_prices'
++            elif not family:
++                kind = 'work_identity_or_context_unknown'
++            elif best is not None and best[1].confidence >= HIGH_CONFIDENCE:
++                kind = 'strong_operator_evidence_requires_recall_or_price_policy_review'
++            elif reference:
++                kind = 'compatible_reference_only_no_automatic_operator_price'
++            elif best:
++                kind = 'known_operator_family_but_incomplete_or_incompatible_evidence'
++            else:
++                kind = 'no_known_family_operator_price'
++            counts[kind] += 1
++            writer.writerow([row_no, original['Position'], original['Query'], effective,
++                             family or '', row['Decision'] if row else 'nonwork', kind, len(candidates),
++                             best[0].ref if best else '', best[0].text if best else '',
++                             best[1].confidence if best else 0,
++                             '; '.join(best[1].reasons) if best else '', reference])
++    return counts
++
++
++if __name__ == '__main__':
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('--corpus', type=Path, required=True)
++    parser.add_argument('--baseline', type=Path, required=True)
++    parser.add_argument('--current', type=Path, required=True)
++    parser.add_argument('--output', type=Path, required=True)
++    args = parser.parse_args()
++    print(dict(audit(args.corpus, args.baseline, args.current, args.output)))

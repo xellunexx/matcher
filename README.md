@@ -160,3 +160,21 @@ reasons) — that is where to look first.
 - **BgGPT-Gemma-3-12B-IT** (INSAIT, `INSAIT-Institute/BgGPT-Gemma-3-12B-IT-GGUF`, Q6_K 9.7 GB) —
   Bulgarian LLM, fits a 16 GB GPU together with bge-m3. Tested as the "same work?" verifier.
 - `gpt-oss-20b` was tried and is weak in Bulgarian (rejects obvious equivalents).
+
+---
+
+## ERP subtree (`erp/backend/`)
+
+Full production backend for the matching/pricing pipeline — added 2026-10-09:
+
+- `app/modules/cost_match/` — deterministic Bulgarian matcher: `matcher.py` (scoring, cohort/authority doctrine), `bulgarian.py` (parser), `work_catalog.py` + `work_definitions_bg.json` (families/notation), `retrieval_bg.py` (object-conjunct + veto plans), `repository.py`, `service.py` (decision maker: tiers, cascade, price-spread arbitration, learning), `router.py`, `bases.py` (named base map).
+- `app/modules/costs/` — the price DB: `oe_costs_item` model, repository, import/export.
+- `app/modules/boq/` — positions, estimate workflow, learners + quarantine handling (`boq/service.py` dequarantine-on-confirm path).
+- `app/modules/{ai_estimator,estimate_basis,estimate_rollup,costmodel,postcalc,...}` — estimators/rollups.
+- `scripts/` — `kcc_match_bg.py` offline replay, `kcc_golden.py`, corpus audit/enrich tools.
+- `tests/` — full suite (unit + integration + module tests).
+- `helpers/` — replay harness (`helper/_replay`), canonical corpus builder (`helper/helper2`), platform debug scripts.
+- `pricedb/` — seed JSONs + `corpus/cost_items.csv` (87,751-row corpus export) + `kcc2-INPUT.xlsx`.
+- `erp/backend/requirements.txt` — full pinned freeze (230 deps).
+
+Not vendored: `.venv`, `node_modules`, caches, `work/` dumps, quarantined learn batches (`contaminated_learn_2026-10-07` stays `is_active=false` by design).

@@ -1,0 +1,85 @@
+import json, sys, io
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+d = json.load(open(r"C:\lab\tenderops\platform\_bill_terms_dump.json", encoding="utf-8"))
+by_code, by_id = {}, {}
+for k, terms in d.items():
+    if k.startswith("BUILDLY-"):
+        short = k.split("-", 2)[-1]
+        by_code.setdefault(short, set()).update(terms)
+    else:
+        by_id[k] = list(terms)
+by_code = {k: sorted(v) for k, v in sorted(by_code.items())}
+by_id = {k: sorted(v) for k, v in sorted(by_id.items())}
+out = ['# -*- coding: utf-8 -*-',
+       '"""Curated Bulgarian bill-language aliases for corpus rows.',
+       '',
+       'Ported from the verified OpenConstructionERP corpus alignment (392 rows,',
+       '2,272 terms): each corpus code maps to the surface forms Bulgarian bills',
+       'actually write - abbreviations (СК, СКИ, ТСК, ПК, ПС, ф2), catalog-vs-bill',
+       'vocabulary (сферичен/спирателен кран, подов сифон), and synonyms the literal',
+       'description cannot reach. Terms join FTS search_text and matcher scoring',
+       'but never the displayed description.',
+       '',
+       'Generated table - regenerated from the ERP corpus dump; do not hand-edit',
+       'rows without re-verifying retrieval.',
+       '"""',
+       'from __future__ import annotations',
+       '',
+       'import json',
+       'import sqlite3',
+       '',
+       'BILL_TERMS_BY_CODE: dict[str, list[str]] = ' + repr(by_code),
+       '',
+       'BILL_TERMS_BY_ID: dict[str, list[str]] = ' + repr(by_id),
+       '',
+       '',
+       'def bill_terms_for(code: str | None, item_id: str | None) -> list[str]:',
+       '    """Merged alias terms for one corpus row (deduped, stable order)."""',
+       '    seen: dict[str, None] = {}',
+       '    for t in (BILL_TERMS_BY_CODE.get(code or "") or []) + (BILL_TERMS_BY_ID.get(item_id or "") or []):',
+       '        seen.setdefault(t, None)',
+       '    return list(seen)',
+       '',
+       '',
+       'def apply(conn: sqlite3.Connection) -> int:',
+       '    """Write bill_terms into extra_json for every mapped corpus row.',
+       '',
+       '    Idempotent union merge - existing operator-added bill_terms survive.',
+       '    Returns the number of rows patched. Call before the FTS rebuild so the',
+       '    alias terms reach the search surface.',
+       '    """',
+       '    patched = 0',
+       '    for code, terms in BILL_TERMS_BY_CODE.items():',
+       '        rows = conn.execute("SELECT id,extra_json FROM cost_items WHERE code=?", (code,)).fetchall()',
+       '        for r in rows:',
+       '            try:',
+       '                extra = json.loads(r["extra_json"] or "{}")',
+       '            except Exception:',
+       '                extra = {}',
+       '            cur = {t for t in (extra.get("bill_terms") or []) if isinstance(t, str)}',
+       '            merged = sorted(cur | set(terms))',
+       '            if merged != sorted(cur):',
+       '                extra["bill_terms"] = merged',
+       '                conn.execute("UPDATE cost_items SET extra_json=? WHERE id=?",',
+       '                             (json.dumps(extra, ensure_ascii=False, separators=(",", ":")), r["id"]))',
+       '                patched += 1',
+       '    for iid, terms in BILL_TERMS_BY_ID.items():',
+       '        r = conn.execute("SELECT id,extra_json FROM cost_items WHERE id=?", (iid,)).fetchone()',
+       '        if not r:',
+       '            continue',
+       '        try:',
+       '            extra = json.loads(r["extra_json"] or "{}")',
+       '        except Exception:',
+       '            extra = {}',
+       '        cur = {t for t in (extra.get("bill_terms") or []) if isinstance(t, str)}',
+       '        merged = sorted(cur | set(terms))',
+       '        if merged != sorted(cur):',
+       '            extra["bill_terms"] = merged',
+       '            conn.execute("UPDATE cost_items SET extra_json=? WHERE id=?",',
+       '                         (json.dumps(extra, ensure_ascii=False, separators=(",", ":")), iid))',
+       '            patched += 1',
+       '    return patched',
+       '']
+path = r"C:\lab\tenderops\tenderops\app\corpus_aliases.py"
+open(path, "w", encoding="utf-8").write("\n".join(out))
+print("wrote", path, "| codes:", len(by_code), "| ids:", len(by_id), "| terms:", sum(len(v) for v in by_code.values()) + sum(len(v) for v in by_id.values()))

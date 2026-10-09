@@ -1,0 +1,3427 @@
+# DDC-CWICR-OE: DataDrivenConstruction · OpenConstructionERP
+# Copyright (c) 2026 Artem Boiko / DataDrivenConstruction
+"""Finance service - business logic for invoicing, payments, budgets, and EVM.
+
+Stateless service layer.
+"""
+
+import hashlib
+import logging
+import uuid
+from collections.abc import Sequence
+from datetime import UTC, datetime
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
+from typing import Any
+
+from fastapi import HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.events import event_bus
+from app.core.money import money_quantum
+from app.modules.finance import gaap
+from app.modules.finance.models import (
+    EVMSnapshot,
+    Invoice,
+    InvoiceLineItem,
+    LedgerAccount,
+    LedgerEntry,
+    Payment,
+    ProjectBudget,
+)
+from app.modules.finance.po_link import invoice_po_link
+from app.modules.finance.repository import (
+    BudgetRepository,
+    EVMSnapshotRepository,
+    InvoiceLineItemRepository,
+    InvoiceRepository,
+    LedgerAccountRepository,
+    LedgerRepository,
+    PaymentRepository,
+)
+from app.modules.finance.retention_ledger import (
+    InvoiceRetention,
+    PaymentWithholding,
+    RetentionLedger,
+    build_retention_ledger,
+)
+from app.modules.finance.schemas import (
+    BudgetCreate,
+    BudgetUpdate,
+    EVMSnapshotCreate,
+    InvoiceCreate,
+    InvoiceLineItemCreate,
+    InvoiceUpdate,
+    JournalEntryCreate,
+    LedgerAccountCreate,
+    LedgerAccountUpdate,
+    LedgerEntryCreate,
+    PaymentCreate,
+    RecordClaimPaymentRequest,
+)
+
+logger = logging.getLogger(__name__)
+
+# Upper bound on invoices scanned for the retention ledger (mirrors the invoice
+# Excel-export cap). A read model, so a hard ceiling keeps a pathological
+# project from loading unbounded rows; realistic projects stay far below it.
+_RETENTION_LEDGER_INVOICE_CAP = 50000
+
+
+def _safe_decimal(value: object, default: Decimal = Decimal("0")) -> Decimal:
+    """Coerce *value* to Decimal; return *default* on any error."""
+    if isinstance(value, Decimal):
+        return value
+    try:
+        return Decimal(str(value))
+    except (InvalidOperation, ValueError, TypeError):
+        return default
+
+
+def _utcnow_iso() -> str:
+    """Return current UTC time as ISO-8601 string."""
+    return datetime.now(UTC).isoformat()
+
+
+def _derive_ledger_idempotency_key(
+    *,
+    project_id: object,
+    transaction_ref: str,
+    source_type: str | None,
+    source_id: str | None,
+) -> str:
+    """Build a deterministic ledger idempotency key.
+
+    Used when the caller does not pass an explicit ``idempotency_key`` so a
+    benign retry of the SAME posting reuses the SAME key (and therefore hits
+    the existing-entry short-circuit / DB backstop) instead of double-posting.
+    Two distinct postings that happen to share a ``transaction_ref`` stay
+    distinct because the source pair is folded in. Hashed to a fixed length
+    so it always fits the ``String(64)`` column regardless of ref length.
+    """
+    raw = "|".join(
+        (
+            str(project_id or ""),
+            transaction_ref or "",
+            source_type or "",
+            source_id or "",
+        )
+    )
+    # Trim to the column width: "auto:" (5) + a full sha256 hex (64) is 69
+    # chars, which overflows the String(64) ``idempotency_key`` column. 59 hex
+    # chars (236 bits) keep collisions negligible, and the truncation is
+    # deterministic so the same posting still derives the same key.
+    return ("auto:" + hashlib.sha256(raw.encode("utf-8")).hexdigest())[:64]
+
+
+def _project_fx_map(project: object | None) -> dict[str, str]:
+    """Project the ``Project.fx_rates`` JSON list into ``{code: rate}``.
+
+    Mirrors :func:`app.modules.boq.service._project_fx_map` - defensive
+    against missing attribute / malformed entries so callers can always
+    pass the result through :func:`_convert_to_base` without further guards.
+    A rate is "units of base currency per 1 unit of the foreign currency".
+    """
+    if project is None:
+        return {}
+    raw = getattr(project, "fx_rates", None)
+    if not isinstance(raw, list):
+        return {}
+    out: dict[str, str] = {}
+    for entry in raw:
+        if not isinstance(entry, dict):
+            continue
+        code = str(entry.get("code") or "").strip().upper()
+        rate = str(entry.get("rate") or "").strip()
+        if code and rate:
+            out[code] = rate
+    return out
+
+
+def _convert_to_base(
+    amounts_by_currency: dict[str, object],
+    *,
+    base_currency: str,
+    fx_rates_map: dict[str, str],
+) -> tuple[str, list[str]]:
+    """Convert per-currency subtotals into the project base currency.
+
+    Mirrors :func:`app.modules.boq.service._position_total_in_base`: an amount
+    priced in a non-base currency contributes ``amount * fx_rates_map[code]``.
+    A blank currency code is treated as already-base. A foreign currency with
+    no configured FX rate is summed in its own units anyway (never zeroed) so
+    the rollup degrades visibly, and its code is returned in the second tuple
+    element so the caller can surface a "missing FX rate" hint.
+
+    The converted total is returned as a quantized Decimal string so money never
+    round-trips through a binary float. The quantum is the base currency's own
+    minor unit, via :func:`app.core.money.money_quantum`, not a fixed two places:
+    this helper is the last step that sees ``base_currency``, so a literal here
+    rounds a Kuwaiti dinar total to cents and loses a fils no caller can put
+    back, and gives a yen total two digits it cannot carry. A blank base keeps
+    the registry's two-decimal default. Callers parse the string back into a
+    Decimal where they need to do further arithmetic.
+    """
+    base = (base_currency or "").strip().upper()
+    total = Decimal("0")
+    missing: list[str] = []
+    for code, amount in amounts_by_currency.items():
+        norm = (code or "").strip().upper()
+        value = _safe_decimal(amount)
+        if norm and norm != base:
+            fx = fx_rates_map.get(norm)
+            if fx:
+                rate = _safe_decimal(fx, Decimal("1"))
+                if rate > 0:
+                    value = value * rate
+            elif norm not in missing:
+                missing.append(norm)
+        total += value
+    return str(total.quantize(money_quantum(base), rounding=ROUND_HALF_UP)), missing
+
+
+# ── Allowed status transitions ──────────────────────────────────────────────
+#
+# Kept in addition to :mod:`app.core.fsm.registry` for backwards compatibility:
+# the update_invoice() path uses this table to enforce transitions when the
+# client PATCHes the ``status`` field directly. The new FSM-driven flows
+# (``approve_invoice`` / ``pay_invoice``) write through :func:`log_activity`
+# and use the canonical FSM nomenclature.
+#
+# Legacy values (``pending`` / ``approved``) are accepted as aliases for the
+# canonical FSM nodes after the v3033 data migration remaps existing rows.
+_INVOICE_STATUS_TRANSITIONS: dict[str, set[str]] = {
+    "draft": {"pending", "approved", "sent", "cancelled"},
+    "pending": {"approved", "sent", "cancelled", "draft"},
+    "approved": {"paid", "sent", "cancelled"},
+    "sent": {"paid", "cancelled"},
+    "paid": {"credit_note_issued"},  # only credit-note reversal allowed
+    "cancelled": {"draft"},  # allow re-opening
+    "credit_note_issued": set(),  # terminal
+}
+
+_VALID_INVOICE_STATUSES = set(_INVOICE_STATUS_TRANSITIONS.keys())
+
+#: Statuses in which an invoice's figures are still being drawn up. Past them
+#: the invoice has been approved, sent, paid or cancelled, and what it charges,
+#: to whom and in which currency is the record.
+_INVOICE_EDITABLE_STATUSES: frozenset[str] = frozenset({"draft", "pending"})
+
+#: The amounts an issued invoice keeps, compared to the cent so that a form
+#: sending the stored figures back is not read as a change.
+_INVOICE_KEPT_AMOUNTS: tuple[str, ...] = ("amount_subtotal", "tax_amount", "retention_amount", "amount_total")
+
+#: The parties and terms an issued invoice keeps, compared as text.
+_INVOICE_KEPT_TERMS: tuple[str, ...] = ("currency_code", "tax_config_id", "contact_id", "invoice_direction")
+
+
+def _cents(value: Any) -> Decimal | None:
+    """An amount rounded to the cent for comparison, ``None`` when unreadable."""
+    try:
+        return Decimal(str(value if value not in (None, "") else "0")).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    except (InvalidOperation, TypeError, ValueError):
+        return None
+
+
+def _issued_invoice_changes(invoice: Any, fields: dict[str, Any], new_lines: Sequence[Any] | None) -> list[str]:
+    """Name what a patch would change about an invoice's figures, parties or lines.
+
+    Only real changes count: a field sent back with the value it already has is
+    not one. Replacement lines count when their number or their amounts differ
+    from the stored ones; a reworded description does not move money.
+    """
+    changed = [
+        name
+        for name in _INVOICE_KEPT_AMOUNTS
+        if name in fields and _cents(fields[name]) != _cents(getattr(invoice, name, None))
+    ]
+    for name in _INVOICE_KEPT_TERMS:
+        if name not in fields:
+            continue
+        new, old = (fields[name] or ""), (getattr(invoice, name, None) or "")
+        if str(new).strip().upper() != str(old).strip().upper():
+            changed.append(name)
+    if new_lines is not None:
+        old_amounts = sorted(_cents(getattr(item, "amount", None)) or Decimal("0") for item in invoice.line_items or [])
+        new_amounts = sorted(_cents(getattr(item, "amount", None)) or Decimal("0") for item in new_lines)
+        if old_amounts != new_amounts:
+            changed.append("line_items")
+    return changed
+
+
+def _parse_decimal(value: str, field_name: str = "value") -> Decimal:
+    """Parse a string to Decimal, raising a clear error on failure."""
+    try:
+        return Decimal(value)
+    except (InvalidOperation, ValueError, TypeError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid numeric value for {field_name}: {value!r}",
+        ) from exc
+
+
+def _compute_invoice_total(subtotal: str, tax: str) -> str:
+    """Compute amount_total = amount_subtotal + tax_amount."""
+    s = _parse_decimal(subtotal, "amount_subtotal")
+    t = _parse_decimal(tax, "tax_amount")
+    return str(s + t)
+
+
+# The widest gap allowed between an invoice's own figures.
+#
+# Two cents, the same figure ``invoice_capture_logic.AMOUNT_TOLERANCE`` holds a
+# scanned document to, and deliberately so: a supplier invoice that passed the
+# capture review must not then be refused when it is booked. It covers rounding
+# and nothing else. Beyond it the numbers are telling two different stories
+# about the same document, and every receiver checks the arithmetic
+# (EN 16931 BR-CO-15), so a total that does not add up is not a preference
+# somebody expressed, it is a document that will be rejected downstream.
+INVOICE_AMOUNT_TOLERANCE = Decimal("0.02")
+
+
+def _line_sum_tolerance(line_count: int) -> Decimal:
+    """How far a set of line amounts may sit from the subtotal they make up.
+
+    A cent per line, because every line is rounded on its own and the error
+    accumulates, with the invoice-level tolerance as the floor for a document
+    of one or two lines.
+    """
+    return max(INVOICE_AMOUNT_TOLERANCE, Decimal("0.01") * line_count)
+
+
+def _refuse_inconsistent_amounts(
+    *,
+    subtotal: str,
+    tax: str,
+    total: str | None,
+    line_amounts: list[str] | None,
+) -> None:
+    """Refuse an invoice whose own figures disagree.
+
+    Issue #466. A total is a claim about the document, not a free-standing
+    number: it has to be the subtotal plus the tax, and the lines have to add
+    up to the subtotal they are lines of. This used to be enforced by quietly
+    overwriting whatever total the caller sent with ``subtotal + tax``, which
+    is why a client that had been posting a truncated total for weeks looked
+    healthy from the database side - the wrong figure never landed, and nothing
+    said it had arrived. Overwriting a number somebody typed is how a defect
+    like that stays invisible, so a disagreement is refused and named instead.
+
+    Args:
+        subtotal: the net figure being stored.
+        tax: the tax figure being stored.
+        total: the gross the caller asserts, or ``None`` to let it be derived.
+        line_amounts: the amounts of the line items being stored, or ``None``
+            when the caller is not touching the lines.
+
+    Raises:
+        HTTPException: 400, naming both figures, when they disagree by more
+            than the tolerance.
+    """
+    net = _parse_decimal(subtotal, "amount_subtotal")
+    vat = _parse_decimal(tax, "tax_amount")
+
+    if total is not None:
+        gross = _parse_decimal(total, "amount_total")
+        if abs(gross - (net + vat)) > INVOICE_AMOUNT_TOLERANCE:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    f"amount_total ({gross}) must equal amount_subtotal + tax_amount "
+                    f"({net} + {vat} = {net + vat}). Leave amount_total out to have it computed."
+                ),
+            )
+
+    if line_amounts:
+        booked = sum(
+            (_parse_decimal(amount, "line_items.amount") for amount in line_amounts),
+            Decimal("0"),
+        )
+        if abs(booked - net) > _line_sum_tolerance(len(line_amounts)):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    f"The line items add up to {booked}, which is not the amount_subtotal "
+                    f"of {net}. Invoice lines are net amounts and have to make up the subtotal."
+                ),
+            )
+
+
+# ── Gap E: retainage withholding maths ───────────────────────────────────────
+
+
+def _q2(value: Decimal) -> Decimal:
+    """Quantize a money Decimal to 2 places (half-up, the accounting default)."""
+    return value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+def compute_payment_withholding(
+    gross: object,
+    *,
+    retention_pct: object = Decimal("0"),
+    withholding_amount: object | None = None,
+) -> tuple[Decimal, Decimal]:
+    """Split a certified gross into (cash to pay, retainage withheld).
+
+    The cash paid out is ``gross - withheld``. The retainage withheld is either
+    the explicit ``withholding_amount`` (when supplied) or ``gross *
+    retention_pct / 100`` otherwise. Both legs are clamped so they stay within
+    ``[0, gross]`` - a retention percentage above 100 or a withholding above the
+    gross can never produce a negative cash payment (which would be a phantom
+    refund) nor a withholding larger than the claim.
+
+    Returns ``(amount_to_pay, withheld)`` both quantized to 2dp. Pure function:
+    no DB, no I/O - the unit suite asserts exact Decimals against it.
+    """
+    g = _safe_decimal(gross)
+    if g < 0:
+        g = Decimal("0")
+    if withholding_amount is not None:
+        withheld = _safe_decimal(withholding_amount)
+    else:
+        pct = _safe_decimal(retention_pct)
+        withheld = g * pct / Decimal("100")
+    # Clamp into [0, gross]: never withhold more than the claim, never negative.
+    if withheld < 0:
+        withheld = Decimal("0")
+    if withheld > g:
+        withheld = g
+    amount_to_pay = g - withheld
+    return _q2(amount_to_pay), _q2(withheld)
+
+
+def _line_item_from(
+    invoice_id: uuid.UUID,
+    item_data: InvoiceLineItemCreate,
+    idx: int,
+    default_vat_rate: Decimal | None = None,
+) -> InvoiceLineItem:
+    """Build a line item row from its Create schema.
+
+    Creating an invoice and replacing its lines persist the same shape, so the
+    mapping lives here once. Written out at each caller instead, a newly added
+    field reaches whichever caller the author happened to be editing and is
+    silently dropped by the other.
+
+    Args:
+        invoice_id: the invoice the line belongs to.
+        item_data: the validated Create schema for one line.
+        idx: position in the submitted list, used when no sort order is given.
+        default_vat_rate: the project country's VAT rate, used only when the
+            line carries none. An explicit rate, zero included, always wins.
+
+    Returns:
+        An unpersisted :class:`InvoiceLineItem`.
+    """
+    return InvoiceLineItem(
+        invoice_id=invoice_id,
+        description=item_data.description,
+        quantity=item_data.quantity,
+        unit=item_data.unit,
+        unit_rate=item_data.unit_rate,
+        amount=item_data.amount,
+        wbs_id=item_data.wbs_id,
+        cost_category=item_data.cost_category,
+        cost_line_id=getattr(item_data, "cost_line_id", None),
+        sort_order=item_data.sort_order if item_data.sort_order else idx,
+        vat_rate=item_data.vat_rate if item_data.vat_rate is not None else default_vat_rate,
+        vat_category=item_data.vat_category,
+    )
+
+
+def _default_vat_matching_tax(
+    items: Sequence[InvoiceLineItemCreate],
+    tax: object,
+    default_vat_rate: Decimal | None,
+) -> Decimal | None:
+    """The country default, only when it reproduces the invoice's own tax.
+
+    The header tax is what the invoice says it charges. Filling the lines that
+    carry no rate with the country rate is right when that adds up to it, and
+    wrong when the invoice was taxed at another rate or not at all: a header
+    of 0 with lines at 25% is a document that disagrees with itself, and the
+    e-invoice and the VAT return read the lines. So the default is applied
+    only when explicit line VAT plus default line VAT lands on the header tax
+    within the line rounding tolerance; otherwise those lines keep no rate, as
+    they did before the default existed. A create that states no tax at all
+    (``tax`` is ``None``) has nothing to disagree with and takes the default.
+    """
+    if default_vat_rate is None or tax is None:
+        return default_vat_rate
+    header_tax = _safe_decimal(tax)
+    line_vat = Decimal("0")
+    for item in items:
+        rate = _safe_decimal(item.vat_rate) if item.vat_rate is not None else default_vat_rate
+        line_vat += _q2(_safe_decimal(item.amount) * rate / Decimal("100"))
+    if abs(line_vat - header_tax) > _line_sum_tolerance(len(items)):
+        logger.info(
+            "Country VAT %s%% not applied to unrated invoice lines: they would carry %s against a stated tax of %s",
+            default_vat_rate,
+            line_vat,
+            header_tax,
+        )
+        return None
+    return default_vat_rate
+
+
+async def resolve_position_cost_lines(
+    session: AsyncSession,
+    items: Sequence[InvoiceLineItemCreate],
+) -> None:
+    """Turn a named bill position into the cost line the money posts against.
+
+    Issue #454. A supplier invoice arrives against work, and the person entering
+    it knows which bill item the work was for; they do not know, and should not
+    have to look up, the cost line that item rolls into. This resolves the one
+    to the other in a single query and writes the result onto ``cost_line_id``,
+    so the row still carries exactly one link and the rollup still has exactly
+    one way to find it.
+
+    Two refusals rather than two silent outcomes:
+
+    * a position that is not on the cost spine, because a line that quietly
+      posted nowhere is precisely the failure this field exists to remove, and
+      the fix is one call to the spine generator rather than a guess here;
+    * a position and a cost line that disagree, because that is two answers to
+      one question and picking either one is picking somebody's mistake.
+
+    Lines that name no position are left exactly as they are, which is every
+    line written before this existed.
+    """
+    wanted = {item.boq_position_id for item in items if getattr(item, "boq_position_id", None) is not None}
+    if not wanted:
+        return
+
+    from app.modules.boq.models import Position
+
+    rows = (await session.execute(select(Position.id, Position.cost_line_id).where(Position.id.in_(wanted)))).all()
+    resolved = {row[0]: row[1] for row in rows}
+
+    for item in items:
+        position_id = getattr(item, "boq_position_id", None)
+        if position_id is None:
+            continue
+        if position_id not in resolved:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=f"No bill position {position_id} exists, so this line cannot be attributed to it.",
+            )
+        cost_line_id = resolved[position_id]
+        if cost_line_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=(
+                    f"Bill position {position_id} is not on the cost spine, so an actual posted "
+                    "against it would roll up nowhere. Generate the spine for the project first "
+                    "(POST /api/v1/costmodel/projects/{project_id}/spine/generate-from-boq/) and "
+                    "send this line again."
+                ),
+            )
+        if item.cost_line_id is not None and item.cost_line_id != cost_line_id:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=(
+                    f"This line names bill position {position_id}, which belongs to cost line "
+                    f"{cost_line_id}, and cost line {item.cost_line_id} as well. Send one of them."
+                ),
+            )
+        item.cost_line_id = cost_line_id
+
+
+class FinanceService:
+    """Business logic for finance operations."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+        self.invoices = InvoiceRepository(session)
+        self.line_items = InvoiceLineItemRepository(session)
+        self.payments_repo = PaymentRepository(session)
+        self.budgets = BudgetRepository(session)
+        self.evm = EVMSnapshotRepository(session)
+        self.accounts = LedgerAccountRepository(session)
+        self.ledger = LedgerRepository(session)
+
+    # ── Invoices ─────────────────────────────────────────────────────────────
+
+    async def create_invoice(
+        self,
+        data: InvoiceCreate,
+        user_id: str | None = None,
+        *,
+        enforce_line_sum: bool = True,
+    ) -> Invoice:
+        """Create a new invoice with optional line items.
+
+        ``amount_total`` is computed as ``amount_subtotal + tax_amount`` when
+        the caller leaves it out. When the caller does send one it is kept, and
+        checked: a total that does not add up is refused rather than silently
+        replaced (issue #466, see :func:`_refuse_inconsistent_amounts`).
+
+        Args:
+            data: the invoice to create.
+            user_id: who is creating it, recorded as ``created_by``.
+            enforce_line_sum: whether the line items have to add up to the
+                subtotal. The one caller that turns this off is invoice
+                capture, whose lines are a best-effort reading of a scanned
+                document while the net comes from the document's own header,
+                and whose amounts are already checked by
+                ``invoice_capture_logic.validate_amounts`` before booking.
+        """
+        # Validate initial status
+        if data.status not in _VALID_INVOICE_STATUSES:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    f"Invalid invoice status: '{data.status}'. Allowed: {', '.join(sorted(_VALID_INVOICE_STATUSES))}"
+                ),
+            )
+
+        # Auto-generate invoice number if not provided.
+        #
+        # A number supplied by the caller is checked, because nothing else
+        # checks it: there is no unique constraint on the column, so a repeat
+        # simply produced a second invoice carrying a number already in use.
+        # That is the key reconciliation, payment matching and every accounting
+        # export rely on, so the duplicate does not surface as a display quirk,
+        # it surfaces as two documents nobody can tell apart.
+        invoice_number = data.invoice_number
+        if invoice_number:
+            taken = await self.invoices.invoice_number_taken(
+                data.project_id,
+                data.invoice_direction,
+                invoice_number,
+            )
+            if taken:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=(
+                        f"Invoice number '{invoice_number}' is already used on this "
+                        "project. Leave it empty to have one generated."
+                    ),
+                )
+        else:
+            invoice_number = await self.invoices.next_invoice_number(data.project_id, data.invoice_direction)
+
+        # A total the caller asserted is kept and checked; one it left out is
+        # derived. Silently replacing an asserted total is what hid #466: the
+        # client had been posting a figure truncated at its own thousands
+        # separator, and because the server rebuilt the number on every write,
+        # the database looked right and nothing anywhere reported the client.
+        asserted_total = data.amount_total if "amount_total" in data.model_fields_set else None
+        _refuse_inconsistent_amounts(
+            subtotal=data.amount_subtotal,
+            tax=data.tax_amount,
+            total=asserted_total,
+            line_amounts=[item.amount for item in data.line_items] if enforce_line_sum else None,
+        )
+        computed_total = (
+            asserted_total
+            if asserted_total is not None
+            else _compute_invoice_total(data.amount_subtotal, data.tax_amount)
+        )
+
+        if data.purchase_order_id is not None:
+            await self._check_po_link(
+                data.purchase_order_id,
+                project_id=data.project_id,
+                direction=data.invoice_direction,
+                contact_id=data.contact_id,
+            )
+
+        invoice = Invoice(
+            project_id=data.project_id,
+            contact_id=data.contact_id,
+            invoice_direction=data.invoice_direction,
+            purchase_order_id=data.purchase_order_id,
+            invoice_number=invoice_number,
+            invoice_date=data.invoice_date,
+            due_date=data.due_date,
+            currency_code=data.currency_code,
+            amount_subtotal=data.amount_subtotal,
+            tax_amount=data.tax_amount,
+            retention_amount=data.retention_amount,
+            amount_total=computed_total,
+            tax_config_id=data.tax_config_id,
+            status=data.status,
+            payment_terms_days=data.payment_terms_days,
+            notes=data.notes,
+            created_by=uuid.UUID(user_id) if user_id else None,
+            metadata_=data.metadata,
+        )
+        invoice = await self.invoices.create(invoice)
+
+        # Create line items
+        await resolve_position_cost_lines(self.session, data.line_items)
+        default_vat = _default_vat_matching_tax(
+            data.line_items,
+            # Weighed only when the tax is stated and the lines are held to make
+            # up the document: a captured scan's lines need not add up to it.
+            data.tax_amount if enforce_line_sum and "tax_amount" in data.model_fields_set else None,
+            await self._default_vat_rate(invoice.project_id, invoice.invoice_date, data.line_items),
+        )
+        for idx, item_data in enumerate(data.line_items):
+            await self.line_items.create(_line_item_from(invoice.id, item_data, idx, default_vat))
+        if invoice.invoice_direction == "payable":
+            await self._sync_budget_quietly(invoice.project_id)
+
+        # Re-fetch invoice with relationships (line_items, payments) eager-loaded
+        refreshed = await self.invoices.get(invoice.id)
+        if refreshed is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to re-fetch created invoice",
+            )
+        logger.info("Invoice created: %s (%s)", refreshed.invoice_number, refreshed.invoice_direction)
+        return refreshed
+
+    async def _check_po_link(
+        self,
+        po_id: uuid.UUID,
+        *,
+        project_id: uuid.UUID,
+        direction: str,
+        contact_id: str | None,
+    ) -> None:
+        """Refuse a purchase-order link the order cannot back.
+
+        The invoice form only offers matching orders, and this is the same rule
+        for every other caller: a supplier invoice, an order on the same
+        project, not a draft or cancelled one, and the same supplier when both
+        name one. The order row is locked for the rest of the transaction, the
+        lock ``create-invoice`` and the order removal path take, so an invoice
+        cannot be linked to an order that another request is deleting.
+        """
+        if direction != "payable":
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="Only a supplier (payable) invoice can be linked to a purchase order.",
+            )
+        try:
+            from app.modules.procurement.models import PurchaseOrder
+        except ImportError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="Purchase orders are not available: the procurement module is not installed.",
+            ) from exc
+        row = (
+            await self.session.execute(
+                select(PurchaseOrder.project_id, PurchaseOrder.vendor_contact_id, PurchaseOrder.status)
+                .where(PurchaseOrder.id == po_id)
+                .with_for_update()
+            )
+        ).first()
+        if row is None or row[0] != project_id:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="The purchase order does not exist on this project.",
+            )
+        po_vendor, po_status = row[1], row[2]
+        if po_status in ("draft", "cancelled"):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=f"A {po_status} purchase order cannot be invoiced; approve it first.",
+            )
+        if contact_id and po_vendor and str(contact_id) != str(po_vendor):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="The purchase order was placed with a different supplier than this invoice.",
+            )
+
+    async def get_invoice(self, invoice_id: uuid.UUID) -> Invoice:
+        """Get invoice by ID. Raises 404 if not found."""
+        invoice = await self.invoices.get(invoice_id)
+        if invoice is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Invoice not found",
+            )
+        return invoice
+
+    async def list_invoices(
+        self,
+        *,
+        project_id: uuid.UUID | None = None,
+        project_ids: set[uuid.UUID] | None = None,
+        direction: str | None = None,
+        invoice_status: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> tuple[list[Invoice], int]:
+        """List invoices with filters.
+
+        ``project_ids`` is the accessible-projects scope applied by the router
+        when no explicit ``project_id`` is given, so a non-admin never sees
+        every tenant's invoices.
+        """
+        return await self.invoices.list(
+            project_id=project_id,
+            project_ids=project_ids,
+            direction=direction,
+            status=invoice_status,
+            limit=limit,
+            offset=offset,
+        )
+
+    async def update_invoice(
+        self,
+        invoice_id: uuid.UUID,
+        data: InvoiceUpdate,
+    ) -> Invoice:
+        """Update invoice fields and optionally replace line items.
+
+        Validates status transitions and recomputes amount_total when
+        subtotal or tax are changed.
+        """
+        invoice = await self.get_invoice(invoice_id)  # 404 check
+
+        fields = data.model_dump(exclude_unset=True, exclude={"line_items"})
+        if "metadata" in fields:
+            fields["metadata_"] = fields.pop("metadata")
+
+        # Validate status transition if status is being changed
+        if "status" in fields and fields["status"] is not None:
+            new_status = fields["status"]
+            if new_status not in _VALID_INVOICE_STATUSES:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=(
+                        f"Invalid invoice status: '{new_status}'. Allowed: {', '.join(sorted(_VALID_INVOICE_STATUSES))}"
+                    ),
+                )
+            allowed = _INVOICE_STATUS_TRANSITIONS.get(invoice.status, set())
+            if new_status != invoice.status and new_status not in allowed:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=(
+                        f"Cannot transition invoice from '{invoice.status}' to '{new_status}'. "
+                        f"Allowed transitions: {', '.join(sorted(allowed)) or 'none'}"
+                    ),
+                )
+
+        # An approved, sent, paid or cancelled invoice keeps its figures, its
+        # parties and its lines. The status can still move along the table
+        # above, and a patch that reopens a cancelled invoice as a draft may
+        # correct it in the same write.
+        resulting_status = fields.get("status") or invoice.status
+        if invoice.status not in _INVOICE_EDITABLE_STATUSES and resulting_status not in _INVOICE_EDITABLE_STATUSES:
+            changed = _issued_invoice_changes(invoice, fields, data.line_items)
+            if changed:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=(
+                        f"This invoice is {invoice.status}, so its {', '.join(changed)} can no longer change. "
+                        "Cancel it and reopen it as a draft to correct it, or issue a credit note if it is paid."
+                    ),
+                )
+
+        # The figures this write leaves the invoice with, whether they come
+        # from the patch or from the row it lands on.
+        new_subtotal = str(fields.get("amount_subtotal") or invoice.amount_subtotal)
+        new_tax = str(fields.get("tax_amount") or invoice.tax_amount)
+        asserted_total = fields.get("amount_total")
+        # Lines are only weighed when this patch replaces them. A patch that
+        # touches an unrelated field must not be refused because of lines it is
+        # not writing, and a claim-born invoice keeps its own breakdown.
+        patch_line_amounts = (
+            [str(getattr(item, "amount", "0")) for item in data.line_items] if data.line_items else None
+        )
+        if asserted_total is not None or patch_line_amounts:
+            _refuse_inconsistent_amounts(
+                subtotal=new_subtotal,
+                tax=new_tax,
+                total=asserted_total if asserted_total is None else str(asserted_total),
+                line_amounts=patch_line_amounts,
+            )
+        # Recompute total only when nothing was asserted: an amount change that
+        # comes without a total still has to leave the invoice adding up.
+        if asserted_total is None and ("amount_subtotal" in fields or "tax_amount" in fields):
+            fields["amount_total"] = _compute_invoice_total(new_subtotal, new_tax)
+
+        # Linking (or relinking) to an order is allowed at any status: it moves
+        # no money, it only says which commitment the money belongs to.
+        if "purchase_order_id" in fields and fields["purchase_order_id"] is None:
+            # Unlinking has to clear the legacy stamp too, or the link reads
+            # straight back from it (``finance.po_link``).
+            meta = dict(fields.get("metadata_", invoice.metadata_) or {})
+            if meta.pop("po_id", None) is not None:
+                fields["metadata_"] = meta
+        # Re-checked when the link moves, and when the vendor or the direction
+        # moves under a link that stays, since either can make it one the
+        # order cannot back.
+        # Compared as text: the patch carries the vendor as a string, the row
+        # holds a UUID, and the form sends it back on every save.
+        parties_moved = (
+            "contact_id" in fields and str(fields["contact_id"] or "").lower() != str(invoice.contact_id or "").lower()
+        ) or ("invoice_direction" in fields and fields["invoice_direction"] != invoice.invoice_direction)
+        if "purchase_order_id" in fields or parties_moved:
+            current_link = invoice_po_link(invoice.purchase_order_id, invoice.metadata_)
+            target_link = fields.get("purchase_order_id", current_link)
+            if target_link is not None and (target_link != current_link or parties_moved):
+                await self._check_po_link(
+                    target_link,
+                    project_id=invoice.project_id,
+                    direction=fields.get("invoice_direction") or invoice.invoice_direction,
+                    contact_id=fields.get("contact_id", invoice.contact_id),
+                )
+
+        if fields:
+            await self.invoices.update(invoice_id, **fields)
+
+        # Replace line items if provided - record a single audit row that
+        # captures the count + total delta (no per-item diff, just the
+        # aggregate so audit logs aren't flooded by every bulk edit).
+        if data.line_items is not None:
+            prior_items = list(getattr(invoice, "line_items", None) or [])
+            prior_count = len(prior_items)
+
+            def _sum(items) -> Decimal:  # type: ignore[no-untyped-def]
+                total = Decimal("0")
+                for it in items:
+                    amt = getattr(it, "amount", None)
+                    if amt is None and isinstance(it, dict):
+                        amt = it.get("amount")
+                    try:
+                        total += Decimal(str(amt or 0))
+                    except (InvalidOperation, TypeError, ValueError):
+                        continue
+                return total
+
+            prior_total = _sum(prior_items)
+            new_total = _sum(data.line_items)
+
+            await resolve_position_cost_lines(self.session, data.line_items)
+            await self.line_items.delete_by_invoice(invoice_id)
+            default_vat = _default_vat_matching_tax(
+                data.line_items,
+                new_tax,
+                await self._default_vat_rate(
+                    invoice.project_id,
+                    fields.get("invoice_date") or getattr(invoice, "invoice_date", None),
+                    data.line_items,
+                ),
+            )
+            for idx, item_data in enumerate(data.line_items):
+                await self.line_items.create(_line_item_from(invoice_id, item_data, idx, default_vat))
+
+            # Single audit row for the bulk replacement. Best-effort:
+            # failures are warned (not rolled back) for the same reason as
+            # the approve/pay paths.
+            try:
+                from app.core.audit_log import log_activity
+
+                await log_activity(
+                    self.session,
+                    actor_id=None,
+                    entity_type="invoice",
+                    entity_id=str(invoice_id),
+                    action="line_items_replaced",
+                    reason=(
+                        f"Replaced {prior_count} line item(s) with "
+                        f"{len(data.line_items)}; total delta="
+                        f"{(new_total - prior_total)}"
+                    ),
+                    metadata={
+                        "invoice_number": getattr(invoice, "invoice_number", None),
+                        "prior_count": prior_count,
+                        "new_count": len(data.line_items),
+                        "prior_total": str(prior_total),
+                        "new_total": str(new_total),
+                        "total_delta": str(new_total - prior_total),
+                    },
+                )
+            except Exception as exc:
+                logger.warning(
+                    "Audit log FAILED for invoice line-items replace (invoice_id=%s): %s",
+                    invoice_id,
+                    exc,
+                    exc_info=True,
+                )
+
+        await self._sync_budget_quietly(invoice.project_id)
+        updated = await self.invoices.get(invoice_id)
+        if updated is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Invoice not found",
+            )
+        logger.info("Invoice updated: %s", invoice_id)
+        return updated
+
+    async def approve_invoice(
+        self,
+        invoice_id: uuid.UUID,
+        *,
+        actor_id: str | None = None,
+        reason: str | None = None,
+    ) -> Invoice:
+        """Transition invoice to ``approved`` status.
+
+        Validates that the invoice is in ``draft`` or ``pending`` before
+        allowing the transition, records the change in :class:`ActivityLog`,
+        and emits an ``invoice.approved`` event for cross-module handlers.
+        """
+        invoice = await self.get_invoice(invoice_id)
+        prior = invoice.status
+        # Read the number before the update expires the instance. Everything
+        # below the update that touches ``invoice`` runs after a re-``get``,
+        # which reloads the same identity-mapped row, but the audit call does
+        # not, and a lazy load there has no greenlet to run in.
+        invoice_number = invoice.invoice_number
+        if prior not in ("draft", "pending"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot approve invoice in status '{prior}'",
+            )
+        await self.invoices.update(invoice_id, status="approved")
+        # FSM audit row - see :mod:`app.core.fsm.registry` for the invoice
+        # lifecycle. Best-effort: an audit failure must NOT roll back the
+        # status change, but it MUST surface as a warning so audit-log
+        # outages don't go silently undetected (the prior debug-level log
+        # was invisible in production where root level = INFO).
+        try:
+            from app.core.audit_log import log_activity
+
+            await log_activity(
+                self.session,
+                actor_id=actor_id,
+                entity_type="invoice",
+                entity_id=str(invoice_id),
+                action="status_changed",
+                from_status=prior,
+                to_status="approved",
+                reason=reason or "Invoice approved via approve_invoice()",
+                metadata={"invoice_number": invoice_number},
+            )
+        except Exception as exc:
+            logger.warning(
+                "FSM audit log FAILED for invoice approve (user_id=%s, invoice_id=%s): %s",
+                actor_id,
+                invoice_id,
+                exc,
+                exc_info=True,
+            )
+        await self._sync_budget_quietly(invoice.project_id)
+        updated = await self.invoices.get(invoice_id)
+        if updated is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Invoice not found",
+            )
+        logger.info("Invoice approved: %s", invoice.invoice_number)
+
+        # Emit event so cross-module handlers can react (TOP-30 #4: ERP
+        # connectors configured to auto-push on approval pick this up).
+        event_bus.publish_detached(
+            "invoice.approved",
+            {
+                "project_id": str(invoice.project_id),
+                "invoice_id": str(invoice.id),
+                "amount_total": str(invoice.amount_total),
+                "currency_code": invoice.currency_code or "",
+            },
+            source_module="finance",
+        )
+        return updated
+
+    async def pay_invoice(
+        self,
+        invoice_id: uuid.UUID,
+        *,
+        actor_id: str | None = None,
+        reason: str | None = None,
+    ) -> Invoice:
+        """Transition invoice to paid status.
+
+        After marking as paid, recalculates budget actuals for the project
+        (sum of all paid invoices) and emits ``invoice.paid`` event.
+        The prior status must be ``approved`` (``sent`` is still accepted
+        for backwards compatibility with legacy rows).
+        """
+        invoice = await self.get_invoice(invoice_id)
+        prior = invoice.status
+        # Same reason as in ``approve_invoice``: the update expires the
+        # instance, and the audit call below is the one place that reads it
+        # before the re-``get`` reloads it.
+        invoice_number = invoice.invoice_number
+        if prior not in ("approved", "sent"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(f"Cannot mark as paid invoice in status '{prior}'. Invoice must be approved first."),
+            )
+        await self.invoices.update(invoice_id, status="paid")
+        # Best-effort: an audit failure must NOT roll back the status
+        # change, but it MUST surface as a warning so audit-log outages
+        # don't go silently undetected (was previously logger.debug, which
+        # is invisible at production INFO root level).
+        try:
+            from app.core.audit_log import log_activity
+
+            await log_activity(
+                self.session,
+                actor_id=actor_id,
+                entity_type="invoice",
+                entity_id=str(invoice_id),
+                action="status_changed",
+                from_status=prior,
+                to_status="paid",
+                reason=reason or "Invoice paid via pay_invoice()",
+                metadata={"invoice_number": invoice_number},
+            )
+        except Exception as exc:
+            logger.warning(
+                "FSM audit log FAILED for invoice pay (user_id=%s, invoice_id=%s): %s",
+                actor_id,
+                invoice_id,
+                exc,
+                exc_info=True,
+            )
+        updated = await self.invoices.get(invoice_id)
+        if updated is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Invoice not found",
+            )
+        logger.info("Invoice paid: %s", invoice.invoice_number)
+
+        # Budget rows follow the paid invoice: each source's committed and
+        # actual lands on ONE budget line, net of VAT (``finance.budget_actuals``
+        # states the rules). BUG-346 fixed the every-line write here once; the
+        # core ``invoice.paid`` handler that kept reintroducing it is no longer
+        # subscribed.
+        await self._sync_budget_quietly(invoice.project_id)
+
+        # ── Post to the costmodel.BudgetLine cost spine (Gap B) ─────────────
+        # In addition to the legacy ProjectBudget bucketing above, mirror every
+        # paid invoice into the cost spine via the shared
+        # CostSpineService.post_actual_to_budget_line(). This is the table the
+        # EVM / forecasting dashboards read. Both updates happen inside the same
+        # request transaction so the two budget tables never drift.
+        #
+        # Idempotency: the spine method is keyed on (source_kind, source_ref)
+        # where source_ref is "{invoice_id}:{item_id}" (or ":full"), so paying
+        # the same invoice twice - or replaying this loop over every already-paid
+        # invoice of the project on each pay - posts each line exactly once.
+        #
+        # FX: amounts are converted to the project base currency BEFORE posting
+        # (the spine stores base-currency actuals). A missing rate keeps the
+        # foreign value as-is (never zeroed), matching the rest of the cost
+        # domain. Non-fatal: a spine failure must NEVER roll back the payment.
+        try:
+            await self._post_paid_invoices_to_spine(invoice.project_id)
+        except Exception:
+            logger.exception(
+                "Spine posting failed for invoice %s - payment unaffected",
+                invoice.invoice_number,
+            )
+
+        # Emit event for additional cross-module handlers
+        event_bus.publish_detached(
+            "invoice.paid",
+            {
+                "project_id": str(invoice.project_id),
+                "invoice_id": str(invoice.id),
+                "amount_total": str(invoice.amount_total),
+                # Empty when the invoice carries no currency; subscribers
+                # receive the truth ("no currency stamped") instead of a
+                # mis-labelled EUR.
+                "currency_code": invoice.currency_code or "",
+            },
+            source_module="finance",
+        )
+
+        return updated
+
+    async def budget_wbs_labels(self, wbs_ids: Sequence[str | None]) -> dict[str, str]:
+        """Readable names for budget ``wbs_id`` values that are ids.
+
+        A budget line's ``wbs_id`` is free text: a WBS code such as "02", the
+        id of a project WBS node, or the id of a bill section (what the bill's
+        "Create budget" action groups by). The Budgets table showed the raw
+        UUID for the last two. Codes are left alone; ids resolve to the node's
+        code and name, else to the section's number and description.
+        """
+        ids: dict[str, uuid.UUID] = {}
+        for raw in wbs_ids:
+            text = (raw or "").strip()
+            if not text:
+                continue
+            try:
+                ids[text] = uuid.UUID(text)
+            except ValueError:
+                continue
+        if not ids:
+            return {}
+        from sqlalchemy import select
+
+        labels: dict[str, str] = {}
+        try:
+            from app.modules.projects.models import ProjectWBS
+
+            for node_id, code, name in (
+                await self.session.execute(
+                    select(ProjectWBS.id, ProjectWBS.code, ProjectWBS.name).where(ProjectWBS.id.in_(ids.values()))
+                )
+            ).all():
+                labels[str(node_id)] = " ".join(part for part in ((code or "").strip(), (name or "").strip()) if part)
+        except ImportError:
+            pass
+        rest = [value for key, value in ids.items() if str(value) not in labels]
+        if rest:
+            try:
+                from app.modules.boq.models import Position
+
+                for pos_id, ordinal, description in (
+                    await self.session.execute(
+                        select(Position.id, Position.ordinal, Position.description).where(Position.id.in_(rest))
+                    )
+                ).all():
+                    text = " ".join(part for part in ((ordinal or "").strip(), (description or "").strip()) if part)
+                    labels[str(pos_id)] = text[:120]
+            except ImportError:
+                pass
+        # Keyed by the stored text, which may differ from str(UUID) in case.
+        return {key: labels[str(value)] for key, value in ids.items() if str(value) in labels}
+
+    async def _default_vat_rate(
+        self,
+        project_id: uuid.UUID,
+        invoice_date: object,
+        items: Sequence[InvoiceLineItemCreate],
+    ) -> Decimal | None:
+        """The VAT rate a line without one gets: the project country's, on the invoice date.
+
+        Read from the jurisdiction registry (``I18nFoundationService.resolve_tax_rate``)
+        only when some line actually lacks a rate. ``None`` when the project
+        has no country, the country taxes by subdivision and none is known, or
+        the registry cannot answer; the line then stays without a rate, as it
+        did before, rather than getting a guessed one.
+        """
+        if all(item.vat_rate is not None for item in items):
+            return None
+        try:
+            from app.modules.i18n_foundation.service import I18nFoundationService
+            from app.modules.projects.repository import ProjectRepository
+
+            project = await ProjectRepository(self.session).get_by_id(project_id)
+            country = (getattr(project, "country_code", None) or "").strip().upper() if project else ""
+            if not country:
+                return None
+            on_date = str(invoice_date or "")[:10] or None
+            resolution = await I18nFoundationService(self.session).resolve_tax_rate(country, on_date=on_date)
+        except Exception:
+            logger.warning("VAT default for project %s could not be resolved", project_id, exc_info=True)
+            return None
+        if not resolution.resolved or resolution.combined_rate_pct is None:
+            return None
+        return _safe_decimal(resolution.combined_rate_pct)
+
+    async def sync_project_budget(self, project_id: uuid.UUID) -> None:
+        """Keep the project's budget rows to the committed and actual the dashboard shows.
+
+        The dashboard reads committed (the open part) and actual per source from
+        the records (``finance.cost_position``); this lands each source on one
+        budget row (``finance.budget_actuals``) and applies only the difference
+        from what it put there last time, recorded per source on the row as a
+        ``sync:<kind>:<id>`` marker. So a replay changes nothing, a figure typed
+        onto a row is left alone, and the rows add up to the dashboard.
+
+        Called after every write that moves one of those figures: an invoice or
+        payment in finance, an order approval or goods receipt (the order events),
+        and a subcontract signed or billed (the subcontractors module).
+
+        A row this has never run on in a project that already has a paid invoice
+        carries the actual the old paid-invoice recompute wrote over it; that part
+        is dropped once, keeping what goods receipts moved into it.
+        """
+        from app.modules.finance.budget_actuals import (
+            COMMITTED_FROM_PO_PREFIX,
+            RECEIVED_FROM_GR_PREFIX,
+            SYNC_PREFIX,
+            BudgetLineRow,
+            parse_sync_marker,
+            plan_budget,
+        )
+        from app.modules.finance.cost_position import load_cost_position
+
+        budgets = list(
+            (
+                await self.session.execute(
+                    select(ProjectBudget)
+                    .where(ProjectBudget.project_id == project_id)
+                    # Rows seeded in one flush share a timestamp; the WBS code
+                    # then decides which is "oldest", so the fallback line is
+                    # the same on every run.
+                    .order_by(ProjectBudget.created_at.asc(), ProjectBudget.wbs_id.asc(), ProjectBudget.id.asc())
+                )
+            )
+            .scalars()
+            .all()
+        )
+        if not budgets:
+            return
+        rows = [
+            BudgetLineRow(
+                id=b.id,
+                wbs_id=b.wbs_id,
+                category=b.category,
+                currency=(getattr(b, "currency_code", "") or "").strip().upper(),
+            )
+            for b in budgets
+        ]
+
+        # What the order events already put on the rows, per order.
+        committed_marker: dict[uuid.UUID, Decimal] = {}
+        received_by_gr: dict[uuid.UUID, Decimal] = {}
+        order_rows: dict[uuid.UUID, uuid.UUID] = {}
+        gr_rows: dict[uuid.UUID, uuid.UUID] = {}
+        for b in budgets:
+            for key, value in (getattr(b, "metadata_", None) or {}).items():
+                prefix = next(
+                    (p for p in (COMMITTED_FROM_PO_PREFIX, RECEIVED_FROM_GR_PREFIX) if key.startswith(p)), None
+                )
+                if prefix is None:
+                    continue
+                try:
+                    ref = uuid.UUID(key[len(prefix) :])
+                except ValueError:
+                    continue
+                if prefix == COMMITTED_FROM_PO_PREFIX:
+                    committed_marker[ref] = _safe_decimal(value)
+                    order_rows[ref] = b.id
+                else:
+                    received_by_gr[ref] = _safe_decimal(value)
+                    gr_rows[ref] = b.id
+        received_marker: dict[uuid.UUID, Decimal] = {}
+        if received_by_gr:
+            from app.modules.procurement.models import GoodsReceipt
+
+            for gr_id, po_id in (
+                await self.session.execute(
+                    select(GoodsReceipt.id, GoodsReceipt.po_id).where(GoodsReceipt.id.in_(list(received_by_gr)))
+                )
+            ).all():
+                received_marker[po_id] = received_marker.get(po_id, Decimal("0")) + received_by_gr[gr_id]
+                order_rows.setdefault(po_id, gr_rows[gr_id])
+        # A receipt takes its value off the row's committed whether or not the
+        # order's approval put anything there (an order approved before the
+        # budget existed is committed by this sync instead), so the order
+        # events' net effect on committed can be negative.
+        order_handled = {
+            po_id: (
+                committed_marker.get(po_id, Decimal("0")) - received_marker.get(po_id, Decimal("0")),
+                received_marker.get(po_id, Decimal("0")),
+            )
+            for po_id in set(committed_marker) | set(received_marker)
+        }
+
+        position = await load_cost_position(self.session, project_id=project_id)
+        plan = plan_budget(rows, position.sources, order_rows=order_rows, order_handled=order_handled)
+
+        legacy_actual = None
+        for b in budgets:
+            md = dict(getattr(b, "metadata_", None) or {})
+            if md.get("budget_sync") != "1":
+                if legacy_actual is None:
+                    legacy_actual = await self._project_has_paid_invoice(project_id)
+                if legacy_actual:
+                    b.actual = _safe_decimal(md.get("actual_from_receipts", "0"))
+                for key in [k for k in md if k.startswith("released_by_payment:")]:
+                    md.pop(key)
+                md["budget_sync"] = "1"
+            wanted = plan.per_row.get(b.id, {})
+            delta_c = delta_a = Decimal("0")
+            for key in {k[len(SYNC_PREFIX) :] for k in md if k.startswith(SYNC_PREFIX)} | set(wanted):
+                old_c, old_a = parse_sync_marker(md.get(f"{SYNC_PREFIX}{key}"))
+                new_c, new_a = wanted.get(key, (Decimal("0"), Decimal("0")))
+                delta_c += new_c - old_c
+                delta_a += new_a - old_a
+                if new_c == 0 and new_a == 0:
+                    md.pop(f"{SYNC_PREFIX}{key}", None)
+                else:
+                    md[f"{SYNC_PREFIX}{key}"] = f"{new_c}|{new_a}"
+            if delta_c:
+                b.committed = max(_safe_decimal(b.committed) + delta_c, Decimal("0"))
+            if delta_a:
+                b.actual = _safe_decimal(b.actual) + delta_a
+            if md != (getattr(b, "metadata_", None) or {}):
+                b.metadata_ = md
+        await self.session.flush()
+        if plan.unplaced:
+            logger.warning(
+                "Project %s has committed / actual in a currency no budget line carries: %s",
+                project_id,
+                plan.unplaced,
+            )
+
+    async def _sync_budget_quietly(self, project_id: uuid.UUID | None) -> None:
+        """``sync_project_budget`` for a write that must not fail because of it."""
+        if project_id is None:
+            return
+        try:
+            async with self.session.begin_nested():
+                await self.sync_project_budget(project_id)
+        except Exception:
+            logger.exception("Budget rows not synced for project %s", project_id)
+
+    async def _project_has_paid_invoice(self, project_id: uuid.UUID) -> bool:
+        found = (
+            await self.session.execute(
+                select(Invoice.id).where(Invoice.project_id == project_id, Invoice.status == "paid").limit(1)
+            )
+        ).first()
+        return found is not None
+
+    async def _post_paid_invoices_to_spine(self, project_id: uuid.UUID) -> None:
+        """Mirror every paid invoice of a project into the costmodel cost spine.
+
+        Walks all ``status="paid"`` invoices for ``project_id`` and posts each
+        line item (or the full total for a headerless invoice) into
+        ``CostSpineService.post_actual_to_budget_line``. The spine method is
+        idempotent on ``(source_kind, source_ref)``, so re-running this sweep on
+        every pay only ever posts each line once - no double counting, and a
+        newly-paid invoice's lines get posted on the pass triggered by its own
+        payment.
+
+        FX: each amount is converted to the project base currency here, before
+        posting, because the spine stores base-currency actuals. A line priced
+        in a currency without a configured project FX rate keeps its own value
+        (never zeroed) so a forgotten rate surfaces as a visibly-wrong figure
+        rather than silently dropping money.
+        """
+        import hashlib
+
+        from sqlalchemy import select
+        from sqlalchemy.orm import selectinload
+
+        from app.modules.costmodel.service import CostSpineService
+        from app.modules.projects.repository import ProjectRepository
+
+        # Resolve the project base currency + FX table once.
+        project = await ProjectRepository(self.session).get_by_id(project_id)
+        base_currency = (getattr(project, "currency", "") or "").strip().upper() if project else ""
+        fx_map = _project_fx_map(project)
+
+        def _to_base(raw: object, currency: str) -> str:
+            """Convert a stored money value to the project base currency string.
+
+            Reuses ``_convert_to_base`` (the finance FX helper) so semantics are
+            identical to the dashboard: a foreign currency with no rate is kept
+            in its own units, never zeroed. Returns a Decimal-as-string.
+            """
+            amount = _safe_decimal(raw)
+            converted, _missing = _convert_to_base(
+                # Keep money as Decimal end to end - _convert_to_base coerces via
+                # _safe_decimal, so float() here would only re-introduce binary
+                # imprecision the module is careful to avoid.
+                {(currency or "").strip().upper(): amount},
+                base_currency=base_currency,
+                fx_rates_map=fx_map,
+            )
+            return str(Decimal(str(converted)))
+
+        # Supplier invoices only: a client invoice being paid is income, not a
+        # cost actual on the spine.
+        result = await self.session.execute(
+            select(Invoice)
+            .options(selectinload(Invoice.line_items))
+            .where(
+                Invoice.project_id == project_id,
+                Invoice.status == "paid",
+                Invoice.invoice_direction == "payable",
+            )
+        )
+        paid_invoices = result.scalars().all()
+
+        spine = CostSpineService(self.session)
+
+        async def _post_one(
+            *,
+            posting_ref: str,
+            cost_line_id: uuid.UUID | None,
+            cost_category: str | None,
+            amount_base: str,
+            currency: str,
+        ) -> None:
+            """Post a single line, isolating its failure from the rest of the sweep.
+
+            One malformed line (e.g. an out-of-vocabulary ``cost_category``,
+            which the spine rejects with a 400) must not abort posting for the
+            other lines / invoices. Each failure is logged and skipped.
+            """
+            idempotency = hashlib.sha256(f"invoice_paid:{posting_ref}".encode()).hexdigest()[:16]
+            try:
+                await spine.post_actual_to_budget_line(
+                    project_id=project_id,
+                    cost_line_id=cost_line_id,
+                    cost_category=cost_category,
+                    amount_base=amount_base,
+                    currency=currency,
+                    source_kind="invoice_paid",
+                    source_ref=posting_ref,
+                    idempotency_key=idempotency,
+                )
+            except Exception:
+                logger.exception("Spine posting failed for invoice line ref=%s - skipped", posting_ref)
+
+        for inv in paid_invoices:
+            inv_currency = inv.currency_code or ""
+            items = list(inv.line_items or [])
+            if items:
+                for item in items:
+                    await _post_one(
+                        posting_ref=f"{inv.id}:{item.id}",
+                        cost_line_id=getattr(item, "cost_line_id", None),
+                        cost_category=item.cost_category or None,
+                        amount_base=_to_base(item.amount, inv_currency),
+                        currency=inv_currency,
+                    )
+            else:
+                await _post_one(
+                    posting_ref=f"{inv.id}:full",
+                    cost_line_id=None,
+                    cost_category=None,
+                    # Net, like the line amounts above: the spine's budget is net.
+                    amount_base=_to_base(inv.amount_subtotal, inv_currency),
+                    currency=inv_currency,
+                )
+
+    # ── Payments ─────────────────────────────────────────────────────────────
+
+    async def create_payment(
+        self,
+        data: PaymentCreate,
+        *,
+        actor_id: str | None = None,
+    ) -> Payment:
+        """Record a payment against an invoice.
+
+        R7 guards:
+        1. Idempotency: if ``idempotency_key`` matches an existing payment,
+           return that row without writing a duplicate.
+        2. Currency normalization: if the payment currency differs from the
+           invoice currency, an explicit FX rate (exchange_rate_snapshot != "1")
+           must be provided - prevents silent silent currency confusion.
+        3. Refund guard: total refunds cannot exceed total forward payments
+           (net_paid >= 0).
+
+        ``actor_id`` is optional so the legacy in-process callers
+        (event-bus consumers, importers) don't break, but the router
+        always supplies it.
+        """
+        # ── 1. Idempotency check ──────────────────────────────────────────────
+        if data.idempotency_key:
+            existing = await self.payments_repo.get_by_idempotency_key(data.idempotency_key)
+            if existing is not None:
+                return existing
+
+        invoice = await self.get_invoice(data.invoice_id)  # 404 check
+
+        # ── 2. Currency normalization ─────────────────────────────────────────
+        inv_currency = getattr(invoice, "currency_code", "") or ""
+        pay_currency = data.currency_code or ""
+        fx_rate = _safe_decimal(data.exchange_rate_snapshot, Decimal("1"))
+        if inv_currency and pay_currency and inv_currency != pay_currency:
+            if fx_rate == Decimal("1"):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=(
+                        f"Payment currency '{pay_currency}' differs from invoice "
+                        f"currency '{inv_currency}' - supply an explicit "
+                        f"exchange_rate_snapshot != '1'."
+                    ),
+                )
+
+        # ── 3. Refund guard ───────────────────────────────────────────────────
+        if data.is_refund:
+            all_payments, _ = await self.payments_repo.list(invoice_id=data.invoice_id)
+            total_forward = sum(_safe_decimal(p.amount) for p in all_payments if not getattr(p, "is_refund", False))
+            total_refunds = sum(_safe_decimal(p.amount) for p in all_payments if getattr(p, "is_refund", False))
+            refund_amount = _safe_decimal(data.amount)
+            if total_forward - total_refunds - refund_amount < Decimal("0"):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=(
+                        f"Refund of {data.amount} would exceed total payments "
+                        f"({total_forward}) minus existing refunds ({total_refunds}). "
+                        f"Net paid cannot go negative."
+                    ),
+                )
+
+        payment = Payment(
+            invoice_id=data.invoice_id,
+            payment_date=data.payment_date,
+            amount=data.amount,
+            currency_code=data.currency_code,
+            exchange_rate_snapshot=data.exchange_rate_snapshot,
+            reference=data.reference,
+            idempotency_key=data.idempotency_key,
+            is_refund=bool(data.is_refund),
+            metadata_=data.metadata,
+        )
+        payment = await self.payments_repo.create(payment)
+
+        # R7 audit-trail row. Best-effort but logged at warning level
+        # so an audit-table outage surfaces in production logs.
+        try:
+            from app.core.audit_log import log_activity
+
+            await log_activity(
+                self.session,
+                actor_id=actor_id,
+                entity_type="payment",
+                entity_id=str(payment.id),
+                action="created",
+                reason="Payment recorded via create_payment()",
+                metadata={
+                    "invoice_id": str(data.invoice_id),
+                    "amount": str(data.amount),
+                    "currency_code": data.currency_code or "",
+                    "payment_date": data.payment_date,
+                    "reference": data.reference or "",
+                },
+            )
+        except Exception as exc:
+            logger.warning(
+                "Audit log FAILED for payment create (actor_id=%s, invoice_id=%s): %s",
+                actor_id,
+                data.invoice_id,
+                exc,
+                exc_info=True,
+            )
+
+        await self._sync_budget_quietly(invoice.project_id)
+        logger.info("Payment recorded: %s for invoice %s", data.amount, data.invoice_id)
+        return payment
+
+    # ── Gap E: certified claim → receivable invoice ──────────────────────────
+
+    async def create_receivable_from_claim(
+        self,
+        claim_id: uuid.UUID,
+        *,
+        actor_id: str | None = None,
+    ) -> Invoice:
+        """Auto-create the invoice a certified progress claim is billed on.
+
+        The direction follows the contract's counterparty. A claim on a client
+        contract is money the client owes us, so it is raised as a receivable.
+        A claim on a subcontract is the subcontractor billing us, so it is a
+        payable: booking it as a receivable put a subcontractor's bill into
+        accounts receivable and its retainage into the retention we hold from
+        the client. The name keeps its original wording because the route and
+        its callers use it.
+
+        Idempotent: if an invoice already carries this ``claim_id`` in its
+        ``source_claim_id`` column it is returned unchanged (event replay /
+        double certification / concurrent calls all converge on one row).
+
+        The claim's contract supplies the project and counterparty; the claim
+        supplies the gross / retention / net figures. Each ``ProgressClaimLine``
+        becomes one ``InvoiceLineItem`` (3 claim lines → 3 invoice items). The
+        claim's gross lands in ``amount_subtotal`` / ``amount_total`` and the
+        retainage in ``retention_amount``; the net collectible is therefore
+        ``amount_total - retention_amount``. Storing the gross (not the net)
+        keeps retention a single deduction so the payment-time withholding never
+        double-counts it.
+
+        Multi-currency: amounts denominated in the claim currency are converted
+        into the project base currency via ``Project.fx_rates`` before storing.
+        A currency with no configured rate keeps its own value (never zeroed) so
+        a forgotten rate surfaces as a visibly-wrong figure rather than dropping
+        money silently.
+
+        Raises:
+            HTTPException 404 when the claim or its contract is missing.
+            HTTPException 400 when the claim is not in ``certified`` status.
+        """
+        from app.modules.contracts.repository import (
+            ContractRepository,
+            ProgressClaimLineRepository,
+            ProgressClaimRepository,
+        )
+        from app.modules.projects.repository import ProjectRepository
+
+        claim_repo = ProgressClaimRepository(self.session)
+        claim = await claim_repo.get_by_id(claim_id)
+        if claim is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Progress claim not found",
+            )
+
+        # ── Idempotency: one AR invoice per claim ────────────────────────────
+        existing = await self.invoices.find_by_source_claim(claim_id)
+        if existing is not None:
+            return existing
+
+        # A claim marked paid was certified first, so it is invoiceable too;
+        # without that a claim paid before its invoice existed could never
+        # get one.
+        if claim.status not in ("certified", "paid"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(f"Claim must be certified before it can be invoiced (current status: '{claim.status}')."),
+            )
+
+        contract_repo = ContractRepository(self.session)
+        contract = await contract_repo.get_by_id(claim.contract_id)
+        if contract is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Contract for progress claim not found",
+            )
+
+        project_id = contract.project_id
+        direction = "payable" if getattr(contract, "counterparty_type", "client") == "subcontractor" else "receivable"
+        contact_id = await self._claim_counterparty_contact_id(contract)
+        claim_currency = (claim.currency or contract.currency or "").strip().upper()
+
+        # ── FX: convert claim figures into the project base currency ─────────
+        project = await ProjectRepository(self.session).get_by_id(project_id)
+        base_currency = (getattr(project, "currency", "") or "").strip().upper() if project else ""
+        fx_map = _project_fx_map(project)
+
+        def _to_base(raw: object) -> Decimal:
+            converted, _missing = _convert_to_base(
+                # Decimal end to end (no lossy float round-trip); the stored
+                # invoice line/subtotal/retention amounts are derived from this.
+                {claim_currency: _safe_decimal(raw)},
+                base_currency=base_currency,
+                fx_rates_map=fx_map,
+            )
+            return Decimal(str(converted))
+
+        # Invoice money model (conventional, so payment-time withholding works):
+        #   amount_subtotal / amount_total = GROSS certified work value
+        #   retention_amount               = retainage to hold back
+        #   net collectible now            = amount_total - retention_amount
+        # The design's shorthand "net_due → subtotal" would store the net and
+        # make the payment then withhold retention a SECOND time. Storing the
+        # gross (with retention broken out) keeps a single source of truth: the
+        # withholding payment subtracts retention_amount exactly once. We prefer
+        # the claim's own gross_amount; if it is absent/zero we reconstruct it
+        # from net_due + retention so a thin claim still books a sane gross.
+        gross_base = _to_base(claim.gross_amount)
+        net_base = _to_base(claim.net_due)
+        retention_base = _to_base(claim.retention_amount)
+        if gross_base <= 0 < (net_base + retention_base):
+            gross_base = net_base + retention_base
+        invoice_currency = base_currency or claim_currency
+
+        # ── Map claim lines → invoice line items ─────────────────────────────
+        line_repo = ProgressClaimLineRepository(self.session)
+        claim_lines = await line_repo.list_for_claim(claim_id)
+
+        # The schedule-of-values lines the claim bills against supply what the
+        # claim rows do not carry: the human description of the work, its unit
+        # of measure and, via value / quantity, its billed rate. Without them
+        # every invoice line used to read "Progress claim <n> line (contract
+        # line <uuid>)" with no unit and a zero unit price, which no reader can
+        # parse and an e-invoice check rejects line by line (BR-23).
+        from sqlalchemy import select as _select
+
+        from app.modules.contracts.models import ContractLine as _ContractLine
+
+        sov_by_id: dict[uuid.UUID, _ContractLine] = {}
+        contract_line_ids = {cl.contract_line_id for cl in claim_lines}
+        if contract_line_ids:
+            rows = await self.session.execute(_select(_ContractLine).where(_ContractLine.id.in_(contract_line_ids)))
+            sov_by_id = {row.id: row for row in rows.scalars()}
+
+        # E-invoice metadata is contract data here: a public buyer hands the
+        # routing id (Leitweg-ID / buyer reference) and the agreed VAT
+        # treatment over at award, so they live under the contract's
+        # ``metadata.einvoice`` and every invoice raised from one of its claims
+        # inherits them. Writing provenance-only metadata used to drop this
+        # key, so the compliance check opened with findings (BR-DE-15) the
+        # invoice could have answered from data the platform already had.
+        contract_einvoice = dict((contract.metadata_ or {}).get("einvoice") or {})
+        vat_rate = _safe_decimal(contract_einvoice.get("vat_rate"), Decimal("0"))
+        tax_base = (
+            (gross_base * vat_rate / Decimal("100")).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            if vat_rate > 0
+            else Decimal("0")
+        )
+
+        invoice_number = await self.invoices.next_invoice_number(project_id, direction)
+        invoice = Invoice(
+            project_id=project_id,
+            contact_id=contact_id,
+            invoice_direction=direction,
+            invoice_number=invoice_number,
+            invoice_date=(claim.claim_date or "")[:10],
+            due_date=None,
+            currency_code=invoice_currency,
+            amount_subtotal=gross_base,
+            tax_amount=tax_base,
+            retention_amount=retention_base,
+            amount_total=gross_base + tax_base,
+            status="draft",
+            source_claim_id=claim_id,
+            notes=f"Auto-created from certified progress claim {claim.claim_number}",
+            created_by=uuid.UUID(actor_id) if actor_id else None,
+            metadata_={
+                "source": "progress_claim",
+                "claim_id": str(claim_id),
+                "claim_number": claim.claim_number,
+                "contract_id": str(claim.contract_id),
+                "claim_currency": claim_currency,
+                "gross_amount": str(gross_base),
+                "net_due": str(net_base),
+                **({"einvoice": contract_einvoice} if contract_einvoice else {}),
+            },
+        )
+        invoice = await self.invoices.create(invoice)
+
+        for idx, cl in enumerate(claim_lines):
+            amount_base = _to_base(cl.period_completed_value)
+            sov = sov_by_id.get(cl.contract_line_id)
+            code = (sov.code or "").strip() if sov else ""
+            text = (sov.description or "").strip() if sov else ""
+            description = " ".join(part for part in (code, text) if part)
+            if not description:
+                # Degenerate schedule row with neither code nor text: name the
+                # claim and the position, never a raw id.
+                description = f"{claim.claim_number}, item {idx + 1}"
+            quantity = _safe_decimal(cl.period_completed_qty, Decimal("0"))
+            unit = ((sov.unit or "").strip() if sov else "") or None
+            if quantity > 0:
+                # Billed rate for the period, derived so quantity x rate is the
+                # billed value rather than restating the full contract rate on
+                # a partially completed line.
+                unit_rate = (amount_base / quantity).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+            else:
+                # Value-only billing (percent complete without a measured
+                # quantity): one lump sum at the billed amount. "psch" is the
+                # schedule's own lump-sum token (UNECE LS).
+                quantity = Decimal("1")
+                unit = unit or "psch"
+                unit_rate = amount_base
+            await self.line_items.create(
+                InvoiceLineItem(
+                    invoice_id=invoice.id,
+                    description=description,
+                    quantity=quantity,
+                    unit=unit,
+                    unit_rate=unit_rate,
+                    amount=amount_base,
+                    wbs_id=None,
+                    cost_category=None,
+                    sort_order=idx,
+                )
+            )
+
+        refreshed = await self.invoices.get(invoice.id)
+        if refreshed is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to re-fetch created receivable invoice",
+            )
+
+        # Audit row - best-effort (mirrors create_invoice / approve paths).
+        try:
+            from app.core.audit_log import log_activity
+
+            await log_activity(
+                self.session,
+                actor_id=actor_id,
+                entity_type="invoice",
+                entity_id=str(refreshed.id),
+                action="created_from_claim",
+                reason=f"{direction.capitalize()} auto-created from certified claim {claim.claim_number}",
+                metadata={
+                    "direction": direction,
+                    "claim_id": str(claim_id),
+                    "claim_number": claim.claim_number,
+                    "gross_base": str(gross_base),
+                    "net_due_base": str(net_base),
+                    "retention_base": str(retention_base),
+                    "currency": invoice_currency,
+                },
+            )
+        except Exception as exc:
+            logger.warning(
+                "Audit log FAILED for receivable-from-claim (claim_id=%s): %s",
+                claim_id,
+                exc,
+                exc_info=True,
+            )
+
+        # Emit so reporting / BI can track certified-but-uncollected AR.
+        event_bus.publish_detached(
+            "finance.invoice.created_from_claim",
+            {
+                "project_id": str(project_id),
+                "invoice_id": str(refreshed.id),
+                "invoice_direction": direction,
+                "claim_id": str(claim_id),
+                "amount_total": str(gross_base),
+                "net_due": str(net_base),
+                "retention_amount": str(retention_base),
+                "currency_code": invoice_currency,
+            },
+            source_module="finance",
+        )
+
+        logger.info(
+            "Receivable invoice %s auto-created from certified claim %s (gross=%s net=%s %s)",
+            refreshed.invoice_number,
+            claim.claim_number,
+            gross_base,
+            net_base,
+            invoice_currency,
+        )
+        return refreshed
+
+    async def _claim_counterparty_contact_id(self, contract: Any) -> str | None:
+        """The contact a claim invoice is addressed to, or None.
+
+        ``Contract.counterparty_id`` is a plain UUID that names a contact on a
+        client contract and usually a subcontractor on a subcontract, whose
+        contact is then ``Subcontractor.contact_id``. Writing the raw id onto
+        the invoice left a subcontract's invoice with an id no contact carries,
+        which every finance view prints as an unspecified counterparty. On a
+        subcontract an id that resolves to neither is dropped rather than
+        stored as if it did; a client contract keeps its id as before.
+
+        A subcontract awarded from a tender names the bidder in
+        ``counterparty_id``, which is neither, and records the contact the
+        award resolved in ``metadata.counterparty_contact_id``. That is the
+        last place looked, and only a contact that exists is taken from it.
+        """
+        from sqlalchemy import select as _select
+
+        from app.modules.contacts.models import Contact
+        from app.modules.subcontractors.models import Subcontractor
+
+        async def _existing_contact(raw: Any) -> str | None:
+            try:
+                wanted = raw if isinstance(raw, uuid.UUID) else uuid.UUID(str(raw))
+            except (ValueError, TypeError):
+                return None
+            found = (await self.session.execute(_select(Contact.id).where(Contact.id == wanted))).scalar_one_or_none()
+            return str(found) if found is not None else None
+
+        cid = getattr(contract, "counterparty_id", None)
+        if cid is not None and getattr(contract, "counterparty_type", "client") != "subcontractor":
+            return str(cid)
+        if cid is not None:
+            sub = await self.session.get(Subcontractor, cid)
+            if sub is not None:
+                return str(sub.contact_id) if sub.contact_id else None
+            direct = await _existing_contact(cid)
+            if direct is not None:
+                return direct
+        recorded = (getattr(contract, "metadata_", None) or {}).get("counterparty_contact_id")
+        return await _existing_contact(recorded) if recorded else None
+
+    async def get_receivable_for_claim(self, claim_id: uuid.UUID) -> Invoice | None:
+        """Return the receivable invoice raised from *claim_id*, or None.
+
+        Convenience lookup behind ``GET /claims/{claim_id}/receivable-invoice``.
+        """
+        return await self.invoices.find_by_source_claim(claim_id)
+
+    async def record_payment_with_withholding(
+        self,
+        invoice_id: uuid.UUID,
+        data: RecordClaimPaymentRequest,
+        *,
+        actor_id: str | None = None,
+    ) -> Payment:
+        """Record a payment that holds back retainage, then post the cash actual.
+
+        Splits the gross into (cash paid, retainage withheld) via
+        :func:`compute_payment_withholding`. When the caller omits
+        ``withholding_amount`` it is derived from the invoice
+        ``retention_amount``; when the caller omits ``amount`` the invoice net
+        (``amount_total - retention_amount``) is paid out. Both are then re-split
+        so the stored breakdown is always internally consistent.
+
+        Idempotent on ``idempotency_key`` (a replay returns the existing row).
+
+        After the payment is written, the cash paid out (NOT the withheld
+        retainage - that is not yet a realised cost to the client/payer) is
+        posted to the cost spine via
+        :meth:`CostSpineService.post_actual_to_budget_line`. The spine call is
+        non-fatal: a failure there must never roll back the payment.
+        """
+        # ── Idempotency check first (cheapest path) ──────────────────────────
+        if data.idempotency_key:
+            existing = await self.payments_repo.get_by_idempotency_key(data.idempotency_key)
+            if existing is not None:
+                return existing
+
+        invoice = await self.get_invoice(invoice_id)  # 404 check
+
+        # FX never-blend: the withholding math below runs entirely in the
+        # invoice currency (gross derives from the invoice total). Stamping the
+        # payment with a different currency would silently relabel an
+        # invoice-currency amount as another currency, so reject the mismatch
+        # rather than mis-post it. Settle in the invoice currency.
+        if data.currency_code and invoice.currency_code and data.currency_code != invoice.currency_code:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=(
+                    f"Payment currency {data.currency_code} does not match invoice "
+                    f"currency {invoice.currency_code}; settle in the invoice currency."
+                ),
+            )
+
+        inv_total = _safe_decimal(invoice.amount_total)
+        inv_retention = _safe_decimal(invoice.retention_amount)
+
+        # Resolve the gross being settled. When amount is given it is the cash
+        # the caller intends to pay; gross = cash + withholding. When amount is
+        # omitted we settle the whole invoice (gross = amount_total).
+        explicit_withholding = _safe_decimal(data.withholding_amount) if data.withholding_amount is not None else None
+        if data.amount is not None:
+            cash_in = _safe_decimal(data.amount)
+            withheld = explicit_withholding if explicit_withholding is not None else inv_retention
+            gross = cash_in + withheld
+        else:
+            gross = inv_total
+            withheld = explicit_withholding if explicit_withholding is not None else inv_retention
+
+        amount_to_pay, withholding = compute_payment_withholding(gross, withholding_amount=withheld)
+
+        pay_currency = data.currency_code or invoice.currency_code or ""
+        payment = Payment(
+            invoice_id=invoice_id,
+            payment_date=data.payment_date,
+            amount=amount_to_pay,
+            currency_code=pay_currency,
+            exchange_rate_snapshot=_safe_decimal(data.exchange_rate_snapshot, Decimal("1")),
+            reference=data.reference,
+            idempotency_key=data.idempotency_key,
+            is_refund=False,
+            withholding_amount=withholding,
+            withholding_release_date=data.withholding_release_date,
+            source_claim_id=invoice.source_claim_id,
+            metadata_=data.metadata,
+        )
+        payment = await self.payments_repo.create(payment)
+
+        # Nothing here reaches the cost spine. A supplier invoice's cost gets
+        # there once, at its net with retention included, when it is marked
+        # paid (``_post_paid_invoices_to_spine``), and a payment on a client
+        # invoice is money received: income, not a cost actual.
+        if invoice.invoice_direction == "payable":
+            await self._sync_budget_quietly(invoice.project_id)
+
+        # Audit row - best-effort.
+        try:
+            from app.core.audit_log import log_activity
+
+            await log_activity(
+                self.session,
+                actor_id=actor_id,
+                entity_type="payment",
+                entity_id=str(payment.id),
+                action="created_with_withholding",
+                reason="Claim payment recorded with retainage withholding",
+                metadata={
+                    "invoice_id": str(invoice_id),
+                    "amount": str(amount_to_pay),
+                    "withholding_amount": str(withholding),
+                    "currency_code": pay_currency,
+                    "source_claim_id": str(invoice.source_claim_id) if invoice.source_claim_id else "",
+                },
+            )
+        except Exception as exc:
+            logger.warning(
+                "Audit log FAILED for withholding payment (invoice_id=%s): %s",
+                invoice_id,
+                exc,
+                exc_info=True,
+            )
+
+        logger.info(
+            "Payment with withholding recorded: paid=%s withheld=%s for invoice %s",
+            amount_to_pay,
+            withholding,
+            invoice_id,
+        )
+        return payment
+
+    async def list_payments(
+        self,
+        *,
+        invoice_id: uuid.UUID | None = None,
+        project_id: uuid.UUID | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> tuple[list[Payment], int]:
+        """List payments with optional invoice / project filter."""
+        return await self.payments_repo.list(
+            invoice_id=invoice_id,
+            project_id=project_id,
+            limit=limit,
+            offset=offset,
+        )
+
+    # ── Budgets ──────────────────────────────────────────────────────────────
+
+    async def create_budget(self, data: BudgetCreate) -> ProjectBudget:
+        """Create a project budget line.
+
+        Two sensible defaults are applied so manually-created lines behave
+        like commercial staff expect:
+
+        * ``revised_budget`` defaults to ``original_budget`` when the caller
+          leaves it at "0". The revised budget only diverges once a change
+          order revises it; without this, variance and consumed-% would be
+          computed against a zero baseline (always 0%, nonsensical).
+        * ``currency_code`` is inherited from the parent project when the
+          caller does not supply one - never hardcoded (task #217).
+        """
+        from sqlalchemy import select
+
+        from app.modules.projects.models import Project
+
+        revised = data.revised_budget
+        try:
+            if Decimal(revised or "0") == 0 and Decimal(data.original_budget or "0") != 0:
+                revised = data.original_budget
+        except (InvalidOperation, ValueError, TypeError):
+            revised = data.revised_budget
+
+        currency_code = data.currency_code
+        if not currency_code:
+            # Best-effort, mirrors boq ``_resolve_project_currency``: a
+            # failed/unavailable lookup must never 500 a budget create -
+            # fall back to "" (honest unknown, never a wrong hardcoded
+            # EUR - task #217).
+            try:
+                proj = (
+                    await self.session.execute(select(Project.currency).where(Project.id == data.project_id))
+                ).scalar_one_or_none()
+            except Exception:  # noqa: BLE001 - lookup is non-critical
+                proj = None
+            currency_code = proj or ""
+
+        budget = ProjectBudget(
+            project_id=data.project_id,
+            wbs_id=data.wbs_id,
+            category=data.category,
+            currency_code=currency_code,
+            original_budget=data.original_budget,
+            revised_budget=revised,
+            committed=data.committed,
+            actual=data.actual,
+            forecast_final=data.forecast_final,
+            # A new row holds only what was typed onto it; it never carried the
+            # old paid-invoice recompute (see ``sync_project_budget``).
+            metadata_={**(data.metadata or {}), "budget_sync": "1"},
+        )
+        try:
+            budget = await self.budgets.create(budget)
+        except IntegrityError as exc:
+            # ``oe_finance_budget`` has a UNIQUE constraint on
+            # (project_id, wbs_id, category). A duplicate budget line is a
+            # caller error, not a server fault - surface a clean 409 instead
+            # of letting the IntegrityError bubble as a raw 500.
+            await self.session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    f"A budget line for WBS '{data.wbs_id}' / category "
+                    f"'{data.category}' already exists for this project."
+                ),
+            ) from exc
+        # Read the row back so the response carries the stored form of every
+        # money column. ``create`` only flushes, and a flush does not expire
+        # attributes, so the instance still holds the caller's own unrounded
+        # values. Without this the POST response is the one place in the module
+        # where a budget serialises differently from every later read of the
+        # same row, because MoneyType is NUMERIC(18, 2) on PostgreSQL.
+        # ``refresh`` rather than ``expire``: expiry defers the load to
+        # attribute access during serialisation, and a lazy load at that point
+        # is where MissingGreenlet comes from under async SQLAlchemy.
+        await self._sync_budget_quietly(data.project_id)
+        await self.session.refresh(budget)
+        logger.info("Budget created: project=%s cat=%s", data.project_id, data.category)
+        return budget
+
+    async def seed_budget_from_boq(self, project_id: uuid.UUID, boq_id: uuid.UUID) -> list[ProjectBudget]:
+        """Write a locked bill's net total into the project budget, one row per WBS.
+
+        Locking a bill is what makes it the budget. The lock itself fills the
+        cost model's budget lines; this is the finance side of the same step,
+        so the finance dashboard and the Budgets tab stop reading zero after a
+        lock (they read ``ProjectBudget``, which nothing used to fill).
+
+        * Only priced leaves count. A section row carries the subtotal of its
+          children, and summing it as well would count the bill twice.
+        * Rows are keyed ``(wbs_id, category="estimate")``, the category that
+          marks them as generated. Each row records what every bill put into
+          it under ``from_boq:<boq_id>``, so locking the same bill again
+          replaces that bill's share instead of adding it twice, and a second
+          bill on the same WBS adds to the first rather than overwriting it.
+        * A change in the original budget moves the revised budget by the same
+          amount, so revisions already booked against the row survive.
+        * A bill that already has a budget from the "Create Budget" button of
+          18.0 and earlier (rows stamped ``boq_id`` in their metadata) keeps
+          that budget and gets no second one. Those rows may carry revisions
+          and synced figures, so they are neither converted nor replaced.
+
+        This is the only writer of a bill's finance budget: the lock reaches it
+        through ``costmodel.budget.generated`` and the "Create Budget" endpoint
+        calls it directly, so whichever runs first, the other finds the bill's
+        share already there.
+
+        Amounts are net of VAT, as a bill is, in the project currency.
+
+        Args:
+            project_id: Project the bill belongs to.
+            boq_id: The bill that was locked.
+
+        Returns:
+            The bill's budget rows: created or updated, or the earlier rows
+            left as they were.
+        """
+        from app.modules.boq.models import Position
+
+        earlier = list(
+            (
+                await self.session.execute(
+                    select(ProjectBudget).where(
+                        ProjectBudget.project_id == project_id,
+                        ProjectBudget.metadata_["boq_id"].as_string() == str(boq_id),
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+        if earlier:
+            logger.info(
+                "Budget for BOQ %s already created by the earlier endpoint (project=%s rows=%d); not seeding again",
+                boq_id,
+                project_id,
+                len(earlier),
+            )
+            return earlier
+
+        rows = (
+            await self.session.execute(
+                select(Position.id, Position.parent_id, Position.wbs_id, Position.total).where(
+                    Position.boq_id == boq_id
+                )
+            )
+        ).all()
+        parents = {parent_id for _, parent_id, _, _ in rows if parent_id is not None}
+        by_wbs: dict[str | None, Decimal] = {}
+        for pos_id, _, wbs_id, total in rows:
+            if pos_id in parents:
+                continue
+            key = (wbs_id or "").strip() or None
+            by_wbs[key] = by_wbs.get(key, Decimal("0")) + _safe_decimal(total)
+        if not by_wbs:
+            return []
+
+        currency_code = await self._project_currency(project_id)
+        marker = f"from_boq:{boq_id}"
+        touched: list[ProjectBudget] = []
+        # Create the rows in WBS order. The positions come back in whatever
+        # order the table holds them, and the row created first is the one a
+        # cost naming no WBS falls back to, so an unordered walk put that cost
+        # on a different line from one machine or one bill edit to the next.
+        for wbs_id, amount in sorted(by_wbs.items(), key=lambda kv: (kv[0] is not None, kv[0] or "")):
+            stmt = select(ProjectBudget).where(
+                ProjectBudget.project_id == project_id,
+                ProjectBudget.category == "estimate",
+                ProjectBudget.wbs_id.is_(None) if wbs_id is None else ProjectBudget.wbs_id == wbs_id,
+            )
+            budget = (await self.session.execute(stmt)).scalars().first()
+            if budget is None:
+                budget = ProjectBudget(
+                    project_id=project_id,
+                    wbs_id=wbs_id,
+                    category="estimate",
+                    currency_code=currency_code,
+                    original_budget=amount,
+                    revised_budget=amount,
+                    metadata_={marker: str(amount), "budget_sync": "1"},
+                )
+                self.session.add(budget)
+            else:
+                md = dict(budget.metadata_ or {})
+                previous = _safe_decimal(md.get(marker))
+                md[marker] = str(amount)
+                delta = amount - previous
+                budget.original_budget = _safe_decimal(budget.original_budget) + delta
+                budget.revised_budget = _safe_decimal(budget.revised_budget) + delta
+                budget.metadata_ = md
+            touched.append(budget)
+        await self.session.flush()
+        await self._sync_budget_quietly(project_id)
+        logger.info("Budget seeded from BOQ %s: project=%s rows=%d", boq_id, project_id, len(touched))
+        return touched
+
+    async def _project_currency(self, project_id: uuid.UUID) -> str:
+        """The project's currency, or "" when it has none (never a guessed default)."""
+        from app.modules.projects.models import Project
+
+        currency = (
+            await self.session.execute(select(Project.currency).where(Project.id == project_id))
+        ).scalar_one_or_none()
+        return (currency or "").strip().upper()
+
+    async def get_budget(self, budget_id: uuid.UUID) -> ProjectBudget:
+        """Get budget by ID. Raises 404 if not found."""
+        budget = await self.budgets.get(budget_id)
+        if budget is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Budget not found",
+            )
+        return budget
+
+    async def list_budgets(
+        self,
+        *,
+        project_id: uuid.UUID | None = None,
+        project_ids: set[uuid.UUID] | None = None,
+        category: str | None = None,
+    ) -> tuple[list[ProjectBudget], int]:
+        """List budgets with filters.
+
+        ``project_ids`` is the accessible-projects scope applied by the router
+        when no explicit ``project_id`` is given, so a non-admin never sees
+        every tenant's budgets.
+        """
+        return await self.budgets.list(
+            project_id=project_id,
+            project_ids=project_ids,
+            category=category,
+        )
+
+    async def update_budget(
+        self,
+        budget_id: uuid.UUID,
+        data: BudgetUpdate,
+    ) -> ProjectBudget:
+        """Update budget fields."""
+        await self.get_budget(budget_id)  # 404 check
+
+        fields = data.model_dump(exclude_unset=True)
+        if "metadata" in fields:
+            fields["metadata_"] = fields.pop("metadata")
+
+        if fields:
+            await self.budgets.update(budget_id, **fields)
+
+        updated = await self.budgets.get(budget_id)
+        if updated is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Budget not found",
+            )
+        logger.info("Budget updated: %s", budget_id)
+        return updated
+
+    # ── EVM ──────────────────────────────────────────────────────────────────
+
+    async def create_evm_snapshot(self, data: EVMSnapshotCreate) -> EVMSnapshot:
+        """Create an EVM snapshot for a project.
+
+        Computes derived metrics server-side:
+        Performance indices:
+        - SV  = EV - PV                  (schedule variance)
+        - CV  = EV - AC                  (cost variance)
+        - SPI = EV / PV                  (schedule performance index, 0 if PV == 0)
+        - CPI = EV / AC                  (cost performance index, 0 if AC == 0)
+
+        Forecast metrics (EVM standard):
+        - EAC  = AC + (BAC - EV) / CPI   (estimate at completion, CPI-based forecast)
+        - VAC  = BAC - EAC               (variance at completion)
+        - ETC  = EAC - AC                (estimate to complete)
+        - TCPI = (BAC - EV) / (BAC - AC) (to-complete performance index)
+
+        When all of BAC/PV/EV/AC are exactly "0" (a truly empty snapshot)
+        the values are derived from the project's current budget and
+        paid-invoice totals (same aggregation that powers ``get_dashboard``).
+        Any explicitly-supplied value, including a single legitimate 0 such
+        as ev=0 on an early project, is honoured unchanged so power users
+        can still record bespoke snapshots.
+        """
+        bac = _parse_decimal(data.bac, "bac")
+        ev = _parse_decimal(data.ev, "ev")
+        pv = _parse_decimal(data.pv, "pv")
+        ac = _parse_decimal(data.ac, "ac")
+
+        zero = Decimal("0")
+        # The project's base currency. Read unconditionally, not just on the
+        # derive-from-budget path below, because the forecast block is rounded
+        # to it and a snapshot row is persisted: a quantum that ignores its
+        # currency writes a Kuwaiti dinar into the table with its third digit
+        # already gone, and no reader downstream can put it back.
+        from app.modules.projects.repository import ProjectRepository
+
+        project = await ProjectRepository(self.session).get_by_id(data.project_id)
+        base_ccy = (getattr(project, "currency", "") or "").strip().upper() if project else ""
+        money_q = money_quantum(base_ccy)
+
+        # Only derive baselines for a truly empty snapshot (all four zero).
+        # A legitimately-supplied single 0 (e.g. ev=0 on an early project)
+        # must be respected, not overwritten with a derived value.
+        if bac == zero and pv == zero and ev == zero and ac == zero:
+            budget_agg = await self.budgets.aggregate_for_dashboard(
+                project_id=data.project_id,
+            )
+            # Budget totals come back per-currency; convert each into the
+            # project base currency (Project.fx_rates) before deriving EVM
+            # baselines so a multi-currency project doesn't blend currencies.
+            fx_map = _project_fx_map(project)
+
+            def _budget_base(amounts: dict[str, float]) -> Decimal:
+                converted, _ = _convert_to_base(amounts, base_currency=base_ccy, fx_rates_map=fx_map)
+                return Decimal(str(converted))
+
+            revised = _budget_base(budget_agg["revised_by_currency"])
+            original = _budget_base(budget_agg["original_by_currency"])
+            derived_bac = revised or original
+            derived_ac = _budget_base(budget_agg["actual_by_currency"])
+            derived_committed = _budget_base(budget_agg["committed_by_currency"])
+            # PV approximation: planned spend up to snapshot date is the
+            # revised baseline (matches dashboard behaviour where plan
+            # equals revised budget). EV approximation: committed work
+            # represents earned value progress when no schedule timeline
+            # is present.
+            derived_pv = derived_bac
+            derived_ev = derived_committed if derived_committed > zero else derived_ac
+            if bac == zero:
+                bac = derived_bac
+            if ac == zero:
+                ac = derived_ac
+            if pv == zero:
+                pv = derived_pv
+            if ev == zero:
+                ev = derived_ev
+
+        sv = ev - pv
+        cv = ev - ac
+        spi = (ev / pv) if pv != 0 else Decimal("0")
+        cpi = (ev / ac) if ac != 0 else Decimal("0")
+
+        # Round indices to 4 decimal places. Do NOT call .normalize(): for
+        # integer-magnitude results normalize() collapses trailing zeros into
+        # exponent form (e.g. Decimal("10") -> "1E+1"), which str() then emits
+        # as scientific notation and breaks the decimal-string API contract.
+        spi = spi.quantize(Decimal("0.0001"))
+        cpi = cpi.quantize(Decimal("0.0001"))
+
+        # ── Forecast metrics ────────────────────────────────────────────
+        # EAC: CPI-based forecast. Falls back to AC + remaining BAC when CPI==0.
+        # The quantum is the project currency's own subdivision, never a
+        # literal: these three amounts are written to the row, so rounding
+        # them to two places regardless of currency does not change how a
+        # number looks, it changes what is stored.
+        if cpi != 0:
+            eac = ac + (bac - ev) / cpi
+        else:
+            eac = ac + (bac - ev)
+        eac = eac.quantize(money_q)
+
+        vac = (bac - eac).quantize(money_q)
+        # ETC ("estimate to complete") = forecast spend remaining. When a
+        # project is already over-forecast (ac > eac), ``eac - ac`` would
+        # report a negative remaining cost which is semantically wrong -
+        # the answer is "nothing more should be spent" (i.e. 0), not a
+        # negative budget recovery. Clamp at zero so the FE KPI card
+        # doesn't render a misleading negative figure.
+        etc = max(eac - ac, Decimal("0")).quantize(money_q)
+
+        # TCPI: performance needed on remaining work to stay within BAC.
+        # Clamp when over budget (bac - ac <= 0): the index is undefined
+        # because no remaining budget exists, and a negative denominator
+        # would flip the sign and report misleading positive performance.
+        remaining_budget = bac - ac
+        if remaining_budget > 0:
+            # No .normalize() - see spi/cpi note above; it would render
+            # integer-magnitude indices in scientific notation via str().
+            tcpi = ((bac - ev) / remaining_budget).quantize(Decimal("0.0001"))
+        else:
+            tcpi = Decimal("0")
+
+        snapshot = EVMSnapshot(
+            project_id=data.project_id,
+            snapshot_date=data.snapshot_date,
+            bac=str(bac),
+            pv=str(pv),
+            ev=str(ev),
+            ac=str(ac),
+            sv=str(sv),
+            cv=str(cv),
+            spi=str(spi),
+            cpi=str(cpi),
+            eac=str(eac),
+            vac=str(vac),
+            etc=str(etc),
+            tcpi=str(tcpi),
+            metadata_=data.metadata,
+        )
+        snapshot = await self.evm.create(snapshot)
+        logger.info(
+            "EVM snapshot created: project=%s date=%s EAC=%s VAC=%s SPI=%s CPI=%s",
+            data.project_id,
+            data.snapshot_date,
+            eac,
+            vac,
+            spi,
+            cpi,
+        )
+        return snapshot
+
+    async def list_evm_snapshots(
+        self,
+        *,
+        project_id: uuid.UUID | None = None,
+        project_ids: set[uuid.UUID] | None = None,
+    ) -> tuple[list[EVMSnapshot], int]:
+        """List EVM snapshots for a project.
+
+        ``project_ids`` is the accessible-projects scope applied by the router
+        when no explicit ``project_id`` is given, so a non-admin never sees
+        every tenant's snapshots.
+        """
+        return await self.evm.list(project_id=project_id, project_ids=project_ids)
+
+    # ── Dashboard ───────────────────────────────────────────────────────────
+
+    async def get_retention_ledger(
+        self,
+        project_id: uuid.UUID,
+        *,
+        as_of: str | None = None,
+    ) -> RetentionLedger:
+        """Build the project's retention / withholding ledger from stored rows.
+
+        Loads every invoice for the project together with its payments (retainage
+        lives on ``Invoice.retention_amount`` and ``Payment.withholding_amount``),
+        then delegates the arithmetic to the pure
+        :func:`app.modules.finance.retention_ledger.build_retention_ledger`.
+
+        ``as_of`` is the release-date cutoff that decides what counts as
+        released; when omitted the current UTC date is used, so "released to
+        date" means "release date reached as of today". No money is blended
+        across currencies or across payable / receivable direction.
+        """
+        from sqlalchemy import select
+        from sqlalchemy.orm import selectinload
+
+        cutoff = as_of if as_of is not None else _utcnow_iso()[:10]
+
+        stmt = (
+            select(Invoice)
+            .where(Invoice.project_id == project_id)
+            .options(selectinload(Invoice.payments))
+            .limit(_RETENTION_LEDGER_INVOICE_CAP)
+        )
+        rows = (await self.session.execute(stmt)).scalars().all()
+
+        invoices = [
+            InvoiceRetention(
+                contact_id=inv.contact_id,
+                currency_code=inv.currency_code or "",
+                direction=inv.invoice_direction or "",
+                retention_amount=inv.retention_amount,
+                payments=[
+                    PaymentWithholding(
+                        withholding_amount=pay.withholding_amount,
+                        release_date=pay.withholding_release_date,
+                    )
+                    for pay in inv.payments
+                ],
+            )
+            for inv in rows
+        ]
+        return build_retention_ledger(invoices, as_of=cutoff)
+
+    async def get_dashboard(
+        self,
+        *,
+        project_id: uuid.UUID | None = None,
+        project_ids: set[uuid.UUID] | None = None,
+    ) -> dict:
+        """Compute aggregated finance KPIs for a project or globally.
+
+        Uses SQL-level aggregation for invoices, budgets, and payments
+        instead of loading all rows into Python - significantly faster
+        for projects with many financial records.
+
+        ``project_ids`` is the accessible-projects scope applied by the router
+        when no explicit ``project_id`` is given, so a non-admin's portfolio
+        dashboard aggregates only their own projects rather than every tenant's.
+        """
+        from app.modules.finance.schemas import FinanceDashboardResponse
+
+        # ── Per-currency aggregates ────────────────────────────────────
+        inv_agg = await self.invoices.aggregate_for_dashboard(project_id=project_id, project_ids=project_ids)
+        budget_agg = await self.budgets.aggregate_for_dashboard(project_id=project_id, project_ids=project_ids)
+        payments_by_currency = await self.payments_repo.aggregate_by_currency(
+            project_id=project_id, project_ids=project_ids
+        )
+        # Committed, invoiced and paid come from the records themselves, not
+        # from the ``committed`` / ``actual`` columns the budget rows carry;
+        # ``cost_position`` explains why and names the basis of each figure.
+        from app.modules.finance.cost_position import load_cost_position
+
+        position = await load_cost_position(self.session, project_id=project_id, project_ids=project_ids)
+        overdue_count = inv_agg["overdue_count"]
+        status_counts = inv_agg["status_counts"]
+
+        # ── Resolve the project base currency + FX table ───────────────
+        # When scoped to a single project we convert every foreign-currency
+        # subtotal into the project base currency via Project.fx_rates
+        # (mirrors boq.service). Without a base (cross-project rollup) we fall
+        # back to the dominant currency and leave foreign amounts unconverted,
+        # flagging the mix so the UI does not present a fictitious blended
+        # number as if it were a single currency.
+        base_currency = ""
+        fx_rates_map: dict[str, str] = {}
+        if project_id is not None:
+            from app.modules.projects.repository import ProjectRepository
+
+            project = await ProjectRepository(self.session).get_by_id(project_id)
+            if project is not None:
+                base_currency = (getattr(project, "currency", "") or "").strip().upper()
+                fx_rates_map = _project_fx_map(project)
+
+        # Dominant currency: prefer budget lines, fall back to invoices.
+        dominant_currency = budget_agg.get("currency") or inv_agg.get("currency") or ""
+        currency = base_currency or dominant_currency
+
+        # Collect every currency actually in play across all financial records
+        # so we can flag mixed-currency dashboards honestly.
+        currencies_in_play = {
+            c
+            for grp in (
+                inv_agg["payable_by_currency"],
+                inv_agg["receivable_by_currency"],
+                inv_agg["overdue_by_currency"],
+                budget_agg["original_by_currency"],
+                budget_agg["revised_by_currency"],
+                budget_agg["committed_by_currency"],
+                budget_agg["actual_by_currency"],
+                payments_by_currency,
+            )
+            for c in grp
+            if c
+        } | position.currencies()
+        mixed_currencies = len(currencies_in_play) > 1
+        missing: set[str] = set()
+
+        def _to_base(amounts: dict[str, object]) -> Decimal:
+            converted, miss = _convert_to_base(amounts, base_currency=currency, fx_rates_map=fx_rates_map)
+            missing.update(miss)
+            return Decimal(converted)
+
+        # ── Invoices ───────────────────────────────────────────────────
+        total_payable = _to_base(inv_agg["payable_by_currency"])
+        total_receivable = _to_base(inv_agg["receivable_by_currency"])
+        total_overdue = _to_base(inv_agg["overdue_by_currency"])
+
+        # ── Budgets ────────────────────────────────────────────────────
+        total_budget_original = _to_base(budget_agg["original_by_currency"])
+        total_budget_revised = _to_base(budget_agg["revised_by_currency"])
+        # ── Cost position (net of VAT, except total_paid) ──────────────
+        # Committed is the open part and actual what has been incurred, so the
+        # two add up to the outturn (``cost_position`` states the basis).
+        total_committed = _to_base(position.committed)
+        total_invoiced = _to_base(position.invoiced)
+        total_actual = _to_base(position.actual)
+        total_paid = _to_base(position.paid)
+        total_over_commitment = _to_base(position.over_commitment)
+        # Summed per row by the repository, following the rule in `variance.py`,
+        # so this header agrees with the column of variances under it. It used
+        # to subtract spend alone and report money that was already on order as
+        # headroom still available. A row can carry a forecast below what the
+        # records show, and money in a currency no row carries reaches no row,
+        # so the outturn never drops below committed plus actual.
+        total_outturn = max(_to_base(budget_agg["outturn_by_currency"]), total_committed + total_actual)
+
+        total_variance = total_budget_revised - total_outturn
+        # The bar stays on spend and the flag moves to outturn, the same split
+        # the individual rows make: how much has gone, against how much is
+        # spoken for.
+        budget_consumed_pct = total_actual / total_budget_revised * 100 if total_budget_revised > 0 else Decimal("0")
+        committed_pct = total_outturn / total_budget_revised * 100 if total_budget_revised > 0 else Decimal("0")
+
+        # Budget warning level
+        if committed_pct >= 95:
+            warning_level = "critical"
+        elif committed_pct >= 80:
+            warning_level = "caution"
+        else:
+            warning_level = "normal"
+
+        # ── Payments ───────────────────────────────────────────────────
+        total_payments = _to_base(payments_by_currency)
+
+        # Net cash flow: receivable payments received minus payable payments made
+        cash_flow_net = total_receivable - total_payable
+
+        return FinanceDashboardResponse(
+            total_payable=round(total_payable, 2),
+            total_receivable=round(total_receivable, 2),
+            total_overdue=round(total_overdue, 2),
+            overdue_count=overdue_count,
+            invoices_draft=status_counts["draft"],
+            invoices_pending=status_counts["pending"],
+            invoices_approved=status_counts["approved"] + status_counts.get("sent", 0),
+            invoices_paid=status_counts["paid"],
+            total_budget_original=round(total_budget_original, 2),
+            total_budget_revised=round(total_budget_revised, 2),
+            total_committed=round(total_committed, 2),
+            total_invoiced=round(total_invoiced, 2),
+            total_actual=round(total_actual, 2),
+            total_paid=round(total_paid, 2),
+            total_over_commitment=round(total_over_commitment, 2),
+            total_variance=round(total_variance, 2),
+            budget_consumed_pct=round(budget_consumed_pct, 1),
+            budget_warning_level=warning_level,
+            total_payments=round(total_payments, 2),
+            cash_flow_net=round(cash_flow_net, 2),
+            currency=currency,
+            mixed_currencies=mixed_currencies,
+            missing_fx_rates=sorted(missing),
+        ).model_dump()
+
+    # ── Ledger (R7 double-entry) ──────────────────────────────────────────────
+
+    async def create_ledger_transaction(
+        self,
+        data: LedgerEntryCreate,
+    ) -> tuple[LedgerEntry, LedgerEntry]:
+        """Write a balanced double-entry ledger transaction.
+
+        Invariants enforced:
+        * debit_amount == credit_amount (400 if unbalanced)
+        * Two rows are written atomically via a SAVEPOINT:
+            - debit row:  debit_amount > 0, credit_amount == 0
+            - credit row: credit_amount > 0, debit_amount == 0
+        * Rows are NEVER mutated after insert - corrections use
+          :meth:`reverse_ledger_transaction`.
+
+        Idempotency: a key is taken from ``data.idempotency_key`` or derived
+        from ``transaction_ref`` + source. If a transaction already exists for
+        that key its rows are returned unchanged (no second write), so a
+        retried post never double-posts the ledger.
+        """
+        from sqlalchemy import select
+
+        idem_key = data.idempotency_key or _derive_ledger_idempotency_key(
+            project_id=data.project_id,
+            transaction_ref=data.transaction_ref,
+            source_type=data.source_type,
+            source_id=data.source_id,
+        )
+
+        # Existence-check first: a benign retry returns the existing pair.
+        existing_stmt = (
+            select(LedgerEntry).where(LedgerEntry.idempotency_key == idem_key).order_by(LedgerEntry.debit_amount.desc())
+        )
+        existing = list((await self.session.execute(existing_stmt)).scalars().all())
+        if existing:
+            debit_existing = next((r for r in existing if _safe_decimal(r.debit_amount) > 0), existing[0])
+            credit_existing = next((r for r in existing if _safe_decimal(r.credit_amount) > 0), existing[-1])
+            logger.info(
+                "Ledger transaction idempotent hit: ref=%s key=%s - returning existing pair.",
+                data.transaction_ref,
+                idem_key,
+            )
+            return debit_existing, credit_existing
+
+        debit_val = _safe_decimal(data.debit_amount)
+        credit_val = _safe_decimal(data.credit_amount)
+        if debit_val <= Decimal("0"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=("Zero or negative debit amount. Double-entry invariant requires debit_amount > 0."),
+            )
+        if debit_val != credit_val:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    f"Double-entry invariant violated: debit {debit_val} "
+                    f"!= credit {credit_val}. "
+                    f"Unbalanced transaction rejected."
+                ),
+            )
+
+        posted_at = data.posted_at or _utcnow_iso()
+        project_id = data.project_id
+
+        try:
+            async with self.session.begin_nested():
+                debit_row = LedgerEntry(
+                    project_id=project_id,
+                    transaction_ref=data.transaction_ref,
+                    account_code=data.debit_account,
+                    description=data.description,
+                    debit_amount=debit_val,
+                    credit_amount=Decimal("0"),
+                    currency_code=data.currency_code or "",
+                    posted_at=posted_at,
+                    source_type=data.source_type,
+                    source_id=data.source_id,
+                    is_reversal=False,
+                    created_by=data.created_by,
+                    idempotency_key=idem_key,
+                )
+                credit_row = LedgerEntry(
+                    project_id=project_id,
+                    transaction_ref=data.transaction_ref,
+                    account_code=data.credit_account,
+                    description=data.description,
+                    debit_amount=Decimal("0"),
+                    credit_amount=credit_val,
+                    currency_code=data.currency_code or "",
+                    posted_at=posted_at,
+                    source_type=data.source_type,
+                    source_id=data.source_id,
+                    is_reversal=False,
+                    created_by=data.created_by,
+                    idempotency_key=idem_key,
+                )
+                self.session.add(debit_row)
+                self.session.add(credit_row)
+                await self.session.flush()
+        except IntegrityError:
+            # Concurrent writer won the race on the partial unique index -
+            # the rows now exist under our key; return them instead of failing.
+            existing = list((await self.session.execute(existing_stmt)).scalars().all())
+            if existing:
+                debit_existing = next((r for r in existing if _safe_decimal(r.debit_amount) > 0), existing[0])
+                credit_existing = next((r for r in existing if _safe_decimal(r.credit_amount) > 0), existing[-1])
+                return debit_existing, credit_existing
+            raise
+
+        logger.info(
+            "Ledger transaction created: ref=%s dr=%s cr=%s",
+            data.transaction_ref,
+            debit_val,
+            credit_val,
+        )
+        return debit_row, credit_row
+
+    async def reverse_ledger_transaction(
+        self,
+        transaction_ref: str,
+        *,
+        project_id: uuid.UUID | None = None,
+        description: str | None = None,
+        created_by: str | None = None,
+    ) -> tuple[LedgerEntry, LedgerEntry]:
+        """Append a corrective reversal pair for an existing transaction.
+
+        Immutability: the original rows are NEVER updated.  Reversal rows
+        have ``is_reversal=True`` and ``reversal_of_id`` pointing at the
+        original row they mirror.
+
+        The reversal transaction_ref uses the ``:rev`` suffix convention:
+        e.g. ``TXN-001:rev``.
+
+        Idempotency: a transaction is reversible exactly once. If a reversal
+        pair already exists for this ref the existing pair is returned (never a
+        second corrective write), so calling reverse twice cannot over-correct
+        the account. A partial unique index on the reversal idempotency key is
+        the DB-level backstop against a concurrent double-reverse.
+        """
+        from sqlalchemy import select
+
+        # :rev suffix is the canonical naming convention for corrective entries
+        reversal_ref = f"{transaction_ref}:rev"
+        # Deterministic key shared by both reversal legs - one reversal per ref.
+        # Trimmed to the String(64) column width ("rev:" + full hex = 68 chars).
+        reversal_idem_key = ("rev:" + hashlib.sha256(reversal_ref.encode("utf-8")).hexdigest())[:64]
+
+        # ── Idempotency: bail out if this transaction is already reversed ─────
+        rev_existing_stmt = (
+            select(LedgerEntry)
+            .where(
+                LedgerEntry.transaction_ref == reversal_ref,
+                LedgerEntry.is_reversal == True,  # noqa: E712
+            )
+            .order_by(LedgerEntry.debit_amount.desc())
+        )
+        already = list((await self.session.execute(rev_existing_stmt)).scalars().all())
+        if already:
+            rev_debit_existing = next((r for r in already if _safe_decimal(r.debit_amount) > 0), already[0])
+            rev_credit_existing = next((r for r in already if _safe_decimal(r.credit_amount) > 0), already[-1])
+            logger.info(
+                "Ledger reversal idempotent hit: %s already reversed - returning existing pair.",
+                transaction_ref,
+            )
+            return rev_debit_existing, rev_credit_existing
+
+        stmt = select(LedgerEntry).where(
+            LedgerEntry.transaction_ref == transaction_ref,
+            LedgerEntry.is_reversal == False,  # noqa: E712
+        )
+        rows = list((await self.session.execute(stmt)).scalars().all())
+        if not rows:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"No ledger entries found for transaction_ref '{transaction_ref}'.",
+            )
+
+        posted_at = _utcnow_iso()
+        rev_description = description or f"Reversal of {transaction_ref}"
+
+        try:
+            async with self.session.begin_nested():
+                # Reverse EVERY leg of the original transaction, not just one
+                # debit + one credit. A journal entry may carry 3+ legs (e.g. one
+                # debit split across two credit accounts); mirroring only a single
+                # debit/credit pair would leave the remaining legs un-backed and
+                # the GL permanently unbalanced. Each reversal row keeps the leg's
+                # OWN account and swaps its debit<->credit amounts, which backs the
+                # account out individually and keeps the reversal batch balanced.
+                # account_code stays part of the idempotency key, so the distinct-
+                # account legs coexist exactly as in the original post.
+                reversal_rows: list[LedgerEntry] = []
+                for r in rows:
+                    rev = LedgerEntry(
+                        project_id=project_id or r.project_id,
+                        transaction_ref=reversal_ref,
+                        account_code=r.account_code,
+                        description=rev_description,
+                        debit_amount=r.credit_amount,  # swap debit <-> credit
+                        credit_amount=r.debit_amount,
+                        currency_code=r.currency_code,
+                        posted_at=posted_at,
+                        source_type=r.source_type,
+                        source_id=r.source_id,
+                        is_reversal=True,
+                        reversal_of_id=r.id,
+                        created_by=created_by,
+                        idempotency_key=reversal_idem_key,
+                    )
+                    self.session.add(rev)
+                    reversal_rows.append(rev)
+                await self.session.flush()
+                # Representative pair for the (debit_row, credit_row) return contract.
+                rev_debit = next((r for r in reversal_rows if _safe_decimal(r.debit_amount) > 0), reversal_rows[0])
+                rev_credit = next((r for r in reversal_rows if _safe_decimal(r.credit_amount) > 0), reversal_rows[-1])
+        except IntegrityError:
+            # Concurrent double-reverse lost the race on the partial unique
+            # index - return the pair the winner wrote, never a second one.
+            already = list((await self.session.execute(rev_existing_stmt)).scalars().all())
+            if already:
+                rev_debit_existing = next((r for r in already if _safe_decimal(r.debit_amount) > 0), already[0])
+                rev_credit_existing = next((r for r in already if _safe_decimal(r.credit_amount) > 0), already[-1])
+                return rev_debit_existing, rev_credit_existing
+            raise
+
+        logger.info("Ledger reversal created: %s -> %s", transaction_ref, reversal_ref)
+        return rev_debit, rev_credit
+
+    # ── GAAP: chart of accounts ───────────────────────────────────────────────
+
+    async def seed_default_chart(
+        self,
+        *,
+        project_id: uuid.UUID | None = None,
+        force: bool = False,
+    ) -> list[LedgerAccount]:
+        """Seed the default construction chart of accounts into a scope.
+
+        Idempotent: when the scope already has any account and ``force`` is
+        False, nothing is written and the existing accounts are returned. The
+        parent links are resolved in a second pass so a sub-account points at the
+        ``LedgerAccount`` row of its parent code (not the seed code).
+        """
+        existing, _ = await self.accounts.list(
+            project_id=project_id,
+            include_workspace=False,
+        )
+        if existing and not force:
+            return existing
+
+        existing_codes = {a.account_code for a in existing}
+        chart = gaap.default_chart_of_accounts()
+        created: dict[str, LedgerAccount] = {a.account_code: a for a in existing}
+
+        # Pass 1: insert every missing account (parents first - the chart is
+        # ordered by code so a parent code sorts before its children).
+        for code, acc in chart.items():
+            if code in existing_codes:
+                continue
+            row = LedgerAccount(
+                project_id=project_id,
+                account_code=acc.code,
+                name=acc.name,
+                account_type=acc.account_type.value,
+                normal_balance=acc.normal_balance.value,
+                statement_section=acc.statement_section,
+                is_cash=acc.is_cash,
+                is_active=True,
+                currency_code="",
+                metadata_={},
+            )
+            created[code] = await self.accounts.create(row)
+
+        # Pass 2: wire parent_id from the seed's parent_code.
+        for code, acc in chart.items():
+            if acc.parent_code and code in created and acc.parent_code in created:
+                child = created[code]
+                parent = created[acc.parent_code]
+                if child.parent_id != parent.id:
+                    await self.accounts.update(child.id, parent_id=parent.id)
+                    child.parent_id = parent.id
+
+        logger.info(
+            "Seeded default chart of accounts: scope=%s accounts=%d",
+            project_id or "workspace",
+            len(created),
+        )
+        return list(created.values())
+
+    async def list_accounts(
+        self,
+        *,
+        project_id: uuid.UUID | None = None,
+        include_workspace: bool = True,
+        account_type: str | None = None,
+        active_only: bool = False,
+    ) -> tuple[list[LedgerAccount], int]:
+        """List chart-of-accounts rows for a scope."""
+        return await self.accounts.list(
+            project_id=project_id,
+            include_workspace=include_workspace,
+            account_type=account_type,
+            active_only=active_only,
+        )
+
+    async def create_account(self, data: LedgerAccountCreate) -> LedgerAccount:
+        """Create a chart-of-accounts account.
+
+        The ``normal_balance`` is derived from ``account_type`` when omitted;
+        when supplied it must match the type's GAAP normal balance (e.g. you
+        cannot declare an asset credit-normal).
+        """
+        derived = gaap.normal_balance_for(data.account_type).value
+        if data.normal_balance and data.normal_balance != derived:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    f"normal_balance '{data.normal_balance}' contradicts the GAAP "
+                    f"normal balance for a {data.account_type} account ('{derived}')."
+                ),
+            )
+
+        # Reject a duplicate code in the same scope with a clean 409.
+        clash = await self.accounts.get_by_code(data.account_code, project_id=data.project_id)
+        if clash is not None and clash.project_id == data.project_id:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Account code '{data.account_code}' already exists in this scope.",
+            )
+
+        account = LedgerAccount(
+            project_id=data.project_id,
+            account_code=data.account_code,
+            name=data.name,
+            account_type=data.account_type,
+            normal_balance=data.normal_balance or derived,
+            parent_id=data.parent_id,
+            statement_section=data.statement_section,
+            is_cash=data.is_cash,
+            is_active=data.is_active,
+            currency_code=data.currency_code,
+            metadata_=data.metadata,
+        )
+        try:
+            account = await self.accounts.create(account)
+        except IntegrityError as exc:
+            await self.session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Account code '{data.account_code}' already exists in this scope.",
+            ) from exc
+        logger.info("Ledger account created: %s (%s)", account.account_code, account.account_type)
+        return account
+
+    async def get_account(self, account_id: uuid.UUID) -> LedgerAccount:
+        """Get a chart-of-accounts account by id. 404 when missing."""
+        account = await self.accounts.get(account_id)
+        if account is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Ledger account not found",
+            )
+        return account
+
+    async def update_account(
+        self,
+        account_id: uuid.UUID,
+        data: LedgerAccountUpdate,
+    ) -> LedgerAccount:
+        """Update mutable fields on a chart-of-accounts account.
+
+        Code and type are immutable (changing them would orphan posted ledger
+        rows and silently flip a statement's sign), so only descriptive fields,
+        the active flag and the cash/section hints can be patched.
+        """
+        await self.get_account(account_id)  # 404 check
+        fields = data.model_dump(exclude_unset=True)
+        if "metadata" in fields:
+            fields["metadata_"] = fields.pop("metadata")
+        if fields:
+            await self.accounts.update(account_id, **fields)
+        updated = await self.accounts.get(account_id)
+        if updated is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Ledger account not found",
+            )
+        return updated
+
+    async def _chart_lookup(self, project_id: uuid.UUID | None) -> dict[str, gaap.AccountDef]:
+        """Build a ``{code: AccountDef}`` lookup for a scope.
+
+        Prefers DB rows (project-scoped override the shared workspace chart by
+        code). Falls back to the in-code default chart for any standard code not
+        yet persisted, so the statements work even before the chart is seeded.
+        """
+        chart: dict[str, gaap.AccountDef] = dict(gaap.default_chart_of_accounts())
+        rows, _ = await self.accounts.list(project_id=project_id, include_workspace=True)
+        # Project-scoped rows win over workspace rows for the same code.
+        rows.sort(key=lambda r: r.project_id is not None)
+        for row in rows:
+            chart[row.account_code] = gaap.AccountDef(
+                code=row.account_code,
+                name=row.name,
+                account_type=gaap.AccountType(row.account_type),
+                parent_code=None,
+                statement_section=row.statement_section,
+                is_cash=bool(row.is_cash),
+            )
+        return chart
+
+    # ── GAAP: journal posting ─────────────────────────────────────────────────
+
+    async def post_journal_entry(
+        self,
+        data: JournalEntryCreate,
+    ) -> tuple[list[LedgerEntry], Decimal, Decimal]:
+        """Post a balanced, multi-line journal entry atomically.
+
+        Invariants enforced before any row is written:
+        * every line is a pure debit OR pure credit (> 0 on exactly one side);
+        * ``sum(debit) == sum(credit)`` (unbalanced is rejected 400);
+        * a single currency for the whole entry (never blended);
+        * every ``account_code`` resolves to a real, active chart account.
+
+        Each line becomes one :class:`LedgerEntry` row sharing the entry's
+        ``transaction_ref``. All rows are written inside one SAVEPOINT so a
+        failure rolls the whole entry back.
+
+        Idempotency: every line of the entry carries the same key (from
+        ``data.idempotency_key`` or derived from ``transaction_ref`` + source).
+        If an entry already exists under that key its rows are returned
+        unchanged, so a replayed post never double-posts the general ledger.
+        """
+        from sqlalchemy import select
+
+        currency = data.currency_code or ""
+
+        idem_key = data.idempotency_key or _derive_ledger_idempotency_key(
+            project_id=data.project_id,
+            transaction_ref=data.transaction_ref,
+            source_type=data.source_type,
+            source_id=data.source_id,
+        )
+
+        # Existence-check first: a replay returns the already-posted rows and
+        # their totals without writing anything new.
+        existing_stmt = (
+            select(LedgerEntry).where(LedgerEntry.idempotency_key == idem_key).order_by(LedgerEntry.posted_at.asc())
+        )
+        existing_rows = list((await self.session.execute(existing_stmt)).scalars().all())
+        if existing_rows:
+            dr = sum((_safe_decimal(r.debit_amount) for r in existing_rows), Decimal("0"))
+            cr = sum((_safe_decimal(r.credit_amount) for r in existing_rows), Decimal("0"))
+            logger.info(
+                "Journal entry idempotent hit: ref=%s key=%s - returning %d existing rows.",
+                data.transaction_ref,
+                idem_key,
+                len(existing_rows),
+            )
+            return existing_rows, gaap.q2(dr), gaap.q2(cr)
+
+        chart = await self._chart_lookup(data.project_id)
+
+        total_debits = Decimal("0")
+        total_credits = Decimal("0")
+        prepared: list[tuple[str, Decimal, Decimal, str | None]] = []
+
+        for idx, line in enumerate(data.lines):
+            debit = _safe_decimal(line.debit)
+            credit = _safe_decimal(line.credit)
+            if debit < 0 or credit < 0:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Line {idx}: amounts must be non-negative.",
+                )
+            # Exactly one side may be non-zero.
+            if (debit > 0) == (credit > 0):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=(
+                        f"Line {idx} for account '{line.account_code}' must be either a "
+                        f"debit OR a credit (exactly one side > 0), got debit={debit} credit={credit}."
+                    ),
+                )
+            # Account must exist in the resolved chart.
+            account = await self.accounts.get_by_code(line.account_code, project_id=data.project_id)
+            if account is None and line.account_code not in chart:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=(
+                        f"Line {idx}: account_code '{line.account_code}' is not in the "
+                        f"chart of accounts. Seed the chart or create the account first."
+                    ),
+                )
+            if account is not None and not account.is_active:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Line {idx}: account '{line.account_code}' is inactive and cannot be posted to.",
+                )
+            total_debits += debit
+            total_credits += credit
+            prepared.append((line.account_code, debit, credit, line.description))
+
+        if gaap.q2(total_debits) != gaap.q2(total_credits):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    f"Unbalanced journal entry: sum(debit)={gaap.q2(total_debits)} "
+                    f"!= sum(credit)={gaap.q2(total_credits)}. Rejected."
+                ),
+            )
+        if total_debits <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Journal entry has zero total value; nothing to post.",
+            )
+
+        posted_at = data.posted_at or _utcnow_iso()
+        rows: list[LedgerEntry] = []
+        try:
+            async with self.session.begin_nested():
+                for account_code, debit, credit, line_desc in prepared:
+                    row = LedgerEntry(
+                        project_id=data.project_id,
+                        transaction_ref=data.transaction_ref,
+                        account_code=account_code,
+                        description=line_desc or data.description,
+                        debit_amount=debit,
+                        credit_amount=credit,
+                        currency_code=currency,
+                        posted_at=posted_at,
+                        source_type=data.source_type,
+                        source_id=data.source_id,
+                        is_reversal=False,
+                        idempotency_key=idem_key,
+                    )
+                    self.session.add(row)
+                    rows.append(row)
+                await self.session.flush()
+        except IntegrityError:
+            # Concurrent writer won the race on the partial unique index -
+            # return the rows it wrote under our key instead of failing.
+            existing_rows = list((await self.session.execute(existing_stmt)).scalars().all())
+            if existing_rows:
+                dr = sum((_safe_decimal(r.debit_amount) for r in existing_rows), Decimal("0"))
+                cr = sum((_safe_decimal(r.credit_amount) for r in existing_rows), Decimal("0"))
+                return existing_rows, gaap.q2(dr), gaap.q2(cr)
+            raise
+
+        logger.info(
+            "Journal entry posted: ref=%s lines=%d dr=%s cr=%s",
+            data.transaction_ref,
+            len(rows),
+            gaap.q2(total_debits),
+            gaap.q2(total_credits),
+        )
+        return rows, gaap.q2(total_debits), gaap.q2(total_credits)
+
+    # ── GAAP: statement derivations ───────────────────────────────────────────
+
+    async def _ledger_lines(
+        self,
+        *,
+        project_id: uuid.UUID | None,
+        currency_code: str | None,
+        date_from: str | None,
+        date_to: str | None,
+    ) -> tuple[list[gaap.LedgerLine], list[LedgerEntry]]:
+        """Load posted ledger entries and map them to pure ``gaap.LedgerLine``.
+
+        Returns the lines and the raw entries (the cash-flow derivation needs the
+        raw rows to pair cash legs with their counter-accounts).
+        """
+        entries = await self.ledger.list_entries(
+            project_id=project_id,
+            currency_code=currency_code,
+            date_from=date_from,
+            date_to=date_to,
+        )
+        lines = [
+            gaap.LedgerLine(
+                account_code=e.account_code,
+                debit=_safe_decimal(e.debit_amount),
+                credit=_safe_decimal(e.credit_amount),
+                currency_code=e.currency_code or "",
+                posted_at=e.posted_at or "",
+            )
+            for e in entries
+        ]
+        return lines, entries
+
+    async def trial_balance(
+        self,
+        *,
+        project_id: uuid.UUID | None = None,
+        currency_code: str | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
+    ) -> gaap.TrialBalance:
+        """Compute the trial balance for a scope and period."""
+        lines, _ = await self._ledger_lines(
+            project_id=project_id,
+            currency_code=currency_code,
+            date_from=date_from,
+            date_to=date_to,
+        )
+        chart = await self._chart_lookup(project_id)
+        return gaap.trial_balance(lines, chart)
+
+    async def income_statement(
+        self,
+        *,
+        project_id: uuid.UUID | None = None,
+        currency_code: str | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
+    ) -> gaap.IncomeStatement:
+        """Derive the income statement (P&L) for a period."""
+        lines, _ = await self._ledger_lines(
+            project_id=project_id,
+            currency_code=currency_code,
+            date_from=date_from,
+            date_to=date_to,
+        )
+        chart = await self._chart_lookup(project_id)
+        tb = gaap.trial_balance(lines, chart)
+        return gaap.income_statement(tb, chart)
+
+    async def balance_sheet(
+        self,
+        *,
+        project_id: uuid.UUID | None = None,
+        currency_code: str | None = None,
+        as_of: str | None = None,
+    ) -> gaap.BalanceSheet:
+        """Derive the balance sheet as of a date (cumulative through ``as_of``)."""
+        lines, _ = await self._ledger_lines(
+            project_id=project_id,
+            currency_code=currency_code,
+            date_from=None,
+            date_to=as_of,
+        )
+        chart = await self._chart_lookup(project_id)
+        tb = gaap.trial_balance(lines, chart)
+        return gaap.balance_sheet(tb, chart)
+
+    async def cash_flow(
+        self,
+        *,
+        project_id: uuid.UUID | None = None,
+        currency_code: str | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
+    ) -> gaap.CashFlowStatement:
+        """Derive the direct-method cash flow statement for a period.
+
+        The opening cash balance is the net movement on the cash accounts BEFORE
+        ``date_from`` (so the closing cash ties to the cumulative ledger). Within
+        the period, each cash leg of a transaction is paired with the non-cash
+        legs of the same ``transaction_ref`` to classify the movement into
+        operating / investing / financing.
+        """
+        chart = await self._chart_lookup(project_id)
+        cash_codes = {code for code, acc in chart.items() if acc.is_cash}
+
+        # Opening cash: net cash movement strictly before the period start.
+        opening_cash = Decimal("0")
+        if date_from:
+            prior, _ = await self._ledger_lines(
+                project_id=project_id,
+                currency_code=currency_code,
+                date_from=None,
+                date_to=None,
+            )
+            for ln in prior:
+                if ln.account_code in cash_codes and ln.posted_at and ln.posted_at < date_from:
+                    opening_cash += ln.debit - ln.credit
+
+        _, entries = await self._ledger_lines(
+            project_id=project_id,
+            currency_code=currency_code,
+            date_from=date_from,
+            date_to=date_to,
+        )
+
+        # Group entries by transaction_ref so a cash leg can find its counter
+        # legs (the non-cash accounts of the same transaction).
+        by_ref: dict[str, list[LedgerEntry]] = {}
+        for e in entries:
+            by_ref.setdefault(e.transaction_ref, []).append(e)
+
+        currency = currency_code or ""
+        movements: list[gaap.CashMovement] = []
+        for ref_entries in by_ref.values():
+            cash_legs = [e for e in ref_entries if e.account_code in cash_codes]
+            non_cash = [e for e in ref_entries if e.account_code not in cash_codes]
+            if not cash_legs:
+                continue
+            # Dominant counter-account: the non-cash leg with the largest
+            # magnitude classifies the whole cash movement (a single-counter
+            # transaction, the common case, classifies exactly).
+            counter_type: gaap.AccountType | None = None
+            counter_section: str | None = None
+            if non_cash:
+                dominant = max(
+                    non_cash,
+                    key=lambda e: abs(_safe_decimal(e.debit_amount) - _safe_decimal(e.credit_amount)),
+                )
+                acc = chart.get(dominant.account_code)
+                if acc is not None:
+                    counter_type = acc.account_type
+                    counter_section = acc.statement_section
+            for leg in cash_legs:
+                # Cash in = debit to a cash account; cash out = credit.
+                amount = _safe_decimal(leg.debit_amount) - _safe_decimal(leg.credit_amount)
+                if amount == 0:
+                    continue
+                if currency_code is None and not currency:
+                    currency = leg.currency_code or ""
+                movements.append(
+                    gaap.CashMovement(
+                        amount=amount,
+                        counter_type=counter_type,
+                        counter_section=counter_section,
+                    )
+                )
+
+        return gaap.cash_flow_direct(
+            movements,
+            currency=currency,
+            opening_cash=opening_cash,
+        )

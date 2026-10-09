@@ -1,0 +1,467 @@
+# DDC-CWICR-OE: DataDrivenConstruction · OpenConstructionERP
+# Copyright (c) 2026 Artem Boiko / DataDrivenConstruction
+"""CDE Pydantic schemas - request/response models.
+
+Defines create, update, and response schemas for document containers
+and revisions following ISO 19650.
+"""
+
+from datetime import datetime
+from typing import Any
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from app.modules.cde.models import (
+    CDE_DEFAULT_MIN_READINESS_LEVEL,
+    CDE_DEFAULT_SUITABILITY_SET,
+)
+from app.modules.cde.readiness import READINESS_LEVELS
+from app.modules.cde.roles import role_keys
+from app.modules.cde.suitability import validate_suitability_for_state
+
+# ── Container Create ──────────────────────────────────────────────────────
+
+
+class ContainerCreate(BaseModel):
+    """Create a new document container."""
+
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    project_id: UUID
+    container_code: str = Field(..., min_length=1, max_length=255)
+    originator_code: str | None = Field(default=None, max_length=50)
+    functional_breakdown: str | None = Field(default=None, max_length=50)
+    spatial_breakdown: str | None = Field(default=None, max_length=50)
+    form_code: str | None = Field(default=None, max_length=50)
+    discipline_code: str | None = Field(default=None, max_length=50)
+    sequence_number: str | None = Field(default=None, max_length=20)
+    classification_system: str | None = Field(
+        default=None,
+        pattern=r"^(uniclass|din276|csi)$",
+    )
+    classification_code: str | None = Field(default=None, max_length=50)
+    cde_state: str = Field(
+        default="wip",
+        pattern=r"^(wip|shared|published|archived)$",
+    )
+    suitability_code: str | None = Field(default=None, max_length=10)
+    title: str = Field(..., min_length=1, max_length=500)
+    description: str | None = None
+    security_classification: str | None = Field(default=None, max_length=50)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _validate_suitability(self) -> "ContainerCreate":
+        ok, reason = validate_suitability_for_state(self.suitability_code, self.cde_state)
+        if not ok:
+            raise ValueError(reason)
+        return self
+
+
+# ── Container Update ──────────────────────────────────────────────────────
+
+
+class ContainerUpdate(BaseModel):
+    """Partial update for a document container."""
+
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    container_code: str | None = Field(default=None, min_length=1, max_length=255)
+    originator_code: str | None = Field(default=None, max_length=50)
+    functional_breakdown: str | None = Field(default=None, max_length=50)
+    spatial_breakdown: str | None = Field(default=None, max_length=50)
+    form_code: str | None = Field(default=None, max_length=50)
+    discipline_code: str | None = Field(default=None, max_length=50)
+    sequence_number: str | None = Field(default=None, max_length=20)
+    classification_system: str | None = Field(
+        default=None,
+        pattern=r"^(uniclass|din276|csi)$",
+    )
+    classification_code: str | None = Field(default=None, max_length=50)
+    suitability_code: str | None = Field(default=None, max_length=10)
+    title: str | None = Field(default=None, min_length=1, max_length=500)
+    description: str | None = None
+    security_classification: str | None = Field(default=None, max_length=50)
+    metadata: dict[str, Any] | None = None
+
+
+# ── Container Response ────────────────────────────────────────────────────
+
+
+class ContainerResponse(BaseModel):
+    """Document container returned from the API."""
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+    id: UUID
+    project_id: UUID
+    container_code: str
+    originator_code: str | None = None
+    functional_breakdown: str | None = None
+    spatial_breakdown: str | None = None
+    form_code: str | None = None
+    discipline_code: str | None = None
+    sequence_number: str | None = None
+    classification_system: str | None = None
+    classification_code: str | None = None
+    cde_state: str = "wip"
+    suitability_code: str | None = None
+    current_revision_id: str | None = None
+    title: str
+    description: str | None = None
+    security_classification: str | None = None
+    created_by: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict, validation_alias="metadata_")
+    created_at: datetime
+    updated_at: datetime
+
+
+# ── State Transition ──────────────────────────────────────────────────────
+
+
+class StateTransitionRequest(BaseModel):
+    """Request to transition a container's CDE state.
+
+    ``approver_signature`` is required when crossing Gate B (SHARED → PUBLISHED);
+    the service layer raises 400 otherwise. ``approval_comments`` is optional
+    and is persisted alongside the signature for the audit trail.
+    """
+
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    target_state: str = Field(
+        ...,
+        pattern=r"^(wip|shared|published|archived)$",
+    )
+    reason: str | None = Field(default=None, max_length=500)
+    approver_signature: str | None = Field(default=None, max_length=200)
+    approval_comments: str | None = Field(default=None, max_length=2000)
+
+
+# ── Revision Create ──────────────────────────────────────────────────────
+
+
+class RevisionCreate(BaseModel):
+    """Create a new revision within a container.
+
+    Two creation modes:
+
+    - **Upload mode** - ``storage_key`` carries a real storage key for a
+      freshly-uploaded file; the service materialises a new ``Document`` row in
+      the Documents hub so the file is indexed there.
+    - **Link mode** - ``document_id`` references an *existing* ``Document``;
+      the service reuses that document's real ``file_path`` / size / mime so the
+      file remains downloadable, and never creates a duplicate Document row.
+    """
+
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    file_name: str = Field(..., min_length=1, max_length=500)
+    file_size: str | None = Field(default=None, max_length=20)
+    mime_type: str | None = Field(default=None, max_length=100)
+    storage_key: str | None = Field(default=None, max_length=500)
+    # When set, link an existing Documents-hub row instead of creating a new
+    # one. Mutually preferred over ``storage_key`` (see CDEService.create_revision).
+    document_id: UUID | None = Field(default=None)
+    content_hash: str | None = Field(default=None, max_length=64)
+    is_preliminary: bool = True
+    change_summary: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+# ── Revision Response ────────────────────────────────────────────────────
+
+
+class RevisionResponse(BaseModel):
+    """Document revision returned from the API."""
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+    id: UUID
+    container_id: UUID
+    revision_code: str
+    revision_number: int
+    is_preliminary: bool = True
+    content_hash: str | None = None
+    file_name: str
+    file_size: str | None = None
+    mime_type: str | None = None
+    storage_key: str | None = None
+    status: str = "draft"
+    approved_by: str | None = None
+    change_summary: str | None = None
+    document_id: str | None = None
+    created_by: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict, validation_alias="metadata_")
+    created_at: datetime
+    updated_at: datetime
+
+
+# ── Stats ────────────────────────────────────────────────────────────────
+
+
+class CDEStatsResponse(BaseModel):
+    """Aggregate statistics for CDE containers within a project."""
+
+    total: int = 0
+    by_state: dict[str, int] = Field(default_factory=dict)
+    by_discipline: dict[str, int] = Field(default_factory=dict)
+    latest_revisions: int = 0
+
+
+# ── Suitability codes ────────────────────────────────────────────────────
+
+
+class SuitabilityCodeEntry(BaseModel):
+    """A single ISO 19650 suitability code with its lifecycle state."""
+
+    code: str
+    label: str
+    state: str
+
+
+class SuitabilityCodesResponse(BaseModel):
+    """Suitability codes grouped per CDE state."""
+
+    codes: list[SuitabilityCodeEntry] = Field(default_factory=list)
+    by_state: dict[str, list[SuitabilityCodeEntry]] = Field(default_factory=dict)
+
+
+# ── Functional roles (ISO 19650) ─────────────────────────────────────────
+
+
+class FunctionalRoleEntry(BaseModel):
+    """One ISO 19650 functional role and how it maps onto the CDE workflow."""
+
+    key: str
+    name: str
+    cde_role: str
+    gate: str | None = None
+    acts_on: list[str] = Field(default_factory=list)
+    permissions: list[str] = Field(default_factory=list)
+    summary: str
+
+
+class FunctionalRolesResponse(BaseModel):
+    """The four functional roles plus the responsibility matrix by CDE state."""
+
+    roles: list[FunctionalRoleEntry] = Field(default_factory=list)
+    states: list[str] = Field(default_factory=list)
+    matrix: dict[str, dict[str, str]] = Field(default_factory=dict)
+
+
+# ── Go-live readiness ─────────────────────────────────────────────────────
+
+
+class ReadinessSignalStatus(BaseModel):
+    """One readiness milestone and whether the project has satisfied it."""
+
+    key: str
+    label: str
+    weight: int
+    hint: str
+    done: bool
+
+
+class ReadinessNextAction(BaseModel):
+    """An unmet milestone surfaced as the next thing to do."""
+
+    key: str
+    label: str
+    hint: str
+
+
+class CDEReadinessResponse(BaseModel):
+    """A project's CDE go-live readiness picture.
+
+    ``score`` is a weighted percent in ``[0, 100]``; ``level`` is a coarse band
+    (not_started / forming / operational / mature). ``signals`` is the full
+    checklist; ``next_actions`` is the leading unmet milestones to nudge.
+    """
+
+    score: int
+    level: str
+    total_containers: int
+    signals: list[ReadinessSignalStatus] = Field(default_factory=list)
+    next_actions: list[ReadinessNextAction] = Field(default_factory=list)
+
+
+# ── Audit / history ──────────────────────────────────────────────────────
+
+
+class StateTransitionEntry(BaseModel):
+    """A single row in the CDE state-transition audit log."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    container_id: UUID
+    from_state: str
+    to_state: str
+    gate_code: str | None = None
+    user_id: str | None = None
+    user_role: str | None = None
+    reason: str | None = None
+    signature: str | None = None
+    transitioned_at: datetime
+
+
+# ── CDE settings (per-project setup) ─────────────────────────────────────
+
+
+def _validate_role_assignments(value: dict[str, Any]) -> dict[str, str]:
+    """Coerce and validate a functional-role -> user-id assignment map.
+
+    Keys must be one of the four ISO 19650 functional roles; unknown roles are
+    rejected so a typo cannot silently drop an assignment. Values are coerced to
+    strings (user ids). An empty map (nothing assigned yet) is valid.
+    """
+    allowed = set(role_keys())
+    out: dict[str, str] = {}
+    for key, val in value.items():
+        if key not in allowed:
+            raise ValueError(f"Unknown functional role {key!r}. Allowed roles: {sorted(allowed)}")
+        if val is None or (isinstance(val, str) and not val.strip()):
+            continue
+        out[key] = str(val)
+    return out
+
+
+class CdeSettingsUpdate(BaseModel):
+    """Partial update of a project's CDE settings (wizard save)."""
+
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    naming_convention: str | None = Field(default=None, max_length=500)
+    suitability_set: str | None = Field(default=None, max_length=50)
+    review_preset_key: str | None = Field(default=None, max_length=100)
+    role_assignments: dict[str, Any] | None = None
+    go_live_gate_enabled: bool | None = None
+    min_readiness_level: str | None = None
+    setup_completed: bool | None = None
+    setup_step: int | None = Field(default=None, ge=0, le=20)
+
+    @field_validator("min_readiness_level")
+    @classmethod
+    def _known_level(cls, v: str | None) -> str | None:
+        if v is not None and v not in READINESS_LEVELS:
+            raise ValueError(f"Unknown readiness level {v!r}. Allowed: {list(READINESS_LEVELS)}")
+        return v
+
+    @field_validator("role_assignments")
+    @classmethod
+    def _valid_roles(cls, v: dict[str, Any] | None) -> dict[str, Any] | None:
+        if v is None:
+            return None
+        return _validate_role_assignments(v)
+
+
+class CdeSettingsResponse(BaseModel):
+    """A project's CDE settings as returned by the API."""
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+    id: UUID
+    project_id: UUID
+    naming_convention: str = ""
+    suitability_set: str = CDE_DEFAULT_SUITABILITY_SET
+    review_preset_key: str | None = None
+    # The project's own editable route cloned from ``review_preset_key`` (see
+    # CDEService.apply_approval_preset). NULL until a preset has been adopted.
+    review_route_id: UUID | None = None
+    role_assignments: dict[str, Any] = Field(default_factory=dict)
+    go_live_gate_enabled: bool = True
+    min_readiness_level: str = CDE_DEFAULT_MIN_READINESS_LEVEL
+    setup_completed: bool = False
+    setup_step: int = 0
+    created_at: datetime
+    updated_at: datetime
+
+
+# ── Go-live gate ─────────────────────────────────────────────────────────
+
+
+class GoLiveGateStatus(BaseModel):
+    """Whether a project's CDE is ready to open to the whole team.
+
+    ``allowed`` is ``True`` when the gate is disabled, or when the project's
+    readiness ``level`` meets the required ``min_readiness_level``. ``reason`` is
+    a short human-readable explanation for the current standing.
+    """
+
+    project_id: UUID
+    gate_enabled: bool
+    allowed: bool
+    level: str
+    min_readiness_level: str
+    score: int
+    reason: str
+
+
+# ── Approval presets (ISO 19650 review flows) ─────────────────────────────
+
+
+class CDEApprovalPresetStep(BaseModel):
+    """One step of an approval preset, as it will apply once adopted."""
+
+    ordinal: int
+    approver_role: str | None = None
+    mode: str
+    required_approver_count: int | None = None
+    sla_hours: int | None = None
+
+
+class CDEApprovalPresetEntry(BaseModel):
+    """A ready-made, tenant-wide ISO 19650 approval/review configuration.
+
+    Merges the live route definition from ``approval_routes`` (name, steps)
+    with CDE-facing framing (which gate it covers, why a team would pick it).
+    """
+
+    system_key: str
+    route_id: UUID
+    name: str
+    gate: str
+    description: str
+    steps: list[CDEApprovalPresetStep] = Field(default_factory=list)
+
+
+class CDEApprovalPresetsResponse(BaseModel):
+    """The CDE approval-preset library plus which one (if any) is adopted."""
+
+    presets: list[CDEApprovalPresetEntry] = Field(default_factory=list)
+    active_system_key: str | None = None
+    active_route_id: UUID | None = None
+
+
+class CDEApprovalPresetApplyRequest(BaseModel):
+    """Adopt one preset as this project's active review route."""
+
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    system_key: str = Field(..., min_length=1, max_length=100)
+
+
+class CDEApprovalPresetApplyResponse(BaseModel):
+    """Result of adopting a preset: the new editable route plus settings."""
+
+    settings: CdeSettingsResponse
+    route_id: UUID
+    route_name: str
+    step_count: int
+
+
+# ── Transmittal link summary (back-reference from CDE) ───────────────────
+
+
+class ContainerTransmittalLink(BaseModel):
+    """Summary of a transmittal that carries a revision from this container."""
+
+    transmittal_id: UUID
+    transmittal_number: str
+    subject: str
+    status: str
+    issued_date: str | None = None
+    revision_id: UUID | None = None
+    revision_code: str | None = None

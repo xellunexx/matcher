@@ -1,0 +1,829 @@
+{
+  "boq_markup": {
+    "contingency_not_on_profit": {
+      "fail": "Der Risikozuschlag \"{markup}\" wird auf eine Basis berechnet, die bereits die Gewinnposition \"{profit}\" enthält, sodass Gewinn auf zurückgestellte Risikomittel anfällt",
+      "suggestion": "Diese Position auf die Einzelkosten beziehen, sofern die im Markt übliche Berechnungsmethode das Risiko nicht bewusst nach Gemeinkosten und Gewinn ansetzt"
+    },
+    "order_is_declared": {
+      "fail": "Platz {order} in der Reihenfolge ist von mehreren Zuschlagspositionen belegt: {markups}",
+      "suggestion": "Jeder Zuschlagsposition einen eigenen Platz geben, damit die Aufschlagsfolge nicht dem Zufall überlassen bleibt"
+    },
+    "percentage_within_band": {
+      "fail": "\"{markup}\" liegt mit {percentage}% als Position der Art \"{category}\" außerhalb des plausiblen Bereichs von 0 bis {ceiling}%",
+      "suggestion": "Das Komma prüfen. Die Position wird in jedem Fall genau wie eingegeben berechnet"
+    },
+    "cumulative_base_is_settled": {
+      "fail": "\"{markup}\" bezieht sich auf \"{apply_to}\", steht aber an erster Stelle und rechnet damit allein auf die Einzelkosten",
+      "suggestion": "Die Position hinter die Zuschläge stellen, auf die sie aufschlagen soll, oder sie auf die Einzelkosten beziehen"
+    }
+  },
+  "common": {
+    "ok": "OK"
+  },
+  "export": {
+    "generated": "Erstellt",
+    "content_digest": "Inhalts-Prüfsumme"
+  },
+  "field_time": {
+    "hours_per_day_max": {
+      "fail": "Arbeiter {worker} ist an diesem Tag mit {hours} h gebucht, über dem Limit von {max} h",
+      "suggestion": "Die Stunden vor dem Einreichen auf den richtigen Tag oder Arbeiter aufteilen"
+    },
+    "line_complete": {
+      "fail": "Zeile {line} ist unvollständig: {reason}",
+      "labour_xor_plant": "muss entweder Lohn oder Gerät buchen, nicht beides und nicht keines",
+      "hours_positive": "Stunden müssen größer als null sein",
+      "cost_code_required": "ein Kostencode ist erforderlich",
+      "suggestion": "Die Zeile vor dem Einreichen des Stundenzettels vervollständigen"
+    },
+    "cost_code_resolves": {
+      "fail": "Zeile {line} Code '{code}' passt zu keiner LV-Position oder WBS in diesem Projekt",
+      "suggestion": "Einen Kostencode oder eine WBS wählen, die im Projekt-LV vorhanden ist"
+    },
+    "daywork_needs_variation": {
+      "fail": "Regiezeile {line} ist keiner offenen Nachtragsanordnung zugeordnet",
+      "suggestion": "Die Regiearbeit mit der beauftragten Nachtragsanordnung verknüpfen"
+    },
+    "plant_needs_equipment": {
+      "fail": "Gerätezeile {line} nennt kein Gerät",
+      "suggestion": "Das Gerät zuordnen, damit Gerätestunden kalkuliert werden können"
+    },
+    "approved_immutable": {
+      "fail": "Dieser Stundenzettel ist {status} und kann nicht bearbeitet werden",
+      "suggestion": "Einen stornierenden Stundenzettel buchen, um genehmigte Stunden zu korrigieren"
+    },
+    "offline_clock_plausible": {
+      "fail": "Das Gerät, das diesen Tag erfasst hat, ging {minutes} Minuten gegenüber der Serverzeit vor",
+      "suggestion": "Die Uhr des Geräts stellen, damit erfasste Zeiten in der richtigen Reihenfolge lesbar sind"
+    },
+    "offline_sync_delay": {
+      "fail": "Dieser Tag wurde am {date} gearbeitet und erreichte das Büro erst {days} Tage später",
+      "suggestion": "Die Stunden vor der Genehmigung gegen den Tag selbst prüfen, die Abrechnung kann bereits geschlossen sein"
+    }
+  },
+  "ai_takeoff": {
+    "unreviewed_proposals": {
+      "fail": "{count} Aufmaß-Vorschläge warten noch auf Prüfung und sind hier nicht bepreist",
+      "suggestion": "Prüfliste abarbeiten, damit die bestätigten Mengen zur Zeichnung passen"
+    }
+  },
+  "boq_quality": {
+    "position_has_quantity": {
+      "fail": "Position {ordinal} darf keine Menge von Null oder fehlende Menge haben",
+      "suggestion": "Bitte eine Menge größer als 0 eintragen"
+    },
+    "position_has_unit_rate": {
+      "fail": "Position {ordinal} sollte einen Einheitspreis zugewiesen bekommen",
+      "suggestion": "Preis aus der Kostendatenbank übernehmen"
+    },
+    "position_has_description": {
+      "fail": "Position {ordinal} darf keine leere Beschreibung haben"
+    },
+    "no_duplicate_ordinals": {
+      "fail": "Doppelte Ordnungszahl '{ordinal}' in {count} Positionen gefunden"
+    },
+    "unit_rate_in_range": {
+      "fail": "Position {ordinal}: Preis {rate} uebersteigt {threshold} - ueber dem 5-fachen Median dieses LV ({median})",
+      "suggestion": "Diesen Einheitspreis gegen die Quelle pruefen - ungewoehnlich hoch im Vergleich zu den anderen Positionen dieser LV (kein Vergleich mit einer Preisdatenbank)"
+    },
+    "negative_values": {
+      "fail": "Position {ordinal} enthält negative Werte: {details}",
+      "suggestion": "Negative Werte korrigieren - positive Zahlen verwenden"
+    },
+    "unrealistic_rate": {
+      "fail": "Position {ordinal}: {details}",
+      "suggestion": "Diesen Wert prüfen - er wirkt unrealistisch hoch",
+      "not_assessed_no_currency": "{count} Position(en) nicht geprüft: das LV nennt keine Währung, daher konnten die Betragsschwellen (in {reference}) nicht darauf umgerechnet werden",
+      "not_assessed_no_currency_suggestion": "Projektwährung festlegen oder eine Währung an den Positionen hinterlegen",
+      "not_assessed_no_rate": "{count} Position(en) in {currency} nicht geprüft: kein Kurs {reference} zu {currency} hinterlegt, daher konnten die Betragsschwellen nicht auf dieses LV umgerechnet werden",
+      "not_assessed_no_rate_suggestion": "Einen {reference}-Kurs für {currency} im Kursregister oder in den Wechselkursen des Projekts hinterlegen"
+    },
+    "total_mismatch": {
+      "fail": "Position {ordinal}: berechnet {computed} != gespeichert {stored} (Differenz={diff})",
+      "suggestion": "Gesamtbetrag neu berechnen = Menge × Einheitspreis"
+    },
+    "resource_split_mismatch": {
+      "fail": "Position {ordinal}: Ressourcen-Zwischensumme {subtotal} weicht um {diff} vom Einheitspreis {rate} ab",
+      "suggestion": "Mengen und Preise der Ressourcen prüfen - ihre Summe pro Einheit sollte dem Einheitspreis der Position entsprechen"
+    },
+    "empty_unit": {
+      "fail": "Position {ordinal} hat keine oder eine leere Einheit",
+      "suggestion": "Eine Mengeneinheit zuweisen (m, m2, m3, kg, Stk, Pauschale usw.)"
+    },
+    "section_without_items": {
+      "fail": "Abschnitt {ordinal} ({title}) enthält keine untergeordneten Positionen",
+      "suggestion": "Positionen unter diesem Abschnitt ergänzen oder den leeren Abschnitt entfernen"
+    },
+    "rate_vs_benchmark": {
+      "fail": "Position {ordinal}: Einheitspreis {rate}/{unit} überschreitet Benchmark-Schwellenwert {threshold}/{unit} - möglicherweise unrealistisch",
+      "suggestion": "Preis prüfen - übliche Preise für {unit} liegen unter {threshold}. Einheit bzw. Dezimalstellen kontrollieren.",
+      "not_assessed_no_currency": "{count} Position(en) nicht geprüft: das LV nennt keine Währung, daher konnten die Benchmark-Schwellenwerte (in {reference}) nicht darauf umgerechnet werden",
+      "not_assessed_no_currency_suggestion": "Projektwährung festlegen oder eine Währung an den Positionen hinterlegen",
+      "not_assessed_no_rate": "{count} Position(en) in {currency} nicht geprüft: kein Kurs {reference} zu {currency} hinterlegt, daher konnten die Benchmark-Schwellenwerte nicht auf dieses LV umgerechnet werden",
+      "not_assessed_no_rate_suggestion": "Einen {reference}-Kurs für {currency} im Kursregister oder in den Wechselkursen des Projekts hinterlegen"
+    },
+    "lump_sum_ratio": {
+      "fail": "{lsum_count} von {total_count} Positionen ({percent}) sind Pauschalen - überschreitet {threshold}-Schwelle",
+      "suggestion": "Pauschalen in messbare Mengen aufteilen (m, m2, m3, kg, Stk) für genauere Kalkulation"
+    },
+    "cost_concentration": {
+      "fail": "Position {ordinal} entspricht {share} der Gesamtkosten ({value} von {grand_total}) - überschreitet {threshold}-Schwelle",
+      "suggestion": "Position in kleinere Elemente aufteilen oder Kosten prüfen - eine einzelne Position sollte den Voranschlag nicht dominieren"
+    },
+    "currency_consistency": {
+      "fail": "Unterschiedliche Währungen gefunden: {currencies}",
+      "suggestion": "Durchgängig eine einheitliche Währung verwenden"
+    },
+    "measurement_consistency": {
+      "fail": "LV vermischt metrische und imperiale Einheiten - einheitliches System verwenden",
+      "suggestion": "Alle Mengen entweder in metrische oder imperiale Einheiten umrechnen"
+    },
+    "revision_cost_impact_review": {
+      "fail": "Die Kostenauswirkung der Revision von {amount} ist noch nicht als Nachtrag erfasst",
+      "suggestion": "Aus diesem Revisionsvergleich einen Nachtragsentwurf erstellen, um die Kostenänderung zu erfassen"
+    },
+    "base_date_readable": {
+      "fail": "Das Basisdatum '{base_date}' ist kein Datum, daher wird das LV mit dem heutigen Steuersatz statt mit seinem eigenen besteuert",
+      "suggestion": "Die Preisbasis als Tag, Monat, Quartal oder Jahr angeben ({shapes})"
+    }
+  },
+  "din276": {
+    "cost_group_required": {
+      "fail": "Position {ordinal} hat keine DIN 276-Kostengruppe",
+      "suggestion": "Dreistellige DIN 276-Kostengruppe zuweisen (z.B. 330 für Wände)"
+    },
+    "valid_cost_group": {
+      "fail": "Ungültiger DIN 276-Code '{code}' in Position {ordinal}"
+    },
+    "hierarchy": {
+      "fail": "Position {ordinal}: KG {child} liegt nicht unter Eltern-KG {parent} (erwarteter Präfix '{prefix}')",
+      "suggestion": "Position in die korrekte Eltern-KG verschieben oder KG-Code an die Hierarchie anpassen ({prefix}xx)"
+    },
+    "completeness": {
+      "fail": "KG-Gruppe {group} - {group_name} fehlt im LV",
+      "suggestion": "Positionen für KG {group} ({group_name}) ergänzen, um vollständige Abdeckung zu gewährleisten"
+    }
+  },
+  "gaeb": {
+    "ordinal_format": {
+      "fail": "Ordnungszahl '{ordinal}' entspricht nicht der OZ-Maske dieser Datei",
+      "suggestion": "Die OZ-Maske der Datei verwenden, z.B. 001.001.0010 oder 01.02.0030"
+    },
+    "lv_structure": {
+      "fail": "Position {ordinal}: Endposition ohne übergeordneten Abschnitt - GAEB-LV-Hierarchie erfordert eine Leistungsgruppe als Elternteil",
+      "suggestion": "Position einem übergeordneten Abschnitt zuweisen (Leistungsgruppe / Titel)"
+    },
+    "einheitspreis_sanity": {
+      "negative": "Position {ordinal}: Einheitspreis {rate} ist negativ (Einheit='{unit}') - ein negativer Preis kann in GAEB nicht übertragen werden",
+      "zero": "Position {ordinal}: Einheitspreis ist 0,00 (Einheit='{unit}') - bitte bestätigen, dass es sich um einen angebotenen Nullpreis und nicht um einen fehlenden Preis handelt",
+      "suggestion": "Positiven Einheitspreis angeben oder Position als Bedarfsposition (optionaler Umfang) bzw. Pauschale kennzeichnen (Einheit='lsum')"
+    },
+    "trade_section_code": {
+      "fail": "Übergeordneter Abschnitt '{ordinal}' hat keinen GAEB-Leistungsbereich-Code (erwarteter 3-stelliger Gewerkecode, z.B. '012')",
+      "suggestion": "Dem Abschnitt einen 3-stelligen Leistungsbereich-Code hinzufügen - z.B. '012' für Erdarbeiten, '013' für Mauerarbeiten"
+    },
+    "quantity_decimals": {
+      "fail": "Position {ordinal}: Menge {quantity} hat {decimals} Nachkommastellen - GAEB X83 erlaubt maximal 3",
+      "suggestion": "Menge auf maximal 3 Nachkommastellen runden gemäß GAEB X83"
+    }
+  },
+  "nrm": {
+    "classification_required": {
+      "fail": "Position {ordinal} hat keinen NRM-Elementcode",
+      "suggestion": "Einen NRM 1/2-Elementcode zuweisen (z.B. 2.6.1 für Außenwände)"
+    },
+    "valid_element": {
+      "fail": "Ungültiger NRM-Code '{code}' in Position {ordinal}"
+    },
+    "completeness": {
+      "fail": "NRM-Gruppe {group} - {group_name} fehlt im LV",
+      "suggestion": "Positionen für NRM-Gruppe {group} ({group_name}) ergänzen"
+    },
+    "base_date_declared": {
+      "fail": "Die Kostenplanung nennt kein Preisbasisdatum für ihre Ansätze",
+      "suggestion": "Hinterlegen Sie das Preisbasisdatum am Leistungsverzeichnis. Ohne dieses lässt sich weder beurteilen, ob ein Ansatz veraltet ist, noch welche Teuerung noch aufzuschlagen ist"
+    },
+    "cost_plan_stage_declared": {
+      "fail": "Die Kostenplanung nennt die Planungsphase nicht, für die sie erstellt wurde",
+      "suggestion": "Hinterlegen Sie die Phase. Die erwartbare Genauigkeit einer Kostenplanung ergibt sich aus ihrer Phase, und eine Planung ohne Phasenangabe weckt die falsche Erwartung"
+    },
+    "contractor_costs_present": {
+      "preliminaries": "Die Kostenplanung enthält keine Baustelleneinrichtung und Baustellengemeinkosten des Hauptunternehmers, weder als Gruppe {group} noch als Zuschlagszeile",
+      "overheads_and_profit": "Die Kostenplanung enthält keine Gemeinkosten und keinen Gewinn des Hauptunternehmers, weder als Gruppe {group} noch als Zuschlagszeile",
+      "suggestion": "Nehmen Sie den Posten als NRM-Gruppenelement oder als Zuschlagszeile auf die gemessenen Leistungen auf. Beides ist zulässig; fehlt er, sind die Baukosten nicht die Baukosten"
+    },
+    "risk_allowance_present": {
+      "fail": "Die Kostenplanung enthält keinen Risikozuschlag",
+      "suggestion": "Nehmen Sie einen Risikozuschlag als NRM-Gruppe 13 oder als Zuschlagszeile auf. Eine Kostenplanung ohne Risikozuschlag präsentiert einen Einzelwert, als wäre er sicher"
+    }
+  },
+  "masterformat": {
+    "classification_required": {
+      "fail": "Position {ordinal} hat keinen MasterFormat-Code",
+      "suggestion": "MasterFormat-Code zuweisen (z.B. 03 30 00 für Ortbeton)"
+    },
+    "valid_division": {
+      "fail": "Ungültiger MasterFormat-Code '{code}' in Position {ordinal}",
+      "suggestion": "6-stelliges MasterFormat-Format verwenden: XX XX XX (z.B. 03 30 00)"
+    },
+    "completeness": {
+      "fail": "Division {division} - {division_name} fehlt im LV",
+      "suggestion": "Positionen für Division {division} ({division_name}) ergänzen"
+    }
+  },
+  "sinapi": {
+    "code_required": {
+      "fail": "Position {ordinal} hat keinen SINAPI-Code",
+      "suggestion": "SINAPI-Kompositionscode zuweisen (z.B. 87878 für Beton C30)"
+    },
+    "valid_code": {
+      "fail": "Ungültiger SINAPI-Code '{code}' in Position {ordinal}"
+    }
+  },
+  "nbr": {
+    "classification_required": {
+      "fail": "Position {ordinal} ohne NBR 12721 Abschnitt",
+      "suggestion": "Position einem NBR 12721 Abschnitt zuordnen (S1..S11)"
+    },
+    "valid_section": {
+      "fail": "NBR 12721 Abschnitt '{code}' in Position {ordinal} ist nicht S1..S11",
+      "suggestion": "Codes S1 bis S11 verwenden (z.B. S3 für Tragwerk)"
+    }
+  },
+  "gesn": {
+    "code_required": {
+      "fail": "Position {ordinal} hat keinen ГЭСН/ФЕР-Code",
+      "suggestion": "ГЭСН-Code zuweisen (z.B. 06-01-001-01 für Beton)"
+    },
+    "valid_code": {
+      "fail": "ГЭСН-Code '{code}' entspricht nicht dem Format XX-XX-XXX-XX",
+      "suggestion": "Format verwenden: NN-NN-NNN-NN (z.B. 06-01-001-01)"
+    },
+    "resource_breakdown": {
+      "fail": "Position {ordinal} nennt die Norm {code}, enthält aber keine Ressourcenaufgliederung",
+      "suggestion": "Die Lohn-, Geräte- und Materialmengen der Norm übernehmen oder begründen, warum diese Position davon abweicht"
+    },
+    "labour_hours_present": {
+      "fail": "Position {ordinal} ({code}) hat eine Ressourcenaufgliederung ohne Lohnstunden",
+      "suggestion": "Die Lohnstunden der Norm ergänzen; Gemeinkosten und kalkulatorischer Gewinn werden auf die Lohnsumme bezogen und sind ohne sie nicht berechenbar"
+    },
+    "price_level_declared": {
+      "fail": "Die Kostenberechnung nennt kein Preisniveau für ihre Beträge",
+      "suggestion": "Preisniveau (ein Datum) und angewendeten Umrechnungsindex angeben, damit ein Prüfer dieselbe Summe erreicht"
+    }
+  },
+  "dpgf": {
+    "lot_required": {
+      "fail": "Position {ordinal} ist keinem Lot technique zugeordnet",
+      "suggestion": "Ein Lot technique zuweisen (z.B. Lot 01 Gros Œuvre)"
+    },
+    "pricing_complete": {
+      "fail": "Nur {priced}/{total} Positionen ({percent}) sind bepreist - unter 80%-Schwelle",
+      "suggestion": "Bepreisung aller Positionen vor der DPGF-Einreichung abschließen"
+    }
+  },
+  "onorm": {
+    "position_format": {
+      "fail": "Ordnungszahl '{ordinal}' entspricht nicht dem ÖNORM-Format XX.XX.XXXXA",
+      "suggestion": "ÖNORM B 2063-Format verwenden (z.B. 01.02.01A)"
+    },
+    "description_length": {
+      "fail": "Position {ordinal}: Beschreibung zu kurz ({length} Zeichen, min. 20)",
+      "suggestion": "Beschreibung gemäß ÖNORM B 2063 ausführlicher gestalten"
+    }
+  },
+  "gbt50500": {
+    "code_required": {
+      "fail": "Position {ordinal} hat keinen GB/T 50500-Code",
+      "suggestion": "9-stelligen GB/T 50500-Code zuweisen (z.B. 010101001)"
+    },
+    "valid_code": {
+      "fail": "Ungültiger GB/T 50500-Code '{code}' - erwartet 9 oder 12 Stellen"
+    }
+  },
+  "cpwd": {
+    "code_required": {
+      "fail": "Position {ordinal} hat keinen CPWD/DSR-Code",
+      "suggestion": "CPWD-DSR-Positionsreferenz zuweisen (z.B. 4.1.1)"
+    },
+    "measurement_units": {
+      "fail": "Einheit '{unit}' in Position {ordinal} ist nicht IS-1200-konform",
+      "suggestion": "Standard-IS-1200-Einheiten verwenden: m, m2, m3, kg, nos, rm usw."
+    }
+  },
+  "hungary": {
+    "item_code_required": {
+      "fail": "Position {ordinal} trägt keine ungarische Positionsnummer",
+      "invalid": "Positionsnummer '{code}' bei Position {ordinal} passt zu keiner der beiden Ordnungen",
+      "suggestion": "Hochbau verwendet MA-CC-SS-II (Kapitel 01 bis 17), Infrastruktur die sechs- oder siebenstellige Positionsnummer aus dem Codeverzeichnis des Projekts"
+    },
+    "chapter_recognised": {
+      "fail": "Kapitel {chapter} bei Position {ordinal} gehört nicht zu den siebzehn der Ordnung"
+    },
+    "material_fee_split": {
+      "fail": "Position {ordinal}: Material {material} plus Lohn {fee} ergibt nicht den Einheitspreis {rate}",
+      "suggestion": "Material- und Lohnanteil oder den Einheitspreis korrigieren, bis die Aufteilung stimmt"
+    },
+    "item_number_unique": {
+      "fail": "Positionsnummer {number} steht auf {count} Positionen und muss genau eine bezeichnen",
+      "suggestion": "Jeder Position eine eigene Projekt-Positionsnummer geben, bevor das LV herausgeht"
+    }
+  },
+  "romania": {
+    "deviz_chapter_required": {
+      "fail": "Position {ordinal} nennt kein Kapitel des deviz general",
+      "suggestion": "Die Position ihrem Kapitel und Unterkapitel nach HG 907/2016 zuordnen, etwa 4.1 für Bau- und Installationsarbeiten oder 5.1 für die Baustelleneinrichtung"
+    },
+    "deviz_chapter_recognised": {
+      "fail": "Der Deviz-Code '{code}' in Position {ordinal} ist kein Kapitel oder Unterkapitel des deviz general",
+      "suggestion": "Einen Code aus den Kapiteln 1 bis 6 des deviz general nach HG 907/2016 verwenden, etwa 1.2, 2, 3.5, 4.1, 5.1 oder 6.2"
+    }
+  },
+  "greece": {
+    "net_article_required": {
+      "fail": "Position {ordinal} trägt keinen Artikel der einheitlichen Preislisten (ΝΕΤ)",
+      "suggestion": "Den ΝΕΤ-Artikel angeben, nach dem die Position bepreist ist, etwa ΟΙΚ 32.01.06, oder ΝΑΟΙΚ für einen neuen Artikel"
+    },
+    "net_article_valid": {
+      "invalid": "Der Artikel '{code}' in Position {ordinal} hat nicht die Form eines ΝΕΤ-Artikels",
+      "chapter": "Der Artikel '{code}' in Position {ordinal} beginnt mit Kapitel {chapter}, das die Preisliste für Hochbauarbeiten nicht kennt",
+      "suggestion": "Präfix der Preisliste und Artikelnummer angeben, etwa ΟΙΚ 38.20.02, ΟΔΟ Α-2 oder ΑΤΗΕ 8151.1"
+    }
+  },
+  "ukraine": {
+    "zkr_chapter_required": {
+      "fail": "Position {ordinal} nennt kein Kapitel der zusammenfassenden Kostenberechnung",
+      "suggestion": "Die Position ihrem Kapitel des зведений кошторисний розрахунок zuordnen, 1 bis 12; Bauarbeiten am Hauptobjekt gehören in Kapitel 2"
+    },
+    "zkr_chapter_recognised": {
+      "fail": "Kapitel {chapter} in Position {ordinal} ist keines der zwölf Kapitel der zusammenfassenden Kostenberechnung",
+      "suggestion": "Eine Kapitelnummer von 1 bis 12 verwenden"
+    }
+  },
+  "birimfiyat": {
+    "code_required": {
+      "fail": "Position {ordinal} hat keine birim-fiyat-Positionsnummer",
+      "suggestion": "Bayındırlık-Positionsnummer zuweisen (z.B. 04.013/1)"
+    },
+    "valid_poz": {
+      "fail": "Poz '{code}' entspricht nicht dem Format XX.XXX/X",
+      "suggestion": "Format verwenden: NN.NNN oder NN.NNN/N (z.B. 04.013/1)"
+    }
+  },
+  "sekisan": {
+    "code_required": {
+      "fail": "Position {ordinal} hat keinen 積算-Code",
+      "suggestion": "Einen 積算基準-Positionscode zuweisen"
+    },
+    "metric_units": {
+      "fail": "Einheit '{unit}' in Position {ordinal} ist nicht standardkonform",
+      "suggestion": "Standard-Metrikeinheiten verwenden: m, m2, m3, kg, t, 式 usw."
+    }
+  },
+  "bc3": {
+    "code_required": {
+      "fail": "Position {ordinal} ohne FIEBDC-3-Konzeptcode",
+      "suggestion": "FIEBDC-3-Code vergeben (z. B. E04CM040 oder 01.02.01)"
+    },
+    "valid_code": {
+      "fail": "Ungültiger FIEBDC-3-Code '{code}' in Position {ordinal}",
+      "suggestion": "FIEBDC-3-Format verwenden: alphanumerisch (z. B. E04CM040, 01.02.01, CAP01#)"
+    }
+  },
+  "mexico": {
+    "apu_completeness": {
+      "fail": "Position {ordinal} hat eine unvollständige APU; fehlende Kostenbestandteile: {missing}",
+      "suggestion": "Ergänzen Sie die fehlenden Bestandteile der direkten Kosten (mano de obra, materiales, maquinaria) in der Einheitspreisanalyse"
+    },
+    "iva_rate_valid": {
+      "fail": "Position {ordinal} hat einen ungültigen IVA-Satz {rate}; der mexikanische IVA beträgt 16, 8 (Grenzregion) oder 0 Prozent",
+      "suggestion": "Setzen Sie den IVA-Satz auf 16 Prozent (Standard), 8 Prozent (Grenzregion) oder 0 Prozent"
+    },
+    "subcontract_retencion": {
+      "fail": "Die Subunternehmer-Position {ordinal} gibt nicht an, ob IVA/ISR-Einbehalte (retenciones) gelten",
+      "suggestion": "Erfassen Sie die IVA- und ISR-Einbehalte für die Subunternehmer-Zeile oder vermerken Sie, dass keine gelten"
+    },
+    "cfdi_rfc_present": {
+      "missing": "Die CFDI-Ausstellerdaten sind für den Angebotsexport unvollständig; fehlend: {missing}",
+      "invalid_rfc": "RFC '{rfc}' ist kein gültiger CFDI-RFC (12 Zeichen für ein Unternehmen, 13 für eine Einzelperson)",
+      "suggestion": "Hinterlegen Sie RFC, regimen fiscal und uso CFDI des Ausstellers im Projektprofil für die CFDI-4.0-Rechnungsstellung"
+    }
+  },
+  "pipeline": {
+    "side_effecting_requires_gate": {
+      "fail": "Schreibende Knoten ohne Gate: {nodes}",
+      "suggestion": "Füge auf jedem Pfad von einem Trigger-/KI-Knoten zu jedem Schreibknoten ein Validierungs- oder Freigabe-Gate hinzu, bevor du veröffentlichst."
+    }
+  },
+  "property_dev": {
+    "escrow_account_required": {
+      "fail": "Bauträgerprojekt benötigt ein aktives Treuhandkonto für Regulator '{regulator}'",
+      "suggestion": "Eröffne ein Treuhandkonto bei der regulator-lizenzierten Bank unter Compliance → Treuhandkonten"
+    },
+    "escrow_iban_valid": {
+      "fail": "Treuhandkonto {account}: IBAN '{iban}' besteht ISO 13616-Strukturprüfung nicht",
+      "suggestion": "IBAN korrigieren: Ländercode + Länge + Prüfsumme müssen ISO 13616 entsprechen"
+    },
+    "escrow_balance_reconciled": {
+      "fail": "Treuhandkonto {account}: Buchsaldo {ledger} weicht um {drift} von der Transaktionssumme ({transactions} Buchungen) ab",
+      "suggestion": "Treuhandkonto abstimmen - unverbuchte Eingänge oder fehlende Lastschriften prüfen"
+    },
+    "sales_contract_party_ownership_sums_to_100": {
+      "fail": "Vertrag {contract}: Eigentumsanteile summieren sich auf {total}% (Soll: exakt 100%)",
+      "suggestion": "Parteienanteile so anpassen, dass die Summe 100,00% ergibt"
+    },
+    "payment_schedule_instalments_sum_to_contract_value": {
+      "fail": "Vertrag {contract}: Ratensumme {instalments} weicht vom Vertragswert {contract_value} ab (Differenz {drift})",
+      "suggestion": "Zahlungsplan neu ausgleichen, damit Ratensumme dem Vertragstotal entspricht"
+    },
+    "reservation_expiry_in_future": {
+      "fail": "Reservierung {reservation}: expires_at {expires} liegt nicht in der Zukunft",
+      "suggestion": "Reservierung verlängern oder in expired/cancelled überführen"
+    },
+    "broker_commission_rate_within_bounds": {
+      "fail": "Provisionsvereinbarung {agreement}: {issue}",
+      "suggestion": "Prozentsatz zwischen 0,1% und 15%, Pauschalbetrag oder nicht-leere Staffelliste verwenden"
+    },
+    "price_matrix_no_negative_modifier": {
+      "fail": "Preismatrix {matrix}: Regel '{factor}' Multiplikator {multiplier} außerhalb [-0,50; 2,00]",
+      "suggestion": "Modifikatoren auf -50% bis +200% begrenzen, um unrealistische Preise zu vermeiden"
+    }
+  },
+  "schedule_quality": {
+    "open_ends": {
+      "fail": "Vorgang '{activity}' hat keine {ends}-Verknüpfung (offenes Ende / hängender Vorgang)",
+      "both": "Vorgänger- oder Nachfolger",
+      "predecessor": "Vorgänger",
+      "successor": "Nachfolger",
+      "suggestion": "Den Vorgang mit Vorgänger und Nachfolger ins Netz einbinden oder als Start-/Endmeilenstein kennzeichnen"
+    },
+    "negative_lag": {
+      "fail": "Beziehung {predecessor} -> {successor} nutzt negative Pufferzeit ({lag} Tage), also einen Vorlauf, der den kritischen Pfad verzerrt",
+      "suggestion": "Den Vorlauf durch einen eigenen Vorgang oder eine SS/FF-Beziehung ersetzen, damit die Abfolge nachvollziehbar bleibt"
+    },
+    "excessive_lag": {
+      "fail": "Beziehung {predecessor} -> {successor} hat eine Pufferzeit von {lag} Tagen, über dem Schwellwert von {threshold} Tagen",
+      "suggestion": "Die Wartezeit als eigenen Vorgang abbilden (Beschaffung, Aushärtung, Freigabe), damit sie einen Status tragen kann"
+    },
+    "hard_constraints": {
+      "fail": "Vorgang '{activity}' hat eine feste Terminvorgabe ({constraint}), die die Netzplanlogik überschreibt",
+      "suggestion": "Eine weiche Vorgabe (Anfang-nicht-früher-als) nutzen oder den Termin über Logik steuern, damit der Vorgang bei Verzug mitwandert"
+    },
+    "negative_float": {
+      "fail": "Vorgang '{activity}' hat negativen Gesamtpuffer ({float} Tage), der Terminplan ist so nicht haltbar",
+      "suggestion": "Ablauf neu ordnen, eine feste Vorgabe lösen oder einen dokumentierten Aufholplan ergänzen, bis der Puffer wieder bei null oder darüber liegt"
+    },
+    "high_float": {
+      "fail": "Vorgang '{activity}' hat sehr hohen Gesamtpuffer ({float} Tage), über dem Schwellwert von {threshold} Tagen",
+      "suggestion": "Auf einen fehlenden Nachfolger prüfen - hoher Puffer bedeutet meist, dass der Vorgang nur lose mit dem Netz verbunden ist"
+    },
+    "missing_duration": {
+      "fail": "Vorgang '{activity}' hat eine ungültige Dauer ({duration} Tage) für einen Nicht-Meilenstein",
+      "suggestion": "Eine positive Arbeitstage-Dauer setzen oder die Zeile als Meilenstein kennzeichnen, falls es wirklich ein Ereignis ohne Dauer ist"
+    },
+    "duration_on_project_week": {
+      "fail": "Vorgang '{activity}' ist mit {stored} Arbeitstagen gespeichert, der Zählung von Montag bis Freitag für {start} bis {end}; in der Arbeitswoche des Projekts, {calendar}, umfassen diese Termine {expected}",
+      "suggestion": "Die Termine des Vorgangs erneut speichern, damit die Dauer in der Arbeitswoche des Projekts neu gezählt wird, oder die Dauer bewusst eingeben"
+    }
+  },
+  "sheet_completeness": {
+    "missing": {
+      "fail": "Blatt {sheet} ist im Planverzeichnis aufgeführt, fehlt aber im hochgeladenen Satz",
+      "suggestion": "Laden Sie das fehlende Blatt hoch oder bestätigen Sie, dass es aus der Ausgabe zurückgezogen wurde"
+    },
+    "extra": {
+      "fail": "Blatt {sheet} ist im hochgeladenen Satz vorhanden, aber nicht im Planverzeichnis aufgeführt",
+      "suggestion": "Nehmen Sie es in das Verzeichnis bzw. das Ausgaberegister auf oder entfernen Sie das überzählige Blatt"
+    },
+    "revision_mismatch": {
+      "fail": "Blatt {sheet} hat Revision {actual_rev}, das Verzeichnis erwartet jedoch {expected_rev}",
+      "suggestion": "Geben Sie die erwartete Revision aus oder aktualisieren Sie das Verzeichnis auf die aktuelle Revision"
+    }
+  },
+  "procurement": {
+    "po_has_lines": {
+      "fail": "Diese Bestellung hat keine Positionen, der zugesagte Betrag ist damit nicht belegt",
+      "suggestion": "Erfassen Sie die bestellten Positionen, bevor Sie die Bestellung freigeben"
+    },
+    "po_line_amount": {
+      "fail": "Position {line} weist {actual} aus, Menge mal Einheitspreis ergibt {expected}",
+      "suggestion": "Korrigieren Sie Menge, Einheitspreis oder Positionsbetrag, damit die drei zusammenpassen"
+    },
+    "po_subtotal_matches_lines": {
+      "fail": "Die Zwischensumme lautet {actual}, die Positionen ergeben {expected}",
+      "suggestion": "Berechnen Sie die Zwischensumme aus den aktuellen Positionen neu"
+    },
+    "po_total_matches_subtotal": {
+      "fail": "Der Gesamtbetrag lautet {actual}, Zwischensumme plus Steuer ergibt {expected}",
+      "suggestion": "Berechnen Sie den Gesamtbetrag als Zwischensumme plus Steuer neu"
+    },
+    "po_no_negative_line": {
+      "fail": "Position {line} hat eine nicht positive Menge oder einen negativen Einheitspreis",
+      "suggestion": "Buchen Sie eine Gutschrift statt einer negativen Position"
+    },
+    "po_currency_set": {
+      "fail": "Diese Bestellung hat keine Währung, der Betrag lässt sich weder aufsummieren noch zahlen",
+      "suggestion": "Setzen Sie die Währung, in der Regel die des Projekts"
+    },
+    "po_vendor_assigned": {
+      "fail": "Diese Bestellung nennt keinen Lieferanten",
+      "suggestion": "Wählen Sie den Lieferanten, bevor Sie die Verpflichtung freigeben"
+    },
+    "po_retention_within_bounds": {
+      "fail": "Ein Einbehalt von {percent}% liegt außerhalb des plausiblen Bereichs von 0 bis {max}%",
+      "suggestion": "Geben Sie den Einbehalt als Prozentsatz an, zum Beispiel 5 für fünf Prozent"
+    },
+    "po_delivery_after_issue": {
+      "fail": "Die Lieferung ist auf {delivery} gesetzt, vor dem Bestelldatum {issue}",
+      "suggestion": "Setzen Sie das Lieferdatum auf das Bestelldatum oder später"
+    },
+    "po_line_cost_coded": {
+      "fail": "Position {line} hat weder WBS noch Kostenart noch Kostenzeile und erscheint damit nicht in der Kostenaufstellung",
+      "suggestion": "Vergeben Sie einen Kostencode, damit die Verpflichtung einem Budget zugeordnet wird"
+    },
+    "invoice_within_order": {
+      "fail": "Rechnung {invoice} übersteigt den offenen Betrag von {remaining} auf Bestellung {po} um {excess}",
+      "suggestion": "Rechnung mit der Bestellung abgleichen; wurde die Mehrleistung vereinbart, zuerst die Bestellung ändern und dann freigeben"
+    },
+    "invoice_quantity_received": {
+      "fail": "Position {line} würde insgesamt mit {invoiced} berechnet, eingegangen sind aber nur {received}",
+      "suggestion": "Lieferschein abwarten oder den Wareneingang bestätigen, bevor diese Menge freigegeben wird"
+    },
+    "invoice_value_received": {
+      "fail": "Auf Bestellung {po} ergäben die Rechnungen insgesamt {invoiced}, der Wareneingang ist zu Bestellpreisen aber nur {received} wert",
+      "suggestion": "Lieferschein abwarten oder den Wareneingang bestätigen, bevor dieser Betrag freigegeben wird"
+    }
+  },
+  "subcontract": {
+    "agreement_has_scope": {
+      "fail": "Dieser Vertrag hat keine Arbeitspakete, daher gibt es nichts, wogegen eine Zahlungsanforderung geltend gemacht werden kann",
+      "suggestion": "Gliedern Sie den beauftragten Leistungsumfang in Arbeitspakete, bevor Sie den Vertrag aktivieren"
+    },
+    "package_scope_described": {
+      "fail": "Arbeitspaket {package} hat einen Namen, aber keine Beschreibung der enthaltenen Leistung",
+      "suggestion": "Halten Sie fest, was das Paket umfasst, damit ein späterer Nachtragsstreit eine Grundlage hat"
+    },
+    "agreement_value_positive": {
+      "fail": "Die Auftragssumme beträgt {value}, damit haben Sicherheitseinbehalt und Zahlungsplan keine Grundlage",
+      "suggestion": "Tragen Sie die vereinbarte Auftragssumme ein, bevor Sie den Vertrag aktivieren"
+    },
+    "packages_within_value": {
+      "fail": "Die Arbeitspakete belaufen sich auf {planned}, der Vertrag jedoch auf {total}",
+      "suggestion": "Bewerten Sie die Pakete neu oder erhöhen Sie die Auftragssumme, damit der Vertrag seinen Umfang deckt"
+    },
+    "agreement_dates_ordered": {
+      "fail": "Der Vertrag endet am {end}, also vor seinem Beginn am {start}",
+      "suggestion": "Korrigieren Sie Beginn oder Ende, damit die Vertragslaufzeit vorwärts läuft"
+    },
+    "agreement_currency_set": {
+      "fail": "Dieser Vertrag hat keine Währung, daher können Zahlungen weder zusammengeführt noch angewiesen werden",
+      "suggestion": "Setzen Sie die Währung, üblicherweise die des Projekts"
+    },
+    "retention_within_bounds": {
+      "fail": "Ein Sicherheitseinbehalt von {percent}% liegt außerhalb des plausiblen Bereichs von 0 bis {max}%",
+      "suggestion": "Tragen Sie den Einbehalt als Prozentsatz je Zahlung ein, nicht als Betrag"
+    },
+    "insurance_valid_at_start": {
+      "fail": "Die Versicherung des Nachunternehmers lief am {expiry} ab, also vor Arbeitsbeginn am {reference}",
+      "suggestion": "Holen Sie einen aktuellen Nachweis ein, bevor der Nachunternehmer die Baustelle betritt"
+    },
+    "unlinked_contract_twin": {
+      "fail": "Der Nachunternehmervertrag {agreement} und der Vertrag {contract} scheinen derselbe Nachunternehmerauftrag zu sein, daher könnten die Finanzen ihn doppelt zählen",
+      "suggestion": "Verknüpfen Sie beide, wenn es derselbe Auftrag ist, oder markieren Sie sie als verschieden"
+    }
+  },
+  "submittal": {
+    "reviewer_assigned": {
+      "fail": "Dieser Vorlage ist kein Prüfer zugeordnet, sie liegt damit bei niemandem",
+      "suggestion": "Weisen Sie vor dem Einreichen den Prüfer zu, der antworten soll"
+    },
+    "required_date_present": {
+      "fail": "Diese Vorlage hat keinen Bedarfstermin und kann deshalb nie als überfällig gemeldet werden",
+      "suggestion": "Setzen Sie den Termin, zu dem die Prüfung vorliegen muss, abgeleitet aus der abhängigen Leistung"
+    },
+    "required_date_after_submitted": {
+      "fail": "Die Prüfung ist am {required} fällig, also vor der Einreichung am {submitted}",
+      "suggestion": "Verschieben Sie den Bedarfstermin auf einen Arbeitstag nach der Einreichung"
+    },
+    "review_window_sufficient": {
+      "fail": "Der Prüfer hat {days} Tage, weniger als die üblichen {minimum} Tage",
+      "suggestion": "Gewähren Sie die übliche Prüffrist oder stimmen Sie die kürzere vorher ab"
+    },
+    "spec_section_present": {
+      "fail": "Diese Vorlage nennt keinen Abschnitt der Leistungsbeschreibung, das Register kann sie nicht einordnen",
+      "suggestion": "Tragen Sie den Abschnitt der Leistungsbeschreibung ein, den diese Vorlage beantwortet"
+    },
+    "approver_distinct_from_reviewer": {
+      "fail": "Dieselbe Person ({person}) prüft und genehmigt, damit fehlt das Vier-Augen-Prinzip",
+      "suggestion": "Weisen Sie einen anderen Genehmiger als den Prüfer zu"
+    },
+    "linked_scope_present": {
+      "fail": "Diese Vorlage ist mit keiner Leistungsposition verknüpft und läuft daher in keinem Paket auf",
+      "suggestion": "Verknüpfen Sie die LV-Positionen, die diese Vorlage betrifft"
+    }
+  },
+  "rfq": {
+    "scope_described": {
+      "fail": "Diese Anfrage hat weder Leistungsbeschreibung noch Erläuterung, ein Bieter kann nichts kalkulieren",
+      "suggestion": "Beschreiben Sie den Leistungsumfang vor dem Versand, damit die Angebote vergleichbar sind"
+    },
+    "deadline_present": {
+      "fail": "Diese Anfrage nennt keine Abgabefrist, das Verfahren wird damit nie geschlossen",
+      "suggestion": "Setzen Sie den Termin, zu dem Angebote vorliegen müssen"
+    },
+    "deadline_parseable": {
+      "fail": "Die Abgabefrist {value} ist kein lesbares Datum, jedes Angebot wird abgewiesen",
+      "suggestion": "Tragen Sie die Frist als Datum ein, zum Beispiel 2026-08-31"
+    },
+    "deadline_in_future": {
+      "fail": "Die Abgabefrist {deadline} ist am {today} bereits abgelaufen, die Anfrage kommt geschlossen an",
+      "suggestion": "Verlegen Sie die Frist vor dem Versand in die Zukunft"
+    },
+    "has_recipients": {
+      "fail": "Diese Anfrage ist an keinen Bieter adressiert, der Versand erreicht niemanden",
+      "suggestion": "Ergänzen Sie die Bieter, an die diese Anfrage geht"
+    },
+    "currency_set": {
+      "fail": "Diese Anfrage nennt keine Währung, die Angebote lassen sich nicht gegeneinander bewerten",
+      "suggestion": "Setzen Sie die Währung, in der kalkuliert werden soll"
+    },
+    "bid_currency_matches": {
+      "fail": "Angebot {bid} ist in {bid_currency} kalkuliert, die Anfrage läuft in {rfq_currency}",
+      "suggestion": "Lassen Sie den Bieter in der Anfragewährung nachreichen oder halten Sie den Umrechnungskurs fest"
+    },
+    "bid_amounts_parseable": {
+      "fail": "Angebot {bid} hat den Betrag {value}, das ist keine bewertbare Zahl",
+      "suggestion": "Korrigieren Sie die Angebotssumme vor der Vergabe"
+    },
+    "bids_still_valid": {
+      "fail": "Angebot {bid} ist am {expired} abgelaufen, heute ist {today}, der Preis bindet nicht mehr",
+      "suggestion": "Lassen Sie sich den Preis vor der Vergabe bestätigen"
+    },
+    "award_has_competition": {
+      "fail": "Diese Vergabe stützt sich auf {count} Angebote, weniger als die {minimum} eines Wettbewerbs",
+      "suggestion": "Begründen Sie die freihändige Vergabe schriftlich oder fordern Sie weitere Angebote an"
+    }
+  },
+  "errors": {
+    "resource_not_found": "Ressource nicht gefunden",
+    "project_not_found": "Projekt nicht gefunden",
+    "vendor_not_found": "Lieferant nicht gefunden",
+    "template_not_found": "Vorlage nicht gefunden",
+    "position_not_found": "Position nicht gefunden",
+    "boq_not_found": "Leistungsverzeichnis nicht gefunden",
+    "session_not_found": "Sitzung nicht gefunden",
+    "document_not_found": "Dokument nicht gefunden",
+    "invitation_not_found": "Einladung nicht gefunden",
+    "agreement_not_found": "Vereinbarung nicht gefunden",
+    "rejection_not_found": "Ablehnung nicht gefunden",
+    "claim_not_found": "Abschlagsrechnung nicht gefunden",
+    "plot_not_found": "Grundstück nicht gefunden",
+    "survey_not_found": "Drohnenvermessung nicht gefunden",
+    "diary_video_not_found": "Bautagebuch-Video nicht gefunden",
+    "diary_photo_not_found": "Bautagebuch-Foto nicht gefunden",
+    "bidder_not_found": "Bieter nicht gefunden",
+    "webhook_not_found": "Webhook nicht gefunden",
+    "submission_not_found": "Angebot nicht gefunden",
+    "measurement_not_found": "Aufmaß nicht gefunden",
+    "salescontract_not_found": "Kaufvertrag nicht gefunden",
+    "prompt_not_found": "Prompt-Vorlage nicht gefunden",
+    "prequalification_not_found": "Präqualifikation nicht gefunden",
+    "purchase_requisition_not_found": "Bestellanforderung nicht gefunden",
+    "purchase_order_not_found": "Bestellung nicht gefunden",
+    "group_not_found": "Gruppe nicht gefunden",
+    "final_account_not_found": "Schlussrechnung nicht gefunden",
+    "estimate_job_not_found": "Kalkulationsauftrag nicht gefunden",
+    "escrow_not_found": "Treuhand-Transaktion nicht gefunden",
+    "commission_accrual_not_found": "Provisions-Abgrenzung nicht gefunden",
+    "baseline_not_found": "Baseline nicht gefunden",
+    "fx_rate_set_locked": "Die EZB-Kurse vom {date} sind gesperrt, deshalb hat diese Aktualisierung sie nicht überschrieben. Entsperren Sie den Kurssatz zuerst, wenn er die neue Veröffentlichung übernehmen soll.",
+    "boq_locked": "Das Leistungsverzeichnis ist gesperrt und kann nicht geändert werden. Legen Sie eine Revision an, um Änderungen vorzunehmen.",
+    "boq_link_owner_locked": "Der Code '{code}' ist durch eine Position im gesperrten Leistungsverzeichnis '{bill}' definiert, und eine Verknüpfung würde dieses Leistungsverzeichnis ändern. Entsperren Sie es zuerst oder erfassen Sie die Position unter einem neuen Code."
+  },
+  "variations": {
+    "boq_lines_are_traced": {
+      "fail": "Position {line} im Nachtrags-LV hat keine Herkunft - weder eine Vertragsposition noch eine Kalkulationsposition",
+      "suggestion": "Benennen Sie die betroffene Vertragsposition oder die Kalkulationsposition, aus der der Leistungsumfang stammt"
+    },
+    "boq_total_matches_estimate": {
+      "fail": "Die Schätzung auf diesem Antrag lautet {estimate}, das kalkulierte LV ergibt jedoch {priced}",
+      "suggestion": "Übernehmen Sie die kalkulierte Summe auf den Antrag oder korrigieren Sie das LV, damit eine Zahl gilt"
+    },
+    "change_kind_matches_numbers": {
+      "removed_positive": "Position {line} ist als entfallender Leistungsumfang gekennzeichnet, trägt aber eine positive Menge von {quantity} - ein Entfall geht als negative Menge vom Vertrag ab",
+      "added_negative": "Position {line} ist als zusätzlicher Leistungsumfang gekennzeichnet, trägt aber eine negative Menge von {quantity} - Umfang, der vom Vertrag abgeht, ist entfallend, nicht zusätzlich",
+      "removed_needs_contract_line": "Position {line} ist als entfallender Leistungsumfang gekennzeichnet, verweist aber auf keine Vertragsposition, von der etwas entfallen könnte",
+      "modified_needs_contract_line": "Position {line} ist als geänderter Leistungsumfang gekennzeichnet, verweist aber auf keine Vertragsposition, die geändert würde",
+      "suggestion": "Korrigieren Sie die Änderungsart oder die Menge in der Herkunft der Position, oder benennen Sie die betroffene Vertragsposition"
+    }
+  },
+  "cases": {
+    "has_steps": {
+      "fail": "Dieser Fall hat noch keine Schritte, sodass ein Leser nichts zum Nachvollziehen hat.",
+      "suggestion": "Fügen Sie mindestens einen Schritt hinzu, der den zu öffnenden Bildschirm und die auszuführende Aktion benennt."
+    },
+    "step_titled": {
+      "fail": "{count} Schritte haben keinen Titel oder keinen zu öffnenden Bildschirm.",
+      "suggestion": "Geben Sie jedem Schritt einen kurzen Titel und legen Sie den Bildschirm fest, den er öffnet."
+    },
+    "step_purpose": {
+      "fail": "{count} von {total} Schritten wird nicht erklärt, warum sie wichtig sind, sodass der Fall wie eine Klickliste statt wie eine Erklärung wirkt.",
+      "suggestion": "Fügen Sie zu jedem Schritt eine Zeile hinzu, wozu er dient - genau das braucht jemand, der neu einsteigt."
+    },
+    "distinct_screens": {
+      "fail": "{count} Schritte öffnen denselben Bildschirm wie der jeweils vorherige Schritt, sodass der Leser keine Veränderung sieht und die Schritte nicht unterscheiden kann.",
+      "suggestion": "Fassen Sie sie zu einem Schritt zusammen, oder verweisen Sie den zweiten auf den Bildschirm, zu dem die Arbeit tatsächlich wechselt."
+    },
+    "duration_plausible": {
+      "fail": "Dieser Fall gibt {minutes} Minuten für {steps} Schritte an. Ein Leser, der nicht mitkommt, verliert das Vertrauen in die restliche Schätzung.",
+      "suggestion": "Erhöhen Sie die Schätzung auf mindestens {minimum} Minuten oder streichen Sie einige Schritte."
+    },
+    "described": {
+      "fail": "Dieser Fall hat keine Zusammenfassung, sodass die Liste nur einen Titel und sonst nichts zeigt.",
+      "suggestion": "Fügen Sie einen Satz hinzu, was der Leser am Ende erledigt haben wird."
+    }
+  },
+  "uk": {
+    "contract_form_declared": {
+      "fail": "Die Kalkulation nennt die Vertragsform nicht, auf die sie kalkuliert ist",
+      "suggestion": "Hinterlegen Sie die Vertragsform. Baustellengemeinkosten, Risiko und Zahlungsbedingungen werden je nach Vertragsform unterschiedlich kalkuliert; ohne diese Angabe sagt die Zahl wenig aus"
+    },
+    "payment_regime_declared": {
+      "fail": "Der Zahlungsmechanismus ist unvollständig: {missing} nicht hinterlegt",
+      "suggestion": "Hinterlegen Sie beide Termine. Ein Bauvertrag, der keinen von beiden festlegt, ist davon nicht befreit; das gesetzliche Zahlungsregime liefert beide, und die Parteien finden ihre Zahlungsbedingungen dann in einer Rechtsverordnung statt in ihrem Vertrag"
+    },
+    "retention_declared": {
+      "fail": "Die Kalkulation nennt keinen Sicherheitseinbehalt",
+      "suggestion": "Hinterlegen Sie Höhe und Freigabe des Einbehalts, oder halten Sie fest, dass keiner gilt. Ein Einbehalt ist verdientes Geld, über das der Unternehmer nicht verfügen kann; eine Kalkulation, die dazu schweigt, schweigt zum Betriebskapital"
+    },
+    "cdm_duty_holders_declared": {
+      "fail": "Die Verantwortlichen nach CDM 2015 sind nicht hinterlegt: {missing} fehlt",
+      "suggestion": "Hinterlegen Sie die Bestellungen. Arbeitet mehr als ein Unternehmer am Projekt, muss der Bauherr einen Principal Designer und einen Principal Contractor schriftlich bestellen; unterbleibt das, trägt der Bauherr diese Pflichten selbst"
+    },
+    "hrb_regime_declared": {
+      "fail": "Die Einstufung als Gebäude mit erhöhtem Risiko ist offen: {reason}",
+      "unanswered": "die Kalkulation sagt nicht, ob es sich um ein Gebäude mit erhöhtem Risiko handelt",
+      "disagrees": "die Kalkulation gibt {declared} an, die eigenen Abmessungen ergeben {derived}",
+      "suggestion": "Ein Gebäude gilt als Gebäude mit erhöhtem Risiko, wenn es mindestens 18 m hoch ist oder mindestens 7 Geschosse hat UND mindestens zwei Wohneinheiten enthält. Beide Hälften zählen: ein hohes Gebäude ohne Wohnungen fällt nicht darunter, und es dennoch so zu behandeln erkauft ein Genehmigungsverfahren, das niemand brauchte"
+    },
+    "vat_treatment_declared": {
+      "fail": "Die Kalkulation sagt nicht, wie die Umsatzsteuer behandelt wird",
+      "suggestion": "Hinterlegen Sie die Behandlung: Regelsatz, ermäßigter oder Nullsatz, soweit die Leistung dafür qualifiziert, oder das Reverse-Charge-Verfahren, soweit die Leistung darunter fällt. Das Reverse-Charge-Verfahren verlagert die Steuer auf den Leistungsempfänger und ändert, was der Unternehmer abrechnen darf"
+    }
+  },
+  "project_completeness": {
+    "country_set": {
+      "fail": "Das Projekt nennt kein Land, daher lassen sich weder Preisbasis noch Steuersatz noch Arbeitskalender bestimmen",
+      "suggestion": "Legen Sie das Land des Projekts in den Einstellungen fest. Es entscheidet, gegen welches Regionalpaket, welche Steuer und welchen Kalender jede Zahl gelesen wird"
+    },
+    "currency_set": {
+      "fail": "Das Projekt nennt keine Währung, daher lassen sich Leistungsverzeichnisse, Zuschläge und Verträge nicht summieren",
+      "suggestion": "Wählen Sie die Projektwährung in den Einstellungen. Jedes Leistungsverzeichnis und jeder Vertrag wird in ihr bepreist und jede Summe in ihr gelesen"
+    },
+    "currency_matches_bill": {
+      "fail": "Das Projekt ist in {project_currency} bepreist, Positionen dieses Leistungsverzeichnisses aber in {bill_currencies}",
+      "suggestion": "Rechnen Sie die Positionen zu einem angegebenen Kurs in die Projektwährung um oder hinterlegen Sie den Wechselkurs am Projekt, damit die Summe des Leistungsverzeichnisses eine Zahl ist"
+    },
+    "priced_bill_present": {
+      "fail": "Das Projekt hat kein Leistungsverzeichnis mit Positionen, es gibt also nichts zu kalkulieren",
+      "suggestion": "Legen Sie ein Leistungsverzeichnis an und erfassen Sie Positionen, oder importieren Sie eines aus einem CAD-Modell, einer Tabelle oder einer Austauschdatei"
+    },
+    "bill_base_date_set": {
+      "fail": "Das Leistungsverzeichnis \"{bill}\" nennt kein Preisbasisdatum für seine Ansätze",
+      "suggestion": "Hinterlegen Sie das Preisbasisdatum am Leistungsverzeichnis. Ohne dieses lassen sich die Ansätze weder indexieren noch zu ihrem eigenen Datum versteuern noch mit einer anderen Kalkulation vergleichen"
+    },
+    "classification_standard_set": {
+      "fail": "Das Projekt hat keinen Klassifikationsstandard, seine Positionen tragen also Codes, die niemand prüfen kann",
+      "suggestion": "Wählen Sie den Klassifikationsstandard, nach dem das Projekt codiert ist. Er entscheidet auch, welche Länderregelsätze die Validierung ausführt"
+    },
+    "planned_dates_set": {
+      "both_missing": "Das Projekt hat weder einen geplanten Beginn noch ein geplantes Ende",
+      "start_missing": "Das Projekt hat ein geplantes Ende, aber keinen geplanten Beginn",
+      "end_missing": "Das Projekt hat einen geplanten Beginn, aber kein geplantes Ende",
+      "unreadable": "Das geplante Datum \"{value}\" lässt sich nicht als Datum lesen",
+      "suggestion": "Tragen Sie geplanten Beginn und geplantes Ende am Projekt als Datum ein. Zeitabhängige Kosten, Preissteigerung und Terminplan werden zwischen ihnen bepreist"
+    },
+    "planned_dates_ordered": {
+      "fail": "Das Projekt soll am {start} beginnen und am {end} enden, also vor seinem Beginn",
+      "suggestion": "Vertauschen oder korrigieren Sie die geplanten Daten, damit der Beginn vor dem Ende liegt"
+    },
+    "client_recorded": {
+      "fail": "Das Projekt nennt keinen Auftraggeber, und kein Vertrag führt einen Auftraggeber als Partei",
+      "suggestion": "Hinterlegen Sie den Auftraggeber am Projekt oder nehmen Sie ihn als Vertragspartei auf, damit die Kalkulation einen Adressaten hat"
+    },
+    "procurement_started": {
+      "fail": "Das Projekt befindet sich in der Phase {phase}, hat aber weder einen Vertrag noch ein Vergabepaket",
+      "suggestion": "Erstellen Sie ein Vergabepaket aus dem Leistungsverzeichnis oder erfassen Sie den Vertrag, oder setzen Sie die Phase auf den Kalkulationsstand zurück, in dem sich das Projekt tatsächlich befindet"
+    }
+  },
+  "boq_resources": {
+    "unit_rate_not_rederived": {
+      "fail": "Position {ordinal}: die Ressourcenzeilen können die Position nicht bepreisen, daher wurde der Einheitspreis nicht aus ihnen neu abgeleitet",
+      "fallback_allowance": "Position {ordinal}: die Ressourcenzeilen sind eine geschätzte Pauschalaufteilung mit der Positionsmenge, daher wurde der Einheitspreis nicht aus ihnen neu abgeleitet",
+      "assumed_norm": "Position {ordinal}: die Ressourcenzeilen tragen Ansätze, die der Katalog nie angegeben hat, daher wurde der Einheitspreis nicht aus ihnen neu abgeleitet",
+      "norm_collapsed": "Position {ordinal}: die Ressourcenzeilen haben ihren Katalogansatz verloren und tragen stattdessen die Positionsmenge, daher wurde der Einheitspreis nicht aus ihnen neu abgeleitet",
+      "whole_position_quantities": "Position {ordinal}: die Ressourcenzeilen tragen Gesamtmengen der Position statt Ansätzen je Einheit, daher wurde der Einheitspreis nicht aus ihnen neu abgeleitet",
+      "suggestion": "Aufbau prüfen - die Position über die Ressourcenansatz-Prüfung aus ihrer Katalogposition neu ableiten oder die Zeilen von Hand korrigieren"
+    }
+  }
+}

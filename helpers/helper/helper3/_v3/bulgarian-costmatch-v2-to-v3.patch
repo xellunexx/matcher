@@ -1,0 +1,2417 @@
+diff --git a/app/modules/cost_match/bulgarian.py b/app/modules/cost_match/bulgarian.py
+--- a/app/modules/cost_match/bulgarian.py
++++ b/app/modules/cost_match/bulgarian.py
+@@ -7,8 +7,7 @@
+ from decimal import Decimal
+ from functools import lru_cache
+ 
+-from app.modules.cost_match.work_catalog import concept_patterns, extra_object_patterns, notation
+-
++from app.modules.cost_match.work_catalog import catalog, concept_patterns, extra_object_patterns, notation
+ 
+ _BG = re.compile(r"[А-Яа-я]")
+ _HEADER = re.compile(
+@@ -19,9 +18,7 @@
+ _TAIL = re.compile(r"\b(?:вкл\.?|включително|включва\w*|съгласно)\b", re.I)
+ _EXCLUDE = re.compile(r"\b(?:без|не\s+включва\w*)\b([^.;]*)", re.I)
+ _BOILERPLATE = frozenset(
+-    "вкл включително включва съгласно всички свързани свързаните с със това разходи "
+-    "разходите изисквания изискванията на за и от тс техническата спецификация "
+-    "техническите спецификации крайна цена крайната цената".split()
++    ["вкл", "включително", "включва", "съгласно", "всички", "свързани", "свързаните", "с", "със", "това", "разходи", "разходите", "изисквания", "изискванията", "на", "за", "и", "от", "тс", "техническата", "спецификация", "техническите", "спецификации", "крайна", "цена", "крайната", "цената"]
+ )
+ _OP_RES = tuple((value, re.compile(pattern, re.I)) for value, pattern in concept_patterns('operations'))
+ 
+@@ -64,7 +61,11 @@
+ @lru_cache(maxsize=32768)
+ def parse_work(text: str) -> WorkIdentity:
+     from app.modules.cost_match.matcher import (
+-        _GENERIC_TERMS, _PROCESS_CONCEPTS, canonical_tokens, extract_specs, fold_accents,
++        _GENERIC_TERMS,
++        _PROCESS_CONCEPTS,
++        canonical_tokens,
++        extract_specs,
++        fold_accents,
+     )
+ 
+     norm = fold_accents(text.replace('∅', 'ф').replace('Ø', 'ф').replace('ø', 'ф')).lower()
+@@ -78,6 +79,8 @@
+     for match in reversed(exclusions):
+         positive = positive[:match.start()] + ' ' + positive[match.end():]
+     operations = {value for value, pattern in _OP_RES if pattern.search(positive)}
++    operations.update(rule['id'] for rule in catalog().get('context_operations', [])
++                      if obj in rule['objects'] and re.search(rule['pattern'], positive, re.I))
+     if 'install' in operations and re.search(r"\b(?:обратен|обратно|повторен|повторно)\b.{0,20}\bмонтаж", norm):
+         operations.remove('install')
+         operations.add('reinstall')
+diff --git a/app/modules/cost_match/matcher.py b/app/modules/cost_match/matcher.py
+--- a/app/modules/cost_match/matcher.py
++++ b/app/modules/cost_match/matcher.py
+@@ -2002,7 +2002,7 @@
+     # Both sides read to the boilerplate tail only: "вкл…"/"крайна цена"/
+     # "съгласно …" clauses declare price scope, not product identity. A head
+     # twin is a twin match; tail words never score, never pool.
+-    from app.modules.cost_match.bulgarian import is_bulgarian, compare_work, is_structural
++    from app.modules.cost_match.bulgarian import compare_work, is_bulgarian, is_structural
+ 
+     q_head = _head_text(query)
+     c_head = _head_text(candidate_text)
+@@ -2540,7 +2540,7 @@
+         equivalent_prices: list[tuple[Candidate, Decimal]] = []
+         if work['work']['definition_id']:
+             for cand, sc in scored:
+-                if sc.confidence < HIGH_CONFIDENCE or sc.factors.get('work_incomplete'):
++                if sc.factors.get('work_conflict'):
+                     continue
+                 rate = suggestion_rate(cand)
+                 factor = unit_rate_factor(cand.unit, query_unit)
+diff --git a/app/modules/cost_match/service.py b/app/modules/cost_match/service.py
+--- a/app/modules/cost_match/service.py
++++ b/app/modules/cost_match/service.py
+@@ -624,10 +624,14 @@
+                 catalog_id=run.catalog_id,
+             )
+             if coded is not None and all(existing.id != coded.id for existing in items):
+-                items = [coded, *items]
++                from app.modules.cost_match.retrieval_bg import retrieval_plan
++
++                evidence = _to_candidate(coded, 'bg' if is_bulgarian(description) else run.source_locale)
++                if not is_bulgarian(description) or retrieval_plan(description).matches(evidence.text):
++                    items = [coded, *items]
+ 
+         items = _dedupe_pool(items, run.source_locale)
+-        candidates = [_to_candidate(item, run.source_locale) for item in items]
++        candidates = [_to_candidate(item, 'bg' if is_bulgarian(description) else run.source_locale) for item in items]
+         # Learned rulings adjust the contest: a bridge a reviewer confirmed
+         # before lifts the candidate that offers it; one they refused sinks
+         # it. The prior travels through the candidate payload so the matcher
+@@ -1048,8 +1052,8 @@
+         estimate and the queue cannot disagree.
+         """
+         from app.modules.boq.models import BOQ
++        from app.modules.cost_match.bulgarian import is_structural
+         from app.modules.projects.models import Project
+-        from app.modules.cost_match.bulgarian import is_structural
+ 
+         boq = await self.session.get(BOQ, boq_id)
+         if boq is None:
+diff --git a/app/modules/cost_match/repository.py b/app/modules/cost_match/repository.py
+--- a/app/modules/cost_match/repository.py
++++ b/app/modules/cost_match/repository.py
+@@ -567,6 +567,31 @@
+             stmt = stmt.where(CostItem.catalog_id == catalog_id)
+         return stmt
+ 
++    async def refresh_bg_signatures(
++        self,
++        *,
++        cost_source: str | None = None,
++        region: str | None = None,
++        catalog_id: uuid.UUID | None = None,
++    ) -> int:
++        """Rebuild only stale derived identities, preserving all price evidence."""
++        from app.modules.cost_match.retrieval_bg import signature_metadata, sql_current_signature
++
++        stmt = self._scoped(cost_source=cost_source, region=region, catalog_id=catalog_id)
++        stmt = stmt.where(sql_current_signature(CostItem).is_not(True))
++        result = await self.session.stream_scalars(stmt.execution_options(yield_per=256))
++        count = 0
++        async for item in result:
++            existing = item.metadata_ if isinstance(item.metadata_, dict) else {}
++            if item.metadata_ is not None and not isinstance(item.metadata_, dict):
++                existing = {'legacy_metadata': item.metadata_}
++            item.metadata_ = {**existing, 'canonical_work': signature_metadata(item)}
++            count += 1
++            if count % 256 == 0:
++                await self.session.flush()
++        await self.session.flush()
++        return count
++
+     async def find_candidates(
+         self,
+         text: str,
+@@ -577,7 +602,11 @@
+         unit: str | None = None,
+         limit: int = 40,
+     ) -> list[CostItem]:
+-        """Cost items worth scoring against ``text``, bounded by ``limit``.
++        """Cost items worth scoring against ``text``.
++
++        Bulgarian reads require the row's parsed object, operations and
++        materials in current corpus signatures. Their full cohort reaches the scorer: truncating it
++        could hide a contradictory price behind the candidate limit.
+ 
+         Recall comes from the shared multilingual predicate, so a Russian or
+         Spanish line still reaches a German or English base row. Ordering is
+@@ -597,6 +626,22 @@
+         ``limit`` rows of the catalogue, which would be a suggestion with no
+         evidence behind it.
+         """
++        from app.modules.cost_match.bulgarian import is_bulgarian
++        from app.modules.cost_match.retrieval_bg import retrieval_plan, sql_predicate
++
++        bg_plan = retrieval_plan(text) if is_bulgarian(text) else None
++        if bg_plan is not None:
++            if bg_plan.blocked_reason:
++                return []
++            await self.refresh_bg_signatures(cost_source=cost_source, region=region, catalog_id=catalog_id)
++            stmt = self._scoped(cost_source=cost_source, region=region, catalog_id=catalog_id)
++            stmt = stmt.where(sql_predicate(bg_plan, CostItem)).order_by(CostItem.code, CostItem.id)
++            result = await self.session.execute(stmt)
++            items = list(result.scalars().all())
++            if not unit:
++                return items
++            return ([item for item in items if unit_rate_factor(item.unit, unit) is not None]
++                    + [item for item in items if unit_rate_factor(item.unit, unit) is None])
+         terms = retrieval_terms(text)
+         clauses = []
+         for term in terms:
+@@ -633,10 +678,7 @@
+         # Oversample so the unit-dimension partition below still fills the
+         # pool after incompatible rows sink to the tail.
+         fetch = limit * 3 if unit else limit
+-        stmt = (
+-            stmt.order_by(matched.desc(), CostItem.code, CostItem.id)
+-            .limit(fetch)
+-        )
++        stmt = stmt.order_by(matched.desc(), CostItem.code, CostItem.id).limit(fetch)
+         result = await self.session.execute(stmt)
+         items = list(result.scalars().all())
+         # Semantic recall: vector hits return rows whose wording shares no
+@@ -661,7 +703,8 @@
+         incompatible = [
+             item for item in items if unit_rate_factor(item.unit, unit) is None
+         ]
+-        return (convertible + incompatible)[:limit]
++        ordered = convertible + incompatible
++        return ordered[:limit]
+ 
+     async def find_by_ids(
+         self,
+diff --git a/app/modules/cost_match/work_catalog.py b/app/modules/cost_match/work_catalog.py
+--- a/app/modules/cost_match/work_catalog.py
++++ b/app/modules/cost_match/work_catalog.py
+@@ -4,10 +4,10 @@
+ 
+ import json
+ import re
+-from hashlib import sha256
+ from dataclasses import asdict, dataclass
+ from decimal import Decimal
+ from functools import lru_cache
++from hashlib import sha256
+ from pathlib import Path
+ from typing import Any
+ 
+@@ -94,6 +94,18 @@
+ 
+     parsed = parse_work(text)
+     _, remainder = notation(text, parsed.object)
++    definition = definitions().get(parsed.object or '')
++    if definition is not None:
++        patterns = list(definition.object_patterns)
++        patterns.extend(pattern for name, pattern in concept_patterns('operations')
++                        if name in parsed.operations or name == 'install' and 'reinstall' in parsed.operations)
++        patterns.extend(pattern for name, pattern in concept_patterns('materials')
++                        if name in parsed.materials)
++        patterns.extend(rule['pattern'] for rule in catalog().get('context_operations', [])
++                        if rule['id'] in parsed.operations and parsed.object in rule['objects'])
++        masked = {i for pattern in patterns for match in re.finditer(pattern, remainder, re.I)
++                  for i in range(*match.span())}
++        remainder = ''.join(' ' if i in masked else char for i, char in enumerate(remainder))
+     residual = set(canonical_tokens(_head_text(remainder))) - _PROCESS_CONCEPTS - _GENERIC_TERMS
+     return CanonicalWork(
+         definition_id=parsed.object if parsed.object in definitions() else None,
+diff --git a/app/modules/cost_match/work_definitions_bg.json b/app/modules/cost_match/work_definitions_bg.json
+--- a/app/modules/cost_match/work_definitions_bg.json
++++ b/app/modules/cost_match/work_definitions_bg.json
+@@ -1,861 +1,872 @@
+-{
+-  "version": 1,
+-  "families": [
+-    {
+-      "id": "primer",
+-      "object_patterns": [
+-        "\\bгрунд\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "roof_ridge_cap",
+-      "object_patterns": [
+-        "\\bкапа[кц]\\w*\\s*(?:(?:по|на|за)\\s*|[-–]\\s*)?бил\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "fascia_board",
+-      "object_patterns": [
+-        "\\bчелн\\w*\\s+д[ъа]ск\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "drip_edge",
+-      "object_patterns": [
+-        "\\bнадулучн\\w*\\s+пол\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "lift_platform",
+-      "object_patterns": [
+-        "\\bподемн\\w*\\s+платформ\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "steel_beam",
+-      "object_patterns": [
+-        "\\bстоманен\\w*\\s+гред\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "steel_column",
+-      "object_patterns": [
+-        "\\bстоманен\\w*\\s+колон\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "steel_purlin",
+-      "object_patterns": [
+-        "\\bстоманен\\w*\\s+столиц\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "earthing",
+-      "object_patterns": [
+-        "\\bзаземл\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "niche",
+-      "object_patterns": [
+-        "\\bниш[аa]\\b"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "wall_opening",
+-      "object_patterns": [
+-        "\\b(?:направа|пробиване)\\s+(?:на\\s+)?отвор\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "router",
+-      "object_patterns": [
+-        "\\bрутер\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "network_switch",
+-      "object_patterns": [
+-        "\\bсуич\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "server",
+-      "object_patterns": [
+-        "\\bсървър\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "storage_drive",
+-      "object_patterns": [
+-        "\\bтвърд\\w*\\s+диск\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "ups",
+-      "object_patterns": [
+-        "\\b(?:ups|непрекъсваем\\w*\\s+токозахранващ\\w*\\s+източник)\\b"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "fire_detector",
+-      "object_patterns": [
+-        "\\bпожароизвестител\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "sounder",
+-      "object_patterns": [
+-        "\\bсигнализатор\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "lightning_terminal",
+-      "object_patterns": [
+-        "\\bмълниеприемник\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "terminal_clamp",
+-      "object_patterns": [
+-        "\\b(?:контролна\\s+)?клем\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "inverter",
+-      "object_patterns": [
+-        "\\bинвертор\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "compensator",
+-      "object_patterns": [
+-        "\\bкомпенсатор\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "anchor_block",
+-      "object_patterns": [
+-        "\\bопорен\\w*\\s+блок\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "vrf_indoor_unit",
+-      "object_patterns": [
+-        "\\bвътрешн\\w*\\s+тел[ао]\\b"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "pressure_test",
+-      "object_patterns": [
+-        "\\b(?:тест\\w*|изпитван\\w*)\\s+за\\s+херметичност\\b"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "evacuation",
+-      "object_patterns": [
+-        "\\bвакуумиран\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "commissioning",
+-      "object_patterns": [
+-        "\\bпуск\\b.*\\bналадк\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "drain_grate",
+-      "object_patterns": [
+-        "\\bотводнител\\w*\\s+решетк\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "drain_channel",
+-      "object_patterns": [
+-        "\\bотводнител\\w*\\s+канал\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "downpipe",
+-      "object_patterns": [
+-        "\\bводосточн\\w*\\s+тръб\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "bracket",
+-      "object_patterns": [
+-        "\\bконзол\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "mounting_plate",
+-      "object_patterns": [
+-        "\\bпланк\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "cable_tray",
+-      "object_patterns": [
+-        "\\b(?:каб(?:елн\\w*|\\.)\\s*)?скар\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "roof_vent_cap",
+-      "object_patterns": [
+-        "\\bшапк\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "window_sill",
+-      "object_patterns": [
+-        "\\bпрозоречн\\w*\\s+перваз\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "window_reveal",
+-      "object_patterns": [
+-        "\\bобръщан\\w*\\s+(?:на\\s+)?отвор\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "formwork",
+-      "object_patterns": [
+-        "\\bкофраж\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "masonry",
+-      "object_patterns": [
+-        "\\b(?:тухл\\w*(?:\\s+зид\\w*)?|зидари\\w*|зид\\w*|газобетон\\w*)"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "plaster",
+-      "object_patterns": [
+-        "\\b(?:(?:варов\\w*|вароцимент\\w*|гипсов\\w*|цимент\\w*)\\s+)?мазилк\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "putty",
+-      "object_patterns": [
+-        "\\b(?:(?:гипсов\\w*|цимент\\w*)\\s+)?шпаклов\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "paint",
+-      "object_patterns": [
+-        "\\b(?:латекс\\w*|боя\\b|боядис\\w*)"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "concrete_floor",
+-      "object_patterns": [
+-        "\\b(?:шлайфан\\w*\\s+)?бетон(?:ов|н)\\w*\\s+настилк\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "ramp",
+-      "object_patterns": [
+-        "\\b(?:бетон(?:ов|н)\\w*\\s+)?рамп\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "screed",
+-      "object_patterns": [
+-        "\\b(?:(?:цимент\\w*|бетонов\\w*)\\s+)?замазк\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "concrete_slab",
+-      "object_patterns": [
+-        "\\b(?:стоманобетонов\\w*|бетонов\\w*)\\s+плоч\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "concrete",
+-      "object_patterns": [
+-        "\\bбетон\\b"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "granite_stairs",
+-      "object_patterns": [
+-        "\\bгранит\\s*[- ]?\\s*стълб\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "reinforcement",
+-      "object_patterns": [
+-        "\\b(?:арматур\\w*|армиров\\w*)"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "fan",
+-      "object_patterns": [
+-        "\\b(?:(?:кръгъл|канален|кръгъл канален)\\s+)?вентилатор\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "duct",
+-      "object_patterns": [
+-        "\\b(?:(?:кръгъл|спирален|правоъгълен)\\s+)?въздуховод\\w*"
+-      ],
+-      "notation": [
+-        {
+-          "name": "declared_diameter",
+-          "pattern": "(?<!\\w)[фФ∅Øø]\\s*(?P<diameter>\\d+(?:[.,]\\d+)?)\\b",
+-          "fields": [
+-            "diameter"
+-          ]
+-        }
+-      ]
+-    },
+-    {
+-      "id": "strainer",
+-      "object_patterns": [
+-        "\\bмрежест\\w*\\s+филтър\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "filter",
+-      "object_patterns": [
+-        "\\bфилтър\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "diffuser",
+-      "object_patterns": [
+-        "\\b(?:конусен\\s+смукател\\w*|дифузер\\w*|анемостат\\w*)"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "treatment_plant",
+-      "object_patterns": [
+-        "\\b(?:(?:локално|биологично)\\s+)?пречиствател\\w*\\s+(?:съоръжение|станция)"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "pump",
+-      "object_patterns": [
+-        "\\b(?:(?:циркулационн\\w*|електронн\\w*|потопяем\\w*)\\s+)*помп\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "plant",
+-      "object_patterns": [
+-        "\\b(?:калистемон\\w*|callistemon|pinus|храст\\w*|дървет\\w*|растителност\\w*|трев\\w*)"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "fastener",
+-      "object_patterns": [
+-        "\\b(?:крепеж\\w*|скоб\\w*|анкер\\w*|дюбел\\w*)"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "control",
+-      "object_patterns": [
+-        "\\b(?:управление|контролер\\w*|термостат\\w*)"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "sensor",
+-      "object_patterns": [
+-        "\\b(?:датчик\\w*|сензор\\w*)"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "valve",
+-      "object_patterns": [
+-        "\\b(?:кран\\w*|вентил(?:и|ите|ът|а)?\\b|клапан\\w*)"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "pipe",
+-      "object_patterns": [
+-        "\\b(?:тръб\\w*|водопровод\\w*)",
+-        "\\bпевп\\b"
+-      ],
+-      "notation": [
+-        {
+-          "name": "declared_diameter",
+-          "pattern": "(?<!\\w)[фФ∅Øø]\\s*(?P<diameter>\\d+(?:[.,]\\d+)?)\\b",
+-          "fields": [
+-            "diameter"
+-          ]
+-        }
+-      ]
+-    },
+-    {
+-      "id": "elbow",
+-      "object_patterns": [
+-        "\\b(?:коляно\\w*|колена)"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "tee",
+-      "object_patterns": [
+-        "\\bтроиник\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "coupling",
+-      "object_patterns": [
+-        "\\b(?:муфа\\w*|муфи|холендер\\w*)"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "reducer",
+-      "object_patterns": [
+-        "\\b(?:редук\\w*|преходник\\w*)"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "collector",
+-      "object_patterns": [
+-        "\\bколектор\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "water_meter",
+-      "object_patterns": [
+-        "\\bводомер\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "toilet",
+-      "object_patterns": [
+-        "\\b(?:тоалетн\\w*\\s+чини\\w*|моноблок\\w*)"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "basin",
+-      "object_patterns": [
+-        "\\b(?:умивалник\\w*|мивк\\w*)"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "siphon",
+-      "object_patterns": [
+-        "\\bсифон\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "radiator",
+-      "object_patterns": [
+-        "\\bрадиатор\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "convector",
+-      "object_patterns": [
+-        "\\bконвектор\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "boiler",
+-      "object_patterns": [
+-        "\\bбоилер\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "chiller",
+-      "object_patterns": [
+-        "\\bчилър\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "air_conditioner",
+-      "object_patterns": [
+-        "\\b(?:климатик\\w*|климатизатор\\w*)"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "heat_pump",
+-      "object_patterns": [
+-        "\\bтермопомп\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "door",
+-      "object_patterns": [
+-        "\\b(?:врат\\w*|входна\\s+врат\\w*)"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "window",
+-      "object_patterns": [
+-        "\\b(?:дограма\\w*|прозор\\w*|витрин\\w*)"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "drywall",
+-      "object_patterns": [
+-        "\\bгипсокартон\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "skylight",
+-      "object_patterns": [
+-        "\\b(?:оберлихт\\w*|капандур\\w*)"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "ceiling",
+-      "object_patterns": [
+-        "\\bокачен\\w*\\s+таван\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "board",
+-      "object_patterns": [
+-        "\\b(?:osb|шперплат\\w*|мдф|mdf|пдч|плоскост\\w*)\\b"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "cladding",
+-      "object_patterns": [
+-        "\\b(?:(?:дъсчен\\w*|металн\\w*)\\s+)?обшивк\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "vapour_barrier",
+-      "object_patterns": [
+-        "\\b(?:пароизолацион\\w*\\s+фолио|пароизолаци\\w*)"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "profile",
+-      "object_patterns": [
+-        "\\b(?:металн\\w*\\s+)?профил\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "mesh",
+-      "object_patterns": [
+-        "\\b(?:(?:армиров\\w*|армиращ\\w*|стоманен\\w*)\\s+)?мреж\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "curb",
+-      "object_patterns": [
+-        "\\bбордюр\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "tiling",
+-      "object_patterns": [
+-        "\\b(?:теракот\\w*|фаянс\\w*|гранитогрес\\w*|плочк\\w*)"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "insulation",
+-      "object_patterns": [
+-        "\\b(?:топлоизола\\w*|изолац\\w*|eps\\b|xps\\b|минералн\\w*\\s+ват\\w*)",
+-        "\\bтоплозолац\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "waterproofing",
+-      "object_patterns": [
+-        "\\b(?:хидроизола\\w*|битум\\w*\\s+мембран\\w*)"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "geotextile",
+-      "object_patterns": [
+-        "\\bгеотекстил\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "geogrid",
+-      "object_patterns": [
+-        "\\bгеомреж\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "cable",
+-      "object_patterns": [
+-        "\\b(?:кабел\\w*|проводник\\w*)"
+-      ],
+-      "notation": [
+-        {
+-          "name": "cable_model_and_section",
+-          "pattern": "(?<!\\w)(?P<model>свт)\\s*(?P<cores>[1-9]\\d?)\\s*[xх×]\\s*(?P<section>\\d+(?:[.,]\\d+)?)\\s*(?:mm|мм)(?:²|2)(?!\\w)",
+-          "fields": [
+-            "model",
+-            "cores",
+-            "section"
+-          ],
+-          "corpus_evidence": [
+-            "OPR2-000328",
+-            "OPR3-000328"
+-          ]
+-        }
+-      ]
+-    },
+-    {
+-      "id": "panel",
+-      "object_patterns": [
+-        "\\b(?:табло\\w*|разпределител\\w*\\s+табл\\w*)"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "switchgear",
+-      "object_patterns": [
+-        "\\b(?:прекъсвач\\w*|предпазител\\w*)"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "luminaire",
+-      "object_patterns": [
+-        "\\b(?:осветител\\w*|ламп\\w*|плафон\\w*|прожектор\\w*)"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "socket",
+-      "object_patterns": [
+-        "\\b(?:контакт\\w*|розетк\\w*)"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "switch",
+-      "object_patterns": [
+-        "\\b(?:електрически\\s+)?ключ\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "camera",
+-      "object_patterns": [
+-        "\\bкамер\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "earthwork",
+-      "object_patterns": [
+-        "\\b(?:изкоп\\w*|насип\\w*)"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "roof_tile",
+-      "object_patterns": [
+-        "\\bкеремид\\w*"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "gutter",
+-      "object_patterns": [
+-        "\\b(?:улук\\w*|улуц\\w*|олук\\w*)"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "railing",
+-      "object_patterns": [
+-        "\\b(?:парапет\\w*|ограда\\w*|ограждение\\w*)"
+-      ],
+-      "notation": []
+-    },
+-    {
+-      "id": "scaffold",
+-      "object_patterns": [
+-        "\\bскел\\w*"
+-      ],
+-      "notation": []
+-    }
+-  ],
+-  "operations": [
+-    {
+-      "id": "demolish",
+-      "pattern": "\\b(?:демонтаж|демонтиране|разваляне|разрушаване|къртене|разбиване|премахване)\\b"
+-    },
+-    {
+-      "id": "install",
+-      "pattern": "\\b(?:монтаж|монтиране|направа|изпълнение|изработка|изграждане|полагане|поставяне|зидане|иззиждане|засаждане|засяване|бетониране|боядисване|боядисвене|лакиране|шпакловане|измазване|облицоване)\\b"
+-    },
+-    {
+-      "id": "repair",
+-      "pattern": "\\b(?:ремонт|ремонтиране|поправка|възстановяване|преработка)\\b"
+-    },
+-    {
+-      "id": "haul",
+-      "pattern": "\\b(?:извозване|транспортиране|превозване|превоз|транспорт)\\b"
+-    },
+-    {
+-      "id": "test",
+-      "pattern": "\\b(?:изпитване|тестване|измерване|наладка|пускане)\\b"
+-    },
+-    {
+-      "id": "clean",
+-      "pattern": "\\b(?:почистване|измиване|промиване|обезпрашаване)\\b"
+-    },
+-    {
+-      "id": "prime",
+-      "pattern": "\\b(?:грундиране|грундира|грунд)\\b"
+-    },
+-    {
+-      "id": "excavate",
+-      "pattern": "\\b(?:изкоп|изкопаване)\\b"
+-    },
+-    {
+-      "id": "backfill",
+-      "pattern": "\\b(?:засипване|обратен насип|засипка)\\b"
+-    }
+-  ],
+-  "materials": [
+-    {
+-      "id": "lime_cement",
+-      "pattern": "\\bвароцимент\\w*"
+-    },
+-    {
+-      "id": "lime",
+-      "pattern": "\\b(?:варов\\w*|вар\\b)"
+-    },
+-    {
+-      "id": "gypsum",
+-      "pattern": "\\bгипс\\w*"
+-    },
+-    {
+-      "id": "cement",
+-      "pattern": "\\bцимент\\w*"
+-    },
+-    {
+-      "id": "pvc",
+-      "pattern": "\\bpvc\\b|\\bпвц\\b"
+-    },
+-    {
+-      "id": "pe",
+-      "pattern": "\\b(?:pe|hdpe|полиетилен\\w*)\\b|\\bпевп\\b"
+-    },
+-    {
+-      "id": "ppr",
+-      "pattern": "\\b(?:ppr|полипропилен\\w*)\\b"
+-    },
+-    {
+-      "id": "copper",
+-      "pattern": "\\b(?:меден\\w*|медни|медна|медта)\\b"
+-    },
+-    {
+-      "id": "steel",
+-      "pattern": "\\b(?:стоман\\w*|поцинкован\\w*)"
+-    },
+-    {
+-      "id": "aluminium",
+-      "pattern": "\\b(?:алумини\\w*|ал\\s*\\.)"
+-    },
+-    {
+-      "id": "wood",
+-      "pattern": "\\b(?:дървен\\w*|дървес\\w*|дъсчен\\w*)"
+-    },
+-    {
+-      "id": "concrete",
+-      "pattern": "\\b(?:бетон\\w*|стоманобетон\\w*)"
+-    },
+-    {
+-      "id": "bitumen",
+-      "pattern": "\\bбитум\\w*"
+-    },
+-    {
+-      "id": "silicone",
+-      "pattern": "\\bсиликон\\w*"
+-    }
+-  ]
+-}
++{
++  "version": 1,
++  "families": [
++    {
++      "id": "primer",
++      "object_patterns": [
++        "\\bгрунд\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "roof_ridge_cap",
++      "object_patterns": [
++        "\\bкапа[кц]\\w*\\s*(?:(?:по|на|за)\\s*|[-–]\\s*)?бил\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "fascia_board",
++      "object_patterns": [
++        "\\bчелн\\w*\\s+д[ъа]ск\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "drip_edge",
++      "object_patterns": [
++        "\\bнадулучн\\w*\\s+пол\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "lift_platform",
++      "object_patterns": [
++        "\\bподемн\\w*\\s+платформ\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "steel_beam",
++      "object_patterns": [
++        "\\bстоманен\\w*\\s+гред\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "steel_column",
++      "object_patterns": [
++        "\\bстоманен\\w*\\s+колон\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "steel_purlin",
++      "object_patterns": [
++        "\\bстоманен\\w*\\s+столиц\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "earthing",
++      "object_patterns": [
++        "\\bзаземл\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "niche",
++      "object_patterns": [
++        "\\bниш[аa]\\b"
++      ],
++      "notation": []
++    },
++    {
++      "id": "wall_opening",
++      "object_patterns": [
++        "\\b(?:направа|пробиване)\\s+(?:на\\s+)?отвор\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "router",
++      "object_patterns": [
++        "\\bрутер\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "network_switch",
++      "object_patterns": [
++        "\\bсуич\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "server",
++      "object_patterns": [
++        "\\bсървър\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "storage_drive",
++      "object_patterns": [
++        "\\bтвърд\\w*\\s+диск\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "ups",
++      "object_patterns": [
++        "\\b(?:ups|непрекъсваем\\w*\\s+токозахранващ\\w*\\s+източник)\\b"
++      ],
++      "notation": []
++    },
++    {
++      "id": "fire_detector",
++      "object_patterns": [
++        "\\bпожароизвестител\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "sounder",
++      "object_patterns": [
++        "\\bсигнализатор\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "lightning_terminal",
++      "object_patterns": [
++        "\\bмълниеприемник\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "terminal_clamp",
++      "object_patterns": [
++        "\\b(?:контролна\\s+)?клем\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "inverter",
++      "object_patterns": [
++        "\\bинвертор\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "compensator",
++      "object_patterns": [
++        "\\bкомпенсатор\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "anchor_block",
++      "object_patterns": [
++        "\\bопорен\\w*\\s+блок\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "vrf_indoor_unit",
++      "object_patterns": [
++        "\\bвътрешн\\w*\\s+тел[ао]\\b"
++      ],
++      "notation": []
++    },
++    {
++      "id": "pressure_test",
++      "object_patterns": [
++        "\\b(?:тест\\w*|изпитван\\w*)\\s+за\\s+херметичност\\b"
++      ],
++      "notation": []
++    },
++    {
++      "id": "evacuation",
++      "object_patterns": [
++        "\\bвакуумиран\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "commissioning",
++      "object_patterns": [
++        "\\bпуск\\b.*\\bналадк\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "drain_grate",
++      "object_patterns": [
++        "\\bотводнител\\w*\\s+решетк\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "drain_channel",
++      "object_patterns": [
++        "\\bотводнител\\w*\\s+канал\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "downpipe",
++      "object_patterns": [
++        "\\bводосточн\\w*\\s+тръб\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "bracket",
++      "object_patterns": [
++        "\\bконзол\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "mounting_plate",
++      "object_patterns": [
++        "\\bпланк\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "cable_tray",
++      "object_patterns": [
++        "\\b(?:каб(?:елн\\w*|\\.)\\s*)?скар\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "roof_vent_cap",
++      "object_patterns": [
++        "\\bшапк\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "window_sill",
++      "object_patterns": [
++        "\\bпрозоречн\\w*\\s+перваз\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "window_reveal",
++      "object_patterns": [
++        "\\bобръщан\\w*\\s+(?:на\\s+)?отвор\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "formwork",
++      "object_patterns": [
++        "\\bкофраж\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "masonry",
++      "object_patterns": [
++        "\\b(?:тухл\\w*(?:\\s+(?:зид\\w*|стен\\w*))?|зидари\\w*|зид\\w*|газобетон\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "plaster",
++      "object_patterns": [
++        "\\b(?:(?:варов\\w*|вароцимент\\w*|гипсов\\w*|цимент\\w*)\\s+)?мазилк\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "putty",
++      "object_patterns": [
++        "\\b(?:(?:гипсов\\w*|цимент\\w*)\\s+)?шпаклов\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "paint",
++      "object_patterns": [
++        "\\b(?:латекс\\w*|боя\\b|боядис\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "concrete_floor",
++      "object_patterns": [
++        "\\b(?:шлайфан\\w*\\s+)?бетон(?:ов|н)\\w*\\s+настилк\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "ramp",
++      "object_patterns": [
++        "\\b(?:бетон(?:ов|н)\\w*\\s+)?рамп\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "screed",
++      "object_patterns": [
++        "\\b(?:(?:цимент\\w*|бетонов\\w*)\\s+)?замазк\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "concrete_slab",
++      "object_patterns": [
++        "\\b(?:стоманобетонов\\w*|бетонов\\w*)\\s+плоч\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "concrete",
++      "object_patterns": [
++        "\\bбетон\\b"
++      ],
++      "notation": []
++    },
++    {
++      "id": "granite_stairs",
++      "object_patterns": [
++        "\\bгранит\\s*[- ]?\\s*стълб\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "reinforcement",
++      "object_patterns": [
++        "\\b(?:арматур\\w*|армиров\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "fan",
++      "object_patterns": [
++        "\\b(?:(?:кръгъл|канален|кръгъл канален)\\s+)?вентилатор\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "duct",
++      "object_patterns": [
++        "\\b(?:(?:кръгъл|спирален|правоъгълен)\\s+)?въздуховод\\w*"
++      ],
++      "notation": [
++        {
++          "name": "declared_diameter",
++          "pattern": "(?<!\\w)[фФ∅Øø]\\s*(?P<diameter>\\d+(?:[.,]\\d+)?)\\b",
++          "fields": [
++            "diameter"
++          ]
++        }
++      ]
++    },
++    {
++      "id": "strainer",
++      "object_patterns": [
++        "\\bмрежест\\w*\\s+филтър\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "filter",
++      "object_patterns": [
++        "\\bфилтър\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "diffuser",
++      "object_patterns": [
++        "\\b(?:конусен\\s+смукател\\w*|дифузер\\w*|анемостат\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "treatment_plant",
++      "object_patterns": [
++        "\\b(?:(?:локално|биологично)\\s+)?пречиствател\\w*\\s+(?:съоръжение|станция)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "pump",
++      "object_patterns": [
++        "\\b(?:(?:циркулационн\\w*|електронн\\w*|потопяем\\w*)\\s+)*помп\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "plant",
++      "object_patterns": [
++        "\\b(?:калистемон\\w*|callistemon|pinus|храст\\w*|дървет\\w*|растителност\\w*|трев\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "fastener",
++      "object_patterns": [
++        "\\b(?:крепеж\\w*|скоб\\w*|анкер\\w*|дюбел\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "control",
++      "object_patterns": [
++        "\\b(?:управление|контролер\\w*|термостат\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "sensor",
++      "object_patterns": [
++        "\\b(?:датчик\\w*|сензор\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "valve",
++      "object_patterns": [
++        "\\b(?:кран\\w*|вентил(?:и|ите|ът|а)?\\b|клапан\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "pipe",
++      "object_patterns": [
++        "\\b(?:тръб\\w*|водопровод\\w*)",
++        "\\bпевп\\b"
++      ],
++      "notation": [
++        {
++          "name": "declared_diameter",
++          "pattern": "(?<!\\w)[фФ∅Øø]\\s*(?P<diameter>\\d+(?:[.,]\\d+)?)\\b",
++          "fields": [
++            "diameter"
++          ]
++        }
++      ]
++    },
++    {
++      "id": "elbow",
++      "object_patterns": [
++        "\\b(?:коляно\\w*|колена)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "tee",
++      "object_patterns": [
++        "\\bтроиник\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "coupling",
++      "object_patterns": [
++        "\\b(?:муфа\\w*|муфи|холендер\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "reducer",
++      "object_patterns": [
++        "\\b(?:редук\\w*|преходник\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "collector",
++      "object_patterns": [
++        "\\bколектор\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "water_meter",
++      "object_patterns": [
++        "\\bводомер\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "toilet",
++      "object_patterns": [
++        "\\b(?:тоалетн\\w*\\s+чини\\w*|моноблок\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "basin",
++      "object_patterns": [
++        "\\b(?:умивалник\\w*|мивк\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "siphon",
++      "object_patterns": [
++        "\\bсифон\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "radiator",
++      "object_patterns": [
++        "\\bрадиатор\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "convector",
++      "object_patterns": [
++        "\\bконвектор\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "boiler",
++      "object_patterns": [
++        "\\bбоилер\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "chiller",
++      "object_patterns": [
++        "\\bчилър\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "air_conditioner",
++      "object_patterns": [
++        "\\b(?:климатик\\w*|климатизатор\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "heat_pump",
++      "object_patterns": [
++        "\\bтермопомп\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "door",
++      "object_patterns": [
++        "\\b(?:врат\\w*|входна\\s+врат\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "window",
++      "object_patterns": [
++        "\\b(?:дограма\\w*|прозор\\w*|витрин\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "drywall",
++      "object_patterns": [
++        "\\bгипсокартон\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "skylight",
++      "object_patterns": [
++        "\\b(?:оберлихт\\w*|капандур\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "ceiling",
++      "object_patterns": [
++        "\\bокачен\\w*\\s+таван\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "board",
++      "object_patterns": [
++        "\\b(?:osb|шперплат\\w*|мдф|mdf|пдч|плоскост\\w*)\\b"
++      ],
++      "notation": []
++    },
++    {
++      "id": "cladding",
++      "object_patterns": [
++        "\\b(?:(?:дъсчен\\w*|металн\\w*)\\s+)?обшивк\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "vapour_barrier",
++      "object_patterns": [
++        "\\b(?:пароизолацион\\w*\\s+фолио|пароизолаци\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "profile",
++      "object_patterns": [
++        "\\b(?:металн\\w*\\s+)?профил\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "mesh",
++      "object_patterns": [
++        "\\b(?:(?:армиров\\w*|армиращ\\w*|стоманен\\w*)\\s+)?мреж\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "curb",
++      "object_patterns": [
++        "\\bбордюр\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "tiling",
++      "object_patterns": [
++        "\\b(?:теракот\\w*|фаянс\\w*|гранитогрес\\w*|плочк\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "insulation",
++      "object_patterns": [
++        "\\b(?:топлоизола\\w*|изолац\\w*|eps\\b|xps\\b|минералн\\w*\\s+ват\\w*)",
++        "\\bтоплозолац\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "waterproofing",
++      "object_patterns": [
++        "\\b(?:хидроизола\\w*|битум\\w*\\s+мембран\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "geotextile",
++      "object_patterns": [
++        "\\bгеотекстил\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "geogrid",
++      "object_patterns": [
++        "\\bгеомреж\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "cable",
++      "object_patterns": [
++        "\\b(?:кабел\\w*|проводник\\w*)"
++      ],
++      "notation": [
++        {
++          "name": "cable_model_and_section",
++          "pattern": "(?<!\\w)(?P<model>свт)\\s*(?P<cores>[1-9]\\d?)\\s*[xх×]\\s*(?P<section>\\d+(?:[.,]\\d+)?)\\s*(?:mm|мм)(?:²|2)(?!\\w)",
++          "fields": [
++            "model",
++            "cores",
++            "section"
++          ],
++          "corpus_evidence": [
++            "OPR2-000328",
++            "OPR3-000328"
++          ]
++        }
++      ]
++    },
++    {
++      "id": "panel",
++      "object_patterns": [
++        "\\b(?:табло\\w*|разпределител\\w*\\s+табл\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "switchgear",
++      "object_patterns": [
++        "\\b(?:прекъсвач\\w*|предпазител\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "luminaire",
++      "object_patterns": [
++        "\\b(?:осветител\\w*|ламп\\w*|плафон\\w*|прожектор\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "socket",
++      "object_patterns": [
++        "\\b(?:контакт\\w*|розетк\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "switch",
++      "object_patterns": [
++        "\\b(?:електрически\\s+)?ключ\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "camera",
++      "object_patterns": [
++        "\\bкамер\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "earthwork",
++      "object_patterns": [
++        "\\b(?:изкоп\\w*|насип\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "roof_tile",
++      "object_patterns": [
++        "\\bкеремид\\w*"
++      ],
++      "notation": []
++    },
++    {
++      "id": "gutter",
++      "object_patterns": [
++        "\\b(?:улук\\w*|улуц\\w*|олук\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "railing",
++      "object_patterns": [
++        "\\b(?:парапет\\w*|ограда\\w*|ограждение\\w*)"
++      ],
++      "notation": []
++    },
++    {
++      "id": "scaffold",
++      "object_patterns": [
++        "\\bскел\\w*"
++      ],
++      "notation": []
++    }
++  ],
++  "operations": [
++    {
++      "id": "demolish",
++      "pattern": "\\b(?:демонтаж|демонтиране|разваляне|разрушаване|къртене|разбиване|премахване|събаряне)\\b"
++    },
++    {
++      "id": "install",
++      "pattern": "\\b(?:монтаж|монтиране|направа|изпълнение|изработка|изграждане|полагане|поставяне|зидане|иззиждане|засаждане|засяване|бетониране|боядисване|боядисвене|лакиране|шпакловане|измазване|облицоване)\\b"
++    },
++    {
++      "id": "repair",
++      "pattern": "\\b(?:ремонт|ремонтиране|поправка|възстановяване|преработка)\\b"
++    },
++    {
++      "id": "haul",
++      "pattern": "\\b(?:извозване|транспортиране|превозване|превоз|транспорт)\\b"
++    },
++    {
++      "id": "test",
++      "pattern": "\\b(?:изпитване|тестване|измерване|наладка|пускане)\\b"
++    },
++    {
++      "id": "clean",
++      "pattern": "\\b(?:почистване|измиване|промиване|обезпрашаване)\\b"
++    },
++    {
++      "id": "prime",
++      "pattern": "\\b(?:грундиране|грундира|грунд)\\b"
++    },
++    {
++      "id": "excavate",
++      "pattern": "\\b(?:изкоп|изкопаване)\\b"
++    },
++    {
++      "id": "backfill",
++      "pattern": "\\b(?:засипване|обратен насип|засипка)\\b"
++    }
++  ],
++  "materials": [
++    {
++      "id": "brick",
++      "pattern": "\\bтухл\\w*"
++    },
++    {
++      "id": "lime_cement",
++      "pattern": "\\bвароцимент\\w*"
++    },
++    {
++      "id": "lime",
++      "pattern": "\\b(?:варов\\w*|вар\\b)"
++    },
++    {
++      "id": "gypsum",
++      "pattern": "\\bгипс\\w*"
++    },
++    {
++      "id": "cement",
++      "pattern": "\\bцимент\\w*"
++    },
++    {
++      "id": "pvc",
++      "pattern": "\\bpvc\\b|\\bпвц\\b"
++    },
++    {
++      "id": "pe",
++      "pattern": "\\b(?:pe|hdpe|полиетилен\\w*)\\b|\\bпевп\\b"
++    },
++    {
++      "id": "ppr",
++      "pattern": "\\b(?:ppr|полипропилен\\w*)\\b"
++    },
++    {
++      "id": "copper",
++      "pattern": "\\b(?:меден\\w*|медни|медна|медта)\\b"
++    },
++    {
++      "id": "steel",
++      "pattern": "\\b(?:стоман\\w*|поцинкован\\w*)"
++    },
++    {
++      "id": "aluminium",
++      "pattern": "\\b(?:алумини\\w*|ал\\s*\\.)"
++    },
++    {
++      "id": "wood",
++      "pattern": "\\b(?:дървен\\w*|дървес\\w*|дъсчен\\w*)"
++    },
++    {
++      "id": "concrete",
++      "pattern": "\\b(?:бетон\\w*|стоманобетон\\w*)"
++    },
++    {
++      "id": "bitumen",
++      "pattern": "\\bбитум\\w*"
++    },
++    {
++      "id": "silicone",
++      "pattern": "\\bсиликон\\w*"
++    }
++  ],
++  "context_operations": [
++    {
++      "id": "demolish",
++      "objects": ["masonry", "plaster", "screed"],
++      "pattern": "\\bотстраняване\\b"
++    }
++  ]
++}
+diff --git a/scripts/kcc_match_bg.py b/scripts/kcc_match_bg.py
+--- a/scripts/kcc_match_bg.py
++++ b/scripts/kcc_match_bg.py
+@@ -19,13 +19,18 @@
+ from openpyxl import load_workbook
+ 
+ from app.modules.cost_match.bulgarian import identity_text, is_structural, parse_work
++from app.modules.cost_match.matcher import (
++    _GENERIC_TERMS,
++    _PROCESS_CONCEPTS,
++    Candidate,
++    best_match,
++    canonical_tokens,
++    suggestion_rate,
++    unit_rate_factor,
++)
++from app.modules.cost_match.retrieval_bg import retrieval_plan
+ from app.modules.cost_match.work_catalog import work_metadata
+ from app.modules.cost_match.work_context import effective_work, is_work_fragment
+-from app.modules.cost_match.matcher import (
+-    _GENERIC_TERMS, _PROCESS_CONCEPTS, Candidate, best_match,
+-    canonical_tokens, suggestion_rate, unit_rate_factor,
+-)
+-
+ 
+ OPERATOR_SOURCES = {'operator_pricelist', 'manual_entry', 'user_upload', 'client_directive', 'custom'}
+ 
+@@ -95,11 +100,13 @@
+                   'Source code', 'Source', 'Source description', 'Confidence',
+                   'Reasons', 'Object', 'Operations', 'Scope', 'Specifications', 'Alternatives',
+                   'KCC work identity', 'Quote work identity', 'Inherited work context',
+-                  'Effective work description'])
++                   'Effective work description', 'Retrieval plan', 'Candidates before limit'])
+     sheet.cell(1, 5, 'Единична цена EUR')
+     sheet.cell(1, 6, 'Обща цена EUR')
+     counts = Counter()
+     cache = {}
++    group_postings = {}
++    retrieval_counts = {}
+     parent_work = ''
+     for row_no in range(2, sheet.max_row + 1):
+         position = str(sheet.cell(row_no, 1).value or '')
+@@ -125,9 +132,19 @@
+         key = (effective, unit)
+         if key not in cache:
+             terms = content(effective)
+-            possible = set(exact.get(identity_text(effective), ()))
+-            for term in terms:
+-                possible.update(postings.get(term, ()))
++            plan = retrieval_plan(effective)
++            possible = set(range(len(candidates))) if not plan.blocked_reason else set()
++            for group in plan.groups:
++                if group not in group_postings:
++                    group_postings[group] = {i for i, candidate in enumerate(candidates)
++                                             if group.matches(candidate.text)}
++                possible.intersection_update(group_postings[group])
++            if not plan.groups:
++                possible = {i for i, candidate in enumerate(candidates)
++                            if plan.matches(candidate.text)} if plan.exact_text is not None else set()
++            else:
++                possible = {i for i in possible if plan.matches(candidates[i].text)}
++            retrieval_counts[key] = len(possible)
+             obj = parse_work(effective).object
+             ordered = sorted(possible, key=lambda i: (
+                 i not in exact.get(identity_text(effective), ()),
+@@ -135,7 +152,7 @@
+                 unit_rate_factor(candidates[i].unit, unit) is None,
+                 -len(terms & tokens[i]),
+                 candidates[i].payload['code'],
+-            ))[:limit]
++            ))
+             cache[key] = best_match(effective, [candidates[i] for i in ordered], query_unit=unit, locale='bg')
+         outcome = cache[key]
+         frame = parse_work(effective)
+@@ -174,7 +191,9 @@
+                       json.dumps(alternatives, ensure_ascii=False),
+                       json.dumps(work_metadata(effective), ensure_ascii=False),
+                       json.dumps(payload.get('canonical_work'), ensure_ascii=False),
+-                      json.dumps(inherited, ensure_ascii=False), effective])
++                       json.dumps(inherited, ensure_ascii=False), effective,
++                       json.dumps(retrieval_plan(effective).as_dict(), ensure_ascii=False),
++                       retrieval_counts[key]])
+     audit.freeze_panes = 'A2'
+     audit.auto_filter.ref = audit.dimensions
+     output_path.parent.mkdir(parents=True, exist_ok=True)
+diff --git a/app/modules/cost_match/retrieval_bg.py b/app/modules/cost_match/retrieval_bg.py
+new file mode 100644
+--- /dev/null
++++ b/app/modules/cost_match/retrieval_bg.py
+@@ -0,0 +1,127 @@
++"""Retrieve Bulgarian quotations by shared, versioned work signatures."""
++
++from __future__ import annotations
++
++from dataclasses import asdict, dataclass
++from functools import lru_cache
++from typing import Any
++
++from app.modules.cost_match.bulgarian import is_structural
++from app.modules.cost_match.work_catalog import canonical_work, catalog_digest, work_metadata
++from app.modules.cost_match.work_context import effective_work, is_work_fragment
++
++SIGNATURE_INDEX_VERSION = 1
++DESCRIPTION_WHITESPACE = (' \t\n\r\v\f\x1c\x1d\x1e\x1f\x85\xa0\u1680'
++                         '\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a'
++                         '\u2028\u2029\u202f\u205f\u3000')
++
++
++@dataclass(frozen=True)
++class RetrievalGroup:
++    kind: str
++    value: str
++
++    def matches(self, text: str) -> bool:
++        work = canonical_work(text)
++        if self.kind == 'object':
++            return bool(work.object == self.value)
++        return bool(self.value in getattr(work, self.kind + 's'))
++
++
++@dataclass(frozen=True)
++class RetrievalPlan:
++    groups: tuple[RetrievalGroup, ...]
++    blocked_reason: str | None = None
++    exact_text: str | None = None
++
++    def matches(self, description: str, parents: list[str] | None = None) -> bool:
++        evidence: str = effective_work(description, parents or [])
++        if self.blocked_reason:
++            return False
++        if self.exact_text is not None:
++            return evidence.strip().lower() == self.exact_text
++        return bool(self.groups) and all(group.matches(evidence) for group in self.groups)
++
++    def requirements(self) -> dict[str, Any]:
++        required: dict[str, Any] = {}
++        for group in self.groups:
++            if group.kind == 'object':
++                required['object'] = group.value
++            else:
++                required.setdefault(group.kind + 's', []).append(group.value)
++        return required
++
++    def as_dict(self) -> dict[str, Any]:
++        return {'schema_version': 1, 'catalog_digest': catalog_digest(),
++                'groups': [asdict(group) for group in self.groups],
++                'blocked_reason': self.blocked_reason, 'exact_text': self.exact_text}
++
++
++@lru_cache(maxsize=16384)
++def retrieval_plan(text: str) -> RetrievalPlan:
++    if is_structural(text) or is_work_fragment(text):
++        return RetrievalPlan((), 'work_context_missing' if is_work_fragment(text) else 'structural_row')
++    work = canonical_work(text)
++    if not work.object:
++        return (RetrievalPlan((), exact_text=text.strip().lower()) if text.strip()
++                else RetrievalPlan((), 'work_object_unknown'))
++    groups = [RetrievalGroup('object', work.object)]
++    groups.extend(RetrievalGroup('operation', operation) for operation in work.operations)
++    groups.extend(RetrievalGroup('material', material) for material in work.materials)
++    return RetrievalPlan(tuple(groups))
++
++
++def quotation_text(item: Any) -> str:
++    names = item.descriptions or {}
++    bg = names.get('bg') if isinstance(names, dict) else None
++    return str(bg).strip() if bg is not None and str(bg).strip() else str(item.description or '').strip()
++
++
++def signature_metadata(item: Any) -> dict[str, Any]:
++    quote = quotation_text(item)
++    meta = item.metadata_ or {}
++    context = meta.get('work_context') if isinstance(meta, dict) else None
++    parents = [name for name in context if isinstance(name, str)] if isinstance(context, list) else []
++    signature: dict[str, Any] = work_metadata(effective_work(quote, parents))
++    signature['retrieval_index_version'] = SIGNATURE_INDEX_VERSION
++    signature['index_source_description'] = quote
++    signature['index_work_context'] = context
++    return signature
++
++
++def sql_description(model: Any) -> Any:
++    from sqlalchemy import func
++
++    return func.coalesce(func.nullif(func.btrim(model.descriptions['bg'].as_string(), DESCRIPTION_WHITESPACE), ''),
++                         func.btrim(model.description, DESCRIPTION_WHITESPACE), '')
++
++
++def sql_current_signature(model: Any) -> Any:
++    from sqlalchemy import and_, cast, func, literal
++    from sqlalchemy.dialects.postgresql import JSONB
++
++    signature = model.metadata_['canonical_work']
++    empty_context = cast(literal('null'), JSONB)
++    return and_(
++        signature['retrieval_index_version'].as_integer() == SIGNATURE_INDEX_VERSION,
++        signature['catalog_digest'].as_string() == catalog_digest(),
++        signature['index_source_description'].as_string() == sql_description(model),
++        func.coalesce(cast(signature['index_work_context'], JSONB), empty_context)
++        == func.coalesce(cast(model.metadata_['work_context'], JSONB), empty_context),
++    )
++
++
++def sql_predicate(plan: RetrievalPlan, model: Any) -> Any:
++    from sqlalchemy import and_, cast, false, func
++    from sqlalchemy.dialects.postgresql import JSONB
++
++    if plan.blocked_reason:
++        return false()
++    if plan.exact_text is not None:
++        upper = 'АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЬЮЯ'
++        quote = func.translate(func.lower(sql_description(model)), upper, upper.lower())
++        return func.trim(quote) == plan.exact_text
++    if not plan.groups:
++        return false()
++    work = cast(model.metadata_['canonical_work']['work'], JSONB)
++    return and_(sql_current_signature(model), work.contains(plan.requirements()))
+diff --git a/tests/unit/cost_match/test_retrieval_bg.py b/tests/unit/cost_match/test_retrieval_bg.py
+new file mode 100644
+--- /dev/null
++++ b/tests/unit/cost_match/test_retrieval_bg.py
+@@ -0,0 +1,86 @@
++"""Conjunctive retrieval and its non-negotiable price-safety boundary."""
++
++from app.modules.cost_match.bulgarian import parse_work
++from app.modules.cost_match.matcher import Candidate, best_match
++from app.modules.cost_match.retrieval_bg import retrieval_plan
++from app.modules.cost_match.work_catalog import work_metadata
++
++DEMOLITION = 'Разваляне на 25 см. тухлен зид'
++
++
++def test_bulgarian_wall_synonyms_retrieve_all_applicable_quotes() -> None:
++    plan = retrieval_plan(DEMOLITION)
++    assert [(group.kind, group.value) for group in plan.groups] == [
++        ('object', 'masonry'), ('operation', 'demolish'), ('material', 'brick'),
++    ]
++    for quote in (
++        'Разваляне на 25 см тухлен зид',
++        'Събаряне на 25 см тухлена стена',
++        'Разбиване на 25 см тухлена зидария',
++        'Премахване на 25 см тухлен зид',
++        'Отстраняване на 25 см тухлена стена',
++    ):
++        assert plan.matches(quote), quote
++        assert parse_work(quote).object == 'masonry'
++
++
++def test_building_a_brick_wall_is_not_demolition() -> None:
++    building = retrieval_plan('Изграждане на тухлен зид')
++    assert building.matches('Направа на тухлена зидария')
++    assert building.matches('Изграждане на тухлена стена')
++    assert not building.matches('Събаряне на тухлена стена')
++    assert not retrieval_plan(DEMOLITION).matches('Направа на тухлена зидария')
++
++
++def test_secondary_wall_cannot_stand_in_for_primary_object() -> None:
++    plan = retrieval_plan(DEMOLITION)
++    for quote in ('Премахване на мазилка от тухлен зид',
++                  'Разваляне на кофраж пред тухлен зид',
++                  'Разбиване на замазка до тухлена стена'):
++        assert not plan.matches(quote), quote
++    assert not plan.matches('Разваляне на кофраж')
++    assert not plan.matches('Разваляне на зид от газобетон')
++
++
++def test_dimension_unit_and_price_evidence_remain_final_gates() -> None:
++    plan = retrieval_plan(DEMOLITION)
++    quote = 'Разваляне на 12 см тухлен зид'
++    assert plan.matches(quote)
++    result = best_match(DEMOLITION, [Candidate('wrong', quote, 'м²',
++                                               {'unit_rate': '30', 'currency': 'EUR'})],
++                        query_unit='м²', locale='bg')
++    assert not result.is_confident
++    result = best_match(DEMOLITION, [Candidate('wrong', DEMOLITION, 'м³',
++                                               {'unit_rate': '30', 'currency': 'EUR'})],
++                        query_unit='м²', locale='bg')
++    assert not result.is_confident
++
++
++def test_unknown_object_needs_an_original_verbatim_quote_not_pieces() -> None:
++    line = 'Доставка и монтаж на чела стълби 5 бр.x1.75м. Гранит'
++    plan = retrieval_plan(line)
++    assert plan.exact_text == line.casefold()
++    assert plan.matches(line)
++    assert not plan.matches('Доставка и монтаж на чела стълби 10 бр.x1.75м. Гранит')
++    assert not retrieval_plan('Ф25').matches('Ф25')
++
++
++def test_unstated_material_is_not_a_requirement() -> None:
++    plan = retrieval_plan('Разваляне на зид')
++    assert plan.requirements() == {'object': 'masonry', 'operations': ['demolish']}
++    assert plan.matches('Разваляне на тухлен зид')
++    assert plan.matches('Разваляне на зид от газобетон')
++
++
++def test_equivalent_role_aliases_cannot_hide_a_price_conflict() -> None:
++    alias = 'Отстраняване на 25 см тухлена стена'
++    assert work_metadata(alias)['fingerprint'] == work_metadata(DEMOLITION)['fingerprint']
++    assert work_metadata('Разбиване на 25 см тухлена зидария')['fingerprint'] == work_metadata(DEMOLITION)['fingerprint']
++    extra = 'Отстраняване на 25 см тухлена стена със специална машина'
++    assert work_metadata(extra)['fingerprint'] != work_metadata(DEMOLITION)['fingerprint']
++    result = best_match(DEMOLITION, [
++        Candidate('original', DEMOLITION, 'м²', {'unit_rate': '30', 'currency': 'EUR'}),
++        Candidate('alias', alias, 'кв.м.', {'unit_rate': '95', 'currency': 'EUR'}),
++    ], query_unit='м²', locale='bg')
++    assert not result.is_confident
++    assert result.score.factors['canonical_price_disagreement'] == 1.0
+diff --git a/tests/unit/cost_match/test_retrieval_bg_postgres.py b/tests/unit/cost_match/test_retrieval_bg_postgres.py
+new file mode 100644
+--- /dev/null
++++ b/tests/unit/cost_match/test_retrieval_bg_postgres.py
+@@ -0,0 +1,143 @@
++"""Real PostgreSQL execution of the ERP repository's signature retrieval."""
++
++import asyncio
++import shutil
++import uuid
++from pathlib import Path
++
++import pytest
++
++
++def test_repository_filters_current_signatures_before_limits(monkeypatch) -> None:
++    pg = pytest.importorskip('pixeltable_pgserver')
++    pytest.importorskip('asyncpg')
++    from sqlalchemy import create_engine, select
++    from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
++
++    temporary = Path.cwd() / f'bg-pg-test-{uuid.uuid4().hex}'
++    temporary.mkdir()
++    pgdata = temporary / 'postgres'
++    server = pg.get_server(pgdata, cleanup_mode='stop')
++    monkeypatch.setenv('DATABASE_URL', server.get_uri(driver='asyncpg'))
++    from app.modules.cost_match import repository as repository_module
++    from app.modules.cost_match.matcher import Candidate, best_match
++    from app.modules.cost_match.repository import CostBaseRepository, CostItem
++
++    async def forbidden_vector_call(*args, **kwargs):
++        raise AssertionError('Bulgarian signature retrieval must not bypass its pool with vector hits')
++
++    monkeypatch.setattr(repository_module, '_vector_candidate_ids', forbidden_vector_call)
++
++    sync_engine = create_engine(server.get_uri(driver='psycopg2'))
++    CostItem.__table__.create(sync_engine)
++
++    async def run() -> None:
++        engine = create_async_engine(server.get_uri(driver='asyncpg'))
++        try:
++            async with AsyncSession(engine, expire_on_commit=False) as session:
++                repository = CostBaseRepository(session)
++                query = 'Разваляне на 25 см. тухлен зид'
++
++                def item(code, description, rate='30', **kwargs):
++                    return CostItem(code=code, description=description, unit='м²', rate=rate,
++                                    currency='EUR', source=kwargs.pop('source', 'operator_pricelist'), is_active=True,
++                                    metadata_={'keep': {'source': 'original'}}, **kwargs)
++
++                rows = [item(f'A{i:03}', 'Разваляне на кофраж') for i in range(70)]
++                rows[0].metadata_ = ['legacy operator reference', {'ref': 'original'}]
++                rows += [
++                    item('HOST', 'Премахване на мазилка от тухлен зид'),
++                    item('BUILD', 'Направа на тухлена зидария'),
++                    item('WALL', query, '35', region='BG_SOFIA'),
++                    item('OTHER_PRICE', query, '95'),
++                    item('SYNONYM', 'Отстраняване на 25 см тухлена стена'),
++                    item('SPEC', 'Разваляне на 12 см тухлен зид'),
++                    item('STONE', 'Разваляне на зид от газобетон'),
++                    item('OUTSIDE', query, region='US'),
++                    item('LOCALIZED', 'Original untranslated source', descriptions={'bg': '\xa0\t' + query + ' \n'}),
++                    item('SPACED', '\xa0\t' + query + ' \n'),
++                    item('UNKNOWN', 'Доставка и монтаж на чела стълби 5 бр.x1.75м. Гранит'),
++                    item('FRAGMENT', 'Ф25'),
++                ]
++                rows[-1].metadata_['work_context'] = ['Доставка и монтаж на тръба PPR PN20']
++                catalog_id = uuid.uuid4()
++                rows += [item('CATALOG_ONLY', query, source='test_catalog_external', catalog_id=catalog_id),
++                         item('CATALOG_OTHER', query, source='test_catalog_external', catalog_id=uuid.uuid4()),
++                         item('INACTIVE', query)]
++                rows[-1].is_active = False
++                session.add_all(rows)
++                await session.flush()
++                original = {row.code: (row.description, row.rate, row.unit, row.currency, row.source)
++                            for row in rows}
++
++                result = await repository.find_candidates(query, cost_source='operator', region='BG',
++                                                          unit='м²', limit=1)
++                codes = {row.code for row in result}
++                assert codes == {'WALL', 'OTHER_PRICE', 'SYNONYM', 'SPEC', 'LOCALIZED', 'SPACED'}
++                assert len(result) > 1
++                assert await repository.refresh_bg_signatures(cost_source='operator', region='BG') == 0
++                assert 'canonical_work' not in rows[-1].metadata_
++                assert 'canonical_work' not in next(row for row in rows if row.code == 'OUTSIDE').metadata_
++                for row in rows:
++                    assert original[row.code] == (row.description, row.rate, row.unit, row.currency, row.source)
++                    if row.code == 'A000':
++                        assert row.metadata_['legacy_metadata'] == ['legacy operator reference', {'ref': 'original'}]
++                    else:
++                        assert row.metadata_['keep'] == {'source': 'original'}
++                pool = [Candidate(row.code, query if row.code == 'LOCALIZED' else row.description,
++                                  row.unit, {'unit_rate': row.rate, 'currency': row.currency})
++                        for row in result]
++                assert not best_match(query, pool, query_unit='м²', locale='bg').is_confident
++
++                building = await repository.find_candidates('Изграждане на тухлен зид',
++                                                             cost_source='operator', region='BG', limit=1)
++                assert {row.code for row in building} == {'BUILD'}
++                no_material = await repository.find_candidates('Разваляне на зид',
++                                                                cost_source='operator', region='BG', limit=1)
++                assert 'STONE' in {row.code for row in no_material}
++
++                wall = next(row for row in rows if row.code == 'WALL')
++                wall.description = 'Премахване на мазилка от тухлен зид'
++                await session.flush()
++                assert await repository.refresh_bg_signatures(cost_source='operator', region='BG') == 1
++                assert wall.metadata_['canonical_work']['work']['object'] == 'plaster'
++
++                localized = next(row for row in rows if row.code == 'LOCALIZED')
++                localized.descriptions = {'bg': 'Премахване на мазилка от тухлен зид'}
++                fragment = next(row for row in rows if row.code == 'FRAGMENT')
++                fragment.metadata_ = {**fragment.metadata_,
++                                      'work_context': ['Доставка и монтаж на компенсатор Ф25']}
++                await session.flush()
++                assert await repository.refresh_bg_signatures(cost_source='operator', region='BG') == 2
++                assert localized.metadata_['canonical_work']['work']['object'] == 'plaster'
++                assert fragment.metadata_['canonical_work']['work']['object'] == 'compensator'
++
++                synonym = next(row for row in rows if row.code == 'SYNONYM')
++                synonym.metadata_ = {**synonym.metadata_, 'canonical_work':
++                                     {**synonym.metadata_['canonical_work'], 'retrieval_index_version': 0}}
++                assert await repository.refresh_bg_signatures(cost_source='operator', region='BG') == 1
++                assert await repository.refresh_bg_signatures(cost_source='operator', region='BG') == 0
++                signature = {**synonym.metadata_['canonical_work'], 'catalog_digest': 'obsolete'}
++                synonym.metadata_ = {**synonym.metadata_, 'canonical_work': signature}
++                await session.flush()
++                assert await repository.refresh_bg_signatures(cost_source='operator', region='BG') == 1
++                assert await repository.refresh_bg_signatures(cost_source='operator', region='BG') == 0
++                result = await repository.find_candidates(query, cost_source='operator', region='BG', limit=1)
++                assert {row.code for row in result} == {'OTHER_PRICE', 'SYNONYM', 'SPEC', 'SPACED'}
++                unknown = await repository.find_candidates(
++                    'Доставка и монтаж на чела стълби 5 бр.x1.75м. Гранит',
++                    cost_source='operator', region='BG', limit=1)
++                assert {row.code for row in unknown} == {'UNKNOWN'}
++                scoped = await repository.find_candidates(query, cost_source='test_catalog_external', region='BG',
++                                                          catalog_id=catalog_id, limit=1)
++                assert {row.code for row in scoped} == {'CATALOG_ONLY'}
++                assert len(list((await session.scalars(select(CostItem))).all())) == len(rows)
++        finally:
++            await engine.dispose()
++
++    try:
++        asyncio.run(run())
++    finally:
++        sync_engine.dispose()
++        server.cleanup()
++        shutil.rmtree(temporary)

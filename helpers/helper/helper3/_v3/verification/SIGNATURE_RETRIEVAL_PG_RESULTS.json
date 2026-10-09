@@ -1,0 +1,69 @@
+{
+  "database": "isolated local PostgreSQL 16.11",
+  "live_erp_tested": false,
+  "source_records": 87751,
+  "load_seconds": 19.02,
+  "signatures_rebuilt": 3875,
+  "first_index_seconds": 2.338,
+  "repeat_index_rebuilt": 0,
+  "queries": [
+    {
+      "query": "Разваляне на 25 см. тухлен зид",
+      "requirements": {
+        "object": "masonry",
+        "operations": [
+          "demolish"
+        ],
+        "materials": [
+          "brick"
+        ]
+      },
+      "candidates_with_limit_1": 5,
+      "elapsed_seconds": 0.018
+    },
+    {
+      "query": "Изграждане на тухлен зид",
+      "requirements": {
+        "object": "masonry",
+        "operations": [
+          "install"
+        ],
+        "materials": [
+          "brick"
+        ]
+      },
+      "candidates_with_limit_1": 13,
+      "elapsed_seconds": 0.016
+    },
+    {
+      "query": "Разваляне на зид",
+      "requirements": {
+        "object": "masonry",
+        "operations": [
+          "demolish"
+        ]
+      },
+      "candidates_with_limit_1": 5,
+      "elapsed_seconds": 0.015
+    },
+    {
+      "query": "Въздуховод Ø160",
+      "requirements": {
+        "object": "duct"
+      },
+      "candidates_with_limit_1": 41,
+      "elapsed_seconds": 0.015
+    },
+    {
+      "query": "Мрежест филтър ф2\"",
+      "requirements": {
+        "object": "strainer"
+      },
+      "candidates_with_limit_1": 2,
+      "elapsed_seconds": 0.014
+    }
+  ],
+  "all_quotations_prices_and_provenance_unchanged": true,
+  "database_records": 87751,
+  "passed": true
+}

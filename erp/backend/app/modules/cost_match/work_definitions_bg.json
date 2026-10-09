@@ -1,0 +1,1555 @@
+{
+  "version": 1,
+  "families": [
+    {
+      "id": "primer",
+      "object_patterns": [
+        "\\bгрунд\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "roof_ridge_cap",
+      "object_patterns": [
+        "\\bкапа[кц]\\w*\\s*(?:(?:по|на|за)\\s*|[-–]\\s*)?бил\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "fascia_board",
+      "object_patterns": [
+        "\\bчелн\\w*\\s+д[ъа]ск\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "drip_edge",
+      "object_patterns": [
+        "\\bнадулучн\\w*\\s+пол\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "lift_platform",
+      "object_patterns": [
+        "\\bподемн\\w*\\s+платформ\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "steel_beam",
+      "object_patterns": [
+        "\\bстоманен\\w*\\s+гред\\w*",
+        "\\bгред\\w*\\s+стоманен\\w*",
+        "\\bметалн\\w*\\s+гред\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "steel_column",
+      "object_patterns": [
+        "\\bстоманен\\w*\\s+колон\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "steel_purlin",
+      "object_patterns": [
+        "\\bстоманен\\w*\\s+столиц\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "earthing",
+      "object_patterns": [
+        "\\bзаземл\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "niche",
+      "object_patterns": [
+        "\\bниш[аa]\\b"
+      ],
+      "notation": []
+    },
+    {
+      "id": "wall_opening",
+      "object_patterns": [
+        "\\b(?:направа|пробиване)\\s+(?:на\\s+)?отвор\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "router",
+      "object_patterns": [
+        "\\bрутер\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "network_switch",
+      "object_patterns": [
+        "\\bсуич\\w*"
+      ],
+      "notation": [
+        {
+          "pattern": "(?P<ports>\\d{1,3})\\s*[-–]?\\s*порт\\w*",
+          "fields": [
+            "ports"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "server",
+      "object_patterns": [
+        "\\bсървър\\w*"
+      ],
+      "notation": [
+        {
+          "pattern": "(?P<capacity_tb>\\d+(?:[.,]\\d+)?)\\s*(?:tb|тб)\\b",
+          "fields": [
+            "capacity_tb"
+          ]
+        },
+        {
+          "pattern": "(?P<ram_gb>\\d+)\\s*(?:gb|гб)\\b",
+          "fields": [
+            "ram_gb"
+          ]
+        },
+        {
+          "pattern": "(?P<height_u>\\d+)\\s*u\\b",
+          "fields": [
+            "height_u"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "storage_drive",
+      "object_patterns": [
+        "\\bтвърд\\w*\\s+диск\\w*"
+      ],
+      "notation": [
+        {
+          "pattern": "(?P<capacity_tb>\\d+(?:[.,]\\d+)?)\\s*(?:tb|тб)\\b",
+          "fields": [
+            "capacity_tb"
+          ]
+        },
+        {
+          "pattern": "(?P<capacity_gb>\\d+)\\s*(?:gb|гб)\\b",
+          "fields": [
+            "capacity_gb"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ups",
+      "object_patterns": [
+        "\\b(?:ups|непрекъсваем\\w*\\s+токозахранващ\\w*\\s+източник)\\b"
+      ],
+      "notation": [
+        {
+          "pattern": "(?P<capacity>\\d+(?:[.,]\\d+)?)\\s*(?:kva|ква)\\b",
+          "fields": [
+            "capacity"
+          ]
+        },
+        {
+          "pattern": "(?P<capacity>\\d+)\\s*(?:va|ва)\\b",
+          "fields": [
+            "capacity"
+          ],
+          "canonicalize": [
+            [
+              "\\d{4,}",
+              "kva_range"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fire_detector",
+      "object_patterns": [
+        "\\bпожароизвестител\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "sounder",
+      "object_patterns": [
+        "\\bсигнализатор\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "lightning_terminal",
+      "object_patterns": [
+        "\\bмълниеприемник\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "terminal_clamp",
+      "object_patterns": [
+        "\\b(?:контролна\\s+)?клем\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "inverter",
+      "object_patterns": [
+        "\\bинвертор\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "compensator",
+      "object_patterns": [
+        "\\bкомпенсатор\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "anchor_block",
+      "object_patterns": [
+        "\\bопорен\\w*\\s+блок\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "vrf_indoor_unit",
+      "object_patterns": [
+        "\\bвътрешн\\w*\\s+тял[ао]\\b",
+        "\\bвътрешн\\w*\\s+тел[ао]\\b"
+      ],
+      "notation": [
+        {
+          "pattern": "q\\s*ох\\s*[=:]?\\s*(?P<cooling>\\d+(?:[.,]\\d+)?)",
+          "fields": [
+            "cooling"
+          ]
+        },
+        {
+          "pattern": "q\\s*от\\s*[=:]?\\s*(?P<heating>\\d+(?:[.,]\\d+)?)",
+          "fields": [
+            "heating"
+          ]
+        },
+        {
+          "pattern": "(?P<cooling>\\d+(?:[.,]\\d+)?)\\s*(?:kw|кв|кw)\\b",
+          "fields": [
+            "cooling"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pressure_test",
+      "object_patterns": [
+        "\\b(?:тест\\w*|изпитван\\w*)\\s+за\\s+херметичност\\b"
+      ],
+      "notation": []
+    },
+    {
+      "id": "evacuation",
+      "object_patterns": [
+        "\\bвакуумиран\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "commissioning",
+      "object_patterns": [
+        "\\bпуск\\b.*\\bналадк\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "drain_grate",
+      "object_patterns": [
+        "\\bотводнител\\w*\\s+решетк\\w*",
+        "\\bрешетк\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "drain_channel",
+      "object_patterns": [
+        "\\bотводнител\\w*\\s+канал\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "downpipe",
+      "object_patterns": [
+        "\\bводосточн\\w*\\s+тръб\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "bracket",
+      "object_patterns": [
+        "\\bконзол\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "mounting_plate",
+      "object_patterns": [
+        "\\bпланк\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "cable_tray",
+      "object_patterns": [
+        "\\b(?:каб(?:елн\\w*|\\.)\\s*)?скар\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "roof_vent_cap",
+      "object_patterns": [
+        "\\bшапк\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "window_sill",
+      "object_patterns": [
+        "\\bпрозоречн\\w*\\s+перваз\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "window_reveal",
+      "object_patterns": [
+        "\\bобръщан\\w*\\s+(?:на\\s+)?отвор\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "formwork",
+      "object_patterns": [
+        "\\bкофраж\\w*"
+      ],
+      "notation": [
+        {
+          "pattern": "\\b(?:за|на)\\s+(?:ст\\.?\\s*б\\.?\\s*|стоманобет\\w*\\.?\\s*|външн\\w*\\s+|вътрешн\\w*\\s+|единич\\w*\\s+|двойн\\w*\\s+)?(?P<element>(?:основ\\w*|фундамент\\w*|ивичн\\w*\\s+(?:фундамент\\w*|бетон\\w*)|стен\\w*|колон\\w*|плоч\\w*|гред\\w*|пояс\\w*|таван\\w*|(?:стълбищн\\w*\\s+)?площадк\\w*|стълб\\w*|стъпал\\w*|асансьор\\w*|рамп\\w*|парапет\\w*|пердаш\\w*)(?:\\s*(?:,|и)\\s*(?:основ\\w*|фундамент\\w*|ивичн\\w*\\s+(?:фундамент\\w*|бетон\\w*)|стен\\w*|колон\\w*|плоч\\w*|гред\\w*|пояс\\w*|таван\\w*|(?:стълбищн\\w*\\s+)?площадк\\w*|стълб\\w*|стъпал\\w*|асансьор\\w*|рамп\\w*|парапет\\w*|пердаш\\w*))*)",
+          "fields": [
+            "element"
+          ],
+          "canonicalize": [
+            [
+              "основ\\w*|фундамент\\w*|ивичн\\w*.*",
+              "foundation"
+            ],
+            [
+              "стен\\w*",
+              "wall"
+            ],
+            [
+              "колон\\w*",
+              "column"
+            ],
+            [
+              "плоч\\w*",
+              "slab"
+            ],
+            [
+              "гред\\w*",
+              "beam"
+            ],
+            [
+              "таван\\w*",
+              "ceiling"
+            ],
+            [
+              "стълб\\w*",
+              "stair"
+            ],
+            [
+              "асансьор\\w*",
+              "elevator"
+            ],
+            [
+              "рамп\\w*",
+              "ramp"
+            ],
+            [
+              "парапет\\w*|пердаш\\w*",
+              "parapet"
+            ],
+            [
+              "стъпал\\w*|стълб\\w*",
+              "staircase"
+            ],
+            [
+              "пояс\\w*",
+              "beam"
+            ],
+            [
+              "площадк\\w*",
+              "landing"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "masonry",
+      "object_patterns": [
+        "\\b(?:тухл\\w*(?:\\s+(?:зид\\w*|стен\\w*))?|зидари\\w*|зид\\w*|газобетон\\w*)"
+      ],
+      "notation": [
+        {
+          "pattern": "\\b(?P<brick_units>\\d+(?:[.,]\\d+)?(?:\\s*/\\s*\\d+)?)\\s*тухл\\w*",
+          "fields": [
+            "brick_units"
+          ],
+          "canonicalize": [
+            [
+              "1\\s*/\\s*2",
+              "0.5"
+            ],
+            [
+              "1\\s*/\\s*4",
+              "0.25"
+            ]
+          ]
+        },
+        {
+          "pattern": "\\b(?P<brick_units>12|25|37|38|50|51)\\s*см\\b",
+          "fields": [
+            "brick_units"
+          ],
+          "canonicalize": [
+            [
+              "12",
+              "0.5"
+            ],
+            [
+              "25",
+              "1"
+            ],
+            [
+              "37|38",
+              "1.5"
+            ],
+            [
+              "50|51",
+              "2"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "plaster",
+      "object_patterns": [
+        "\\b(?:(?:варов\\w*|вароцимент\\w*|гипсов\\w*|цимент\\w*)\\s+)?мазилк\\w*"
+      ],
+      "notation": [
+        {
+          "pattern": "(?P<thick_mm>\\d+)\\s*мм\\b",
+          "fields": [
+            "thick_mm"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "putty",
+      "object_patterns": [
+        "\\b(?:(?:гипсов\\w*|цимент\\w*)\\s+)?шпаклов\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "paint",
+      "object_patterns": [
+        "\\b(?:латекс\\w*|боя\\b|боядис\\w*)"
+      ],
+      "notation": []
+    },
+    {
+      "id": "concrete_floor",
+      "object_patterns": [
+        "\\b(?:шлайфан\\w*\\s+)?бетон(?:ов|н)\\w*\\s+настилк\\w*"
+      ],
+      "notation": [
+        {
+          "pattern": "\\b(?:[вbB]\\s*|с\\s*)(?P<class>\\d{1,2}(?:[.,]\\d+)?(?:\\s*/\\s*\\d{1,2})?)\\b",
+          "fields": [
+            "class"
+          ],
+          "canonicalize": [
+            [
+              "15|12\\s*/\\s*15",
+              "c12/15"
+            ],
+            [
+              "20|16\\s*/\\s*20",
+              "c16/20"
+            ],
+            [
+              "25|20\\s*/\\s*25",
+              "c20/25"
+            ],
+            [
+              "30|25\\s*/\\s*30",
+              "c25/30"
+            ],
+            [
+              "35|30\\s*/\\s*37",
+              "c30/37"
+            ],
+            [
+              "40|32\\s*/\\s*40|35\\s*/\\s*45",
+              "c32/40"
+            ],
+            [
+              "45|40\\s*/\\s*50",
+              "c40/50"
+            ],
+            [
+              "50|45\\s*/\\s*55",
+              "c45/55"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ramp",
+      "object_patterns": [
+        "\\b(?:бетон(?:ов|н)\\w*\\s+)?рамп\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "screed",
+      "object_patterns": [
+        "\\b(?:(?:цимент\\w*|бетонов\\w*)\\s+)?замазк\\w*"
+      ],
+      "notation": [
+        {
+          "pattern": "(?P<thick_cm>\\d+(?:[.,]\\d+)?)\\s*см\\b",
+          "fields": [
+            "thick_cm"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "concrete_slab",
+      "object_patterns": [
+        "\\b(?:стоманобетонов\\w*|бетонов\\w*)\\s+плоч\\w*"
+      ],
+      "notation": [
+        {
+          "pattern": "\\b(?:[вbB]\\s*|с\\s*)(?P<class>\\d{1,2}(?:[.,]\\d+)?(?:\\s*/\\s*\\d{1,2})?)\\b",
+          "fields": [
+            "class"
+          ],
+          "canonicalize": [
+            [
+              "15|12\\s*/\\s*15",
+              "c12/15"
+            ],
+            [
+              "20|16\\s*/\\s*20",
+              "c16/20"
+            ],
+            [
+              "25|20\\s*/\\s*25",
+              "c20/25"
+            ],
+            [
+              "30|25\\s*/\\s*30",
+              "c25/30"
+            ],
+            [
+              "35|30\\s*/\\s*37",
+              "c30/37"
+            ],
+            [
+              "40|32\\s*/\\s*40|35\\s*/\\s*45",
+              "c32/40"
+            ],
+            [
+              "45|40\\s*/\\s*50",
+              "c40/50"
+            ],
+            [
+              "50|45\\s*/\\s*55",
+              "c45/55"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "concrete",
+      "object_patterns": [
+        "\\bбетон\\b"
+      ],
+      "notation": [
+        {
+          "pattern": "\\b(?:[вbB]\\s*|с\\s*)(?P<class>\\d{1,2}(?:[.,]\\d+)?(?:\\s*/\\s*\\d{1,2})?)\\b",
+          "fields": [
+            "class"
+          ],
+          "canonicalize": [
+            [
+              "15|12\\s*/\\s*15",
+              "c12/15"
+            ],
+            [
+              "20|16\\s*/\\s*20",
+              "c16/20"
+            ],
+            [
+              "25|20\\s*/\\s*25",
+              "c20/25"
+            ],
+            [
+              "30|25\\s*/\\s*30",
+              "c25/30"
+            ],
+            [
+              "35|30\\s*/\\s*37",
+              "c30/37"
+            ],
+            [
+              "40|32\\s*/\\s*40|35\\s*/\\s*45",
+              "c32/40"
+            ],
+            [
+              "45|40\\s*/\\s*50",
+              "c40/50"
+            ],
+            [
+              "50|45\\s*/\\s*55",
+              "c45/55"
+            ]
+          ]
+        },
+        {
+          "pattern": "\\b(?:за|на)\\s+(?:ст\\.?\\s*б\\.?\\s*|стоманобет\\w*\\.?\\s*|външн\\w*\\s+|вътрешн\\w*\\s+|единич\\w*\\s+|двойн\\w*\\s+)?(?P<element>(?:основ\\w*|фундамент\\w*|ивичн\\w*\\s+(?:фундамент\\w*|бетон\\w*)|стен\\w*|колон\\w*|плоч\\w*|гред\\w*|пояс\\w*|таван\\w*|(?:стълбищн\\w*\\s+)?площадк\\w*|стълб\\w*|стъпал\\w*|асансьор\\w*|рамп\\w*|парапет\\w*|пердаш\\w*)(?:\\s*(?:,|и)\\s*(?:основ\\w*|фундамент\\w*|ивичн\\w*\\s+(?:фундамент\\w*|бетон\\w*)|стен\\w*|колон\\w*|плоч\\w*|гред\\w*|пояс\\w*|таван\\w*|(?:стълбищн\\w*\\s+)?площадк\\w*|стълб\\w*|стъпал\\w*|асансьор\\w*|рамп\\w*|парапет\\w*|пердаш\\w*))*)",
+          "fields": [
+            "element"
+          ],
+          "canonicalize": [
+            [
+              "основ\\w*|фундамент\\w*|ивичн\\w*.*",
+              "foundation"
+            ],
+            [
+              "стен\\w*",
+              "wall"
+            ],
+            [
+              "колон\\w*",
+              "column"
+            ],
+            [
+              "плоч\\w*",
+              "slab"
+            ],
+            [
+              "гред\\w*",
+              "beam"
+            ],
+            [
+              "таван\\w*",
+              "ceiling"
+            ],
+            [
+              "стълб\\w*",
+              "stair"
+            ],
+            [
+              "асансьор\\w*",
+              "elevator"
+            ],
+            [
+              "рамп\\w*",
+              "ramp"
+            ],
+            [
+              "парапет\\w*|пердаш\\w*",
+              "parapet"
+            ],
+            [
+              "стъпал\\w*|стълб\\w*",
+              "staircase"
+            ],
+            [
+              "пояс\\w*",
+              "beam"
+            ],
+            [
+              "площадк\\w*",
+              "landing"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "granite_stairs",
+      "object_patterns": [
+        "\\bгранит\\s*[- ]?\\s*стълб\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "reinforcement",
+      "object_patterns": [
+        "\\b(?:арматур\\w*|армиров\\w*)"
+      ],
+      "notation": [
+        {
+          "pattern": "\\b(?:aiii|a3|в500|b500)\\b.*?(?P<rebar_d>ф\\s*\\d+)",
+          "fields": [
+            "rebar_d"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fan",
+      "object_patterns": [
+        "\\b(?:(?:кръгъл|канален|кръгъл канален)\\s+)?вентилатор\\w*"
+      ],
+      "notation": [
+        {
+          "pattern": "(?P<flow>\\d+(?:[.,]\\d+)?)\\s*(?:m3/h|м3/ч)\\b",
+          "fields": [
+            "flow"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "duct",
+      "object_patterns": [
+        "\\b(?:(?:кръгъл|спирален|правоъгълен)\\s+)?въздуховод\\w*"
+      ],
+      "notation": [
+        {
+          "name": "declared_diameter",
+          "pattern": "(?<!\\w)[фФ∅Øø]\\s*(?P<diameter>\\d+(?:[.,]\\d+)?)\\b",
+          "fields": [
+            "diameter"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "strainer",
+      "object_patterns": [
+        "\\bмрежест\\w*\\s+филтър\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "filter",
+      "object_patterns": [
+        "\\bфилтър\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "diffuser",
+      "object_patterns": [
+        "\\b(?:конусен\\s+смукател\\w*|дифузер\\w*|анемостат\\w*)"
+      ],
+      "notation": []
+    },
+    {
+      "id": "treatment_plant",
+      "object_patterns": [
+        "\\b(?:(?:локално|биологично)\\s+)?пречиствател\\w*\\s+(?:съоръжение|станция)"
+      ],
+      "notation": [
+        {
+          "pattern": "(?P<people>\\d+)\\s*(?:еквивалент\\w*|е\\.?ж\\.?)\\b",
+          "fields": [
+            "people"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pump",
+      "object_patterns": [
+        "\\b(?:(?:циркулационн\\w*|електронн\\w*|потопяем\\w*)\\s+)*помп\\w*"
+      ],
+      "notation": [
+        {
+          "pattern": "q\\s*=\\s*(?P<flow>\\d+(?:[.,]\\d+)?)",
+          "fields": [
+            "flow"
+          ]
+        },
+        {
+          "pattern": "h\\s*=\\s*(?P<head>\\d+(?:[.,]\\d+)?)",
+          "fields": [
+            "head"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "plant",
+      "object_patterns": [
+        "\\b(?:калистемон\\w*|callistemon|pinus|храст\\w*|дървет\\w*|растителност\\w*|трев\\w*)"
+      ],
+      "notation": []
+    },
+    {
+      "id": "fastener",
+      "object_patterns": [
+        "\\b(?:крепеж\\w*|скоб\\w*|анкер\\w*|дюбел\\w*|болт\\w*|гайк\\w*|винт\\w*|шайб\\w*|шпилк\\w*|саморез\\w*)"
+      ],
+      "notation": [
+        {
+          "pattern": "[mм]\\s*(?P<bolt_m>\\d+)\\s*[xх×*]\\s*(?P<bolt_l>\\d+)",
+          "fields": [
+            "bolt_m",
+            "bolt_l"
+          ]
+        },
+        {
+          "pattern": "[-–]?\\s*(?P<pack>\\d+)\\s*бр\\b",
+          "fields": [
+            "pack"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "control",
+      "object_patterns": [
+        "\\b(?:управление|контролер\\w*|термостат\\w*)"
+      ],
+      "notation": []
+    },
+    {
+      "id": "sensor",
+      "object_patterns": [
+        "\\b(?:датчик\\w*|сензор\\w*)"
+      ],
+      "notation": []
+    },
+    {
+      "id": "valve",
+      "object_patterns": [
+        "\\b(?:(?:спирател\\w*|сферичн\\w*|бълочн\\w*|месингов\\w*|чугунен\\w*)\\s+)?(?:кран\\w*|вентил(?:и|ите|ът|а)?\\b|клапан\\w*)|\\bск\\b"
+      ],
+      "notation": [
+        {
+          "pattern": "\\b(?:dn|ду|ф)\\s*(?P<dn>\\d+)\\b",
+          "fields": [
+            "dn"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pipe",
+      "object_patterns": [
+        "\\b(?:тръб\\w*|водопровод\\w*)",
+        "\\bпевп\\b"
+      ],
+      "notation": [
+        {
+          "name": "declared_diameter",
+          "pattern": "(?<!\\w)[фФ∅Øø]\\s*(?P<diameter>\\d+(?:[.,]\\d+)?)\\b",
+          "fields": [
+            "diameter"
+          ]
+        },
+        {
+          "pattern": "\\bpn\\s*(?P<pn>\\d+)\\b",
+          "fields": [
+            "pn"
+          ]
+        },
+        {
+          "pattern": "\\bsdr\\s*(?P<sdr>\\d+(?:[.,]\\d+)?)\\b",
+          "fields": [
+            "sdr"
+          ]
+        },
+        {
+          "pattern": "\\bsn\\s*(?P<sn>\\d+)\\b",
+          "fields": [
+            "sn"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "elbow",
+      "object_patterns": [
+        "\\b(?:коляно\\w*|колена)"
+      ],
+      "notation": []
+    },
+    {
+      "id": "tee",
+      "object_patterns": [
+        "\\bтроиник\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "coupling",
+      "object_patterns": [
+        "\\b(?:муфа\\w*|муфи|холендер\\w*)"
+      ],
+      "notation": []
+    },
+    {
+      "id": "reducer",
+      "object_patterns": [
+        "\\b(?:редук\\w*|преходник\\w*)"
+      ],
+      "notation": []
+    },
+    {
+      "id": "collector",
+      "object_patterns": [
+        "\\bколектор\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "water_meter",
+      "object_patterns": [
+        "\\bводомер\\w*"
+      ],
+      "notation": [
+        {
+          "pattern": "\\b(?:dn|ду|ф)\\s*(?P<dn>\\d+)\\b",
+          "fields": [
+            "dn"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "toilet",
+      "object_patterns": [
+        "\\b(?:тоалетн\\w*\\s+чини\\w*|моноблок\\w*)"
+      ],
+      "notation": []
+    },
+    {
+      "id": "basin",
+      "object_patterns": [
+        "\\b(?:умивалник\\w*|мивк\\w*)"
+      ],
+      "notation": []
+    },
+    {
+      "id": "siphon",
+      "object_patterns": [
+        "\\bсифон\\w*"
+      ],
+      "notation": [
+        {
+          "pattern": "\\b(?:dn|ду|ф)\\s*(?P<dn>\\d+)\\b",
+          "fields": [
+            "dn"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "radiator",
+      "object_patterns": [
+        "\\bрадиатор\\w*"
+      ],
+      "notation": [
+        {
+          "pattern": "(?P<sections>\\d+)\\s*член\\w*",
+          "fields": [
+            "sections"
+          ]
+        },
+        {
+          "pattern": "(?P<power>\\d+(?:[.,]\\d+)?)\\s*(?:kw|кв)\\b",
+          "fields": [
+            "power"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "convector",
+      "object_patterns": [
+        "\\bконвектор\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "boiler",
+      "object_patterns": [
+        "\\bбоилер\\w*"
+      ],
+      "notation": [
+        {
+          "pattern": "(?P<volume_l>\\d+)\\s*л\\b",
+          "fields": [
+            "volume_l"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "chiller",
+      "object_patterns": [
+        "\\bчилър\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "air_conditioner",
+      "object_patterns": [
+        "\\b(?:климатик\\w*|климатизатор\\w*)"
+      ],
+      "notation": [
+        {
+          "pattern": "(?P<btu>\\d+)\\s*btu\\b",
+          "fields": [
+            "btu"
+          ]
+        },
+        {
+          "pattern": "(?P<cooling>\\d+(?:[.,]\\d+)?)\\s*(?:kw|кв)\\b",
+          "fields": [
+            "cooling"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "heat_pump",
+      "object_patterns": [
+        "\\bтермопомп\\w*"
+      ],
+      "notation": [
+        {
+          "pattern": "(?P<power>\\d+(?:[.,]\\d+)?)\\s*(?:kw|кв)\\b",
+          "fields": [
+            "power"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "door",
+      "object_patterns": [
+        "\\b(?:врат\\w*|входна\\s+врат\\w*)"
+      ],
+      "notation": []
+    },
+    {
+      "id": "window",
+      "object_patterns": [
+        "\\b(?:дограма\\w*|прозор\\w*|витрин\\w*)"
+      ],
+      "notation": []
+    },
+    {
+      "id": "drywall",
+      "object_patterns": [
+        "\\bгипсокартон\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "skylight",
+      "object_patterns": [
+        "\\b(?:оберлихт\\w*|капандур\\w*)"
+      ],
+      "notation": []
+    },
+    {
+      "id": "ceiling",
+      "object_patterns": [
+        "\\bокачен\\w*\\s+таван\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "board",
+      "object_patterns": [
+        "\\b(?:osb|шперплат\\w*|мдф|mdf|пдч|плоскост\\w*)\\b"
+      ],
+      "notation": []
+    },
+    {
+      "id": "cladding",
+      "object_patterns": [
+        "\\b(?:(?:дъсчен\\w*|металн\\w*)\\s+)?обшивк\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "vapour_barrier",
+      "object_patterns": [
+        "\\b(?:пароизолацион\\w*\\s+фолио|пароизолаци\\w*)"
+      ],
+      "notation": []
+    },
+    {
+      "id": "profile",
+      "object_patterns": [
+        "\\b(?:металн\\w*\\s+)?профил\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "mesh",
+      "object_patterns": [
+        "\\b(?:(?:армиров\\w*|армиращ\\w*|стоманен\\w*)\\s+)?мреж\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "curb",
+      "object_patterns": [
+        "\\bбордюр\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "tiling",
+      "object_patterns": [
+        "\\b(?:теракот\\w*|фаянс\\w*|гранитогрес\\w*|плочк\\w*)"
+      ],
+      "notation": []
+    },
+    {
+      "id": "insulation",
+      "object_patterns": [
+        "\\b(?:топлоизола\\w*|изолац\\w*|eps\\b|xps\\b|минералн\\w*\\s+ват\\w*)",
+        "\\bтоплозолац\\w*"
+      ],
+      "notation": [
+        {
+          "pattern": "(?P<thick_cm>\\d+(?:[.,]\\d+)?)\\s*см\\b",
+          "fields": [
+            "thick_cm"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "waterproofing",
+      "object_patterns": [
+        "\\b(?:хидроизола\\w*|битум\\w*\\s+мембран\\w*)"
+      ],
+      "notation": [
+        {
+          "pattern": "(?P<layers>\\d+)\\s*пласт\\w*",
+          "fields": [
+            "layers"
+          ]
+        },
+        {
+          "pattern": "(?P<thick_mm>\\d+(?:[.,]\\d+)?)\\s*мм\\b",
+          "fields": [
+            "thick_mm"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "geotextile",
+      "object_patterns": [
+        "\\bгеотекстил\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "geogrid",
+      "object_patterns": [
+        "\\bгеомреж\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "cable",
+      "object_patterns": [
+        "\\b(?:кабел\\w*|проводник\\w*)"
+      ],
+      "notation": [
+        {
+          "name": "cable_model_and_section",
+          "pattern": "(?<!\\w)(?P<model>свт)\\s*(?P<cores>[1-9]\\d?)\\s*[xх×]\\s*(?P<section>\\d+(?:[.,]\\d+)?)\\s*(?:mm|мм)(?:²|2)(?!\\w)",
+          "fields": [
+            "model",
+            "cores",
+            "section"
+          ],
+          "corpus_evidence": [
+            "OPR2-000328",
+            "OPR3-000328"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "panel",
+      "object_patterns": [
+        "\\b(?:табло\\w*|разпределител\\w*\\s+табл\\w*)"
+      ],
+      "notation": [
+        {
+          "pattern": "(?P<modules>\\d+)\\s*модул\\w*",
+          "fields": [
+            "modules"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "switchgear",
+      "object_patterns": [
+        "\\b(?:прекъсвач\\w*|предпазител\\w*)"
+      ],
+      "notation": [
+        {
+          "pattern": "(?P<amperage>\\d+)\\s*[aа](?![a-zа-я])",
+          "fields": [
+            "amperage"
+          ]
+        },
+        {
+          "pattern": "(?P<modules>\\d+)\\s*модул\\w*",
+          "fields": [
+            "modules"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "luminaire",
+      "object_patterns": [
+        "\\b(?:осветител\\w*|ламп\\w*|плафон\\w*|прожектор\\w*)"
+      ],
+      "notation": [
+        {
+          "pattern": "(?P<count>\\d+)\\s*[xх×]\\s*(?P<lamp_w>\\d+(?:[.,]\\d+)?)\\s*(?:w|вт)\\b",
+          "fields": [
+            "count",
+            "lamp_w"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "socket",
+      "object_patterns": [
+        "\\b(?:контакт\\w*|розетк\\w*)"
+      ],
+      "notation": [
+        {
+          "pattern": "(?P<poles>\\d)\\s*[pп]\\s*\\+\\s*(?P<extras>e|з|н)\\b",
+          "fields": [
+            "poles",
+            "extras"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "switch",
+      "object_patterns": [
+        "\\b(?:електрически\\s+)?ключ\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "camera",
+      "object_patterns": [
+        "\\bкамер\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "earthwork",
+      "object_patterns": [
+        "\\b(?:изкоп\\w*|насип\\w*)"
+      ],
+      "notation": []
+    },
+    {
+      "id": "roof_tile",
+      "object_patterns": [
+        "\\bкеремид\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "gutter",
+      "object_patterns": [
+        "\\b(?:улук\\w*|улуц\\w*|олук\\w*)"
+      ],
+      "notation": [
+        {
+          "pattern": "(?P<width_mm>\\d+)\\s*мм\\b",
+          "fields": [
+            "width_mm"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "railing",
+      "object_patterns": [
+        "\\b(?:парапет\\w*|ограда\\w*|ограждение\\w*)"
+      ],
+      "notation": []
+    },
+    {
+      "id": "scaffold",
+      "object_patterns": [
+        "\\bскел\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "manhole",
+      "object_patterns": [
+        "\\b(?:водомерн\\w*|ревизионн\\w*|каналн\\w*|дъждовн\\w*|дренажн\\w*|газов\\w*|топл\\w*|минн\\w*|колекторн\\w*|смотров\\w*|дождеприемн\\w*)\\s+шахт\\w*",
+        "\\bшахт\\w*",
+        "\\bкладенц\\w*",
+        "\\bводомерн\\w*\\s+кас\\w*",
+        "\\b(?:рш|лпс)\\b"
+      ],
+      "notation": [
+        {
+          "pattern": "(?P<diam_mm>\\d+)\\s*/\\s*(?P<depth_mm>\\d+)",
+          "fields": [
+            "diam_mm",
+            "depth_mm"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "air_valve",
+      "object_patterns": [
+        "\\b(?:конусн\\w*\\s+)?смукател\\w*"
+      ],
+      "notation": []
+    },
+    {
+      "id": "mixer_tap",
+      "object_patterns": [
+        "\\bсмесител\\w*(?:\\s+батери\\w*)?"
+      ],
+      "notation": []
+    }
+  ],
+  "operations": [
+    {
+      "id": "demolish",
+      "pattern": "\\b(?:демонтаж|демонтиране|разваляне|разрушаване|къртене|разбиване|премахване|събаряне|очукване|обичкарване)\\b"
+    },
+    {
+      "id": "install",
+      "pattern": "\\b(?:монтаж|монтиране|направа|изпълнение|изработка|изграждане|полагане|поставяне|зидане|иззиждане|засаждане|засяване|бетониране|боядисване|боядисвене|лакиране|шпакловане|измазване|облицоване)\\b"
+    },
+    {
+      "id": "repair",
+      "pattern": "\\b(?:ремонт|ремонтиране|поправка|възстановяване|преработка)\\b"
+    },
+    {
+      "id": "haul",
+      "pattern": "\\b(?:извозване|транспортиране|превозване|превоз|транспорт)\\b"
+    },
+    {
+      "id": "test",
+      "pattern": "\\b(?:изпитване|тестване|измерване|наладка|пускане)\\b"
+    },
+    {
+      "id": "clean",
+      "pattern": "\\b(?:почистване|измиване|промиване|обезпрашаване)\\b"
+    },
+    {
+      "id": "prime",
+      "pattern": "\\b(?:грундиране|грундира|грунд)\\b"
+    },
+    {
+      "id": "excavate",
+      "pattern": "\\b(?:изкоп|изкопаване)\\b"
+    },
+    {
+      "id": "backfill",
+      "pattern": "\\b(?:засипване|обратен насип|засипка|зариване|заривка)\\b"
+    },
+    {
+      "id": "polish",
+      "pattern": "\\b(?:шла[йи]фан\\w*|полиран\\w*|шлифован\\w*)\\b"
+    },
+    {
+      "id": "connect",
+      "pattern": "\\b(?:свързване|присъединяване|присъединител\\w*)\\b"
+    },
+    {
+      "id": "drain",
+      "pattern": "\\b(?:отводняване|дрениране|дренаж)\\b"
+    },
+    {
+      "id": "fill",
+      "pattern": "\\b(?:насипване|(?<!обратен\\s)насип\\w*|запълване|напълване|подсипване)\\b"
+    },
+    {
+      "id": "insulate",
+      "pattern": "\\b(?:изолиране|топлоизолиране|хидроизолиране|звукоизолиране)\\b"
+    },
+    {
+      "id": "pull",
+      "pattern": "\\b(?:изтегл\\w*|протегл\\w*)\\b"
+    },
+    {
+      "id": "compact",
+      "pattern": "\\b(?:трамбован\\w*|уплътняван\\w*|трамбовк\\w*|уплътнен\\w*)\\b"
+    }
+  ],
+  "materials": [
+    {
+      "id": "brick",
+      "pattern": "\\bтухл\\w*"
+    },
+    {
+      "id": "lime_cement",
+      "pattern": "\\bвароцимент\\w*"
+    },
+    {
+      "id": "lime",
+      "pattern": "\\b(?:варов\\w*|вар\\b)"
+    },
+    {
+      "id": "gypsum",
+      "pattern": "\\bгипс\\w*"
+    },
+    {
+      "id": "cement",
+      "pattern": "\\bцимент\\w*"
+    },
+    {
+      "id": "pvc",
+      "pattern": "\\bpvc\\b|\\bпвц\\b"
+    },
+    {
+      "id": "pe",
+      "pattern": "\\b(?:pe|hdpe|полиетилен\\w*)\\b|\\bпевп\\b"
+    },
+    {
+      "id": "ppr",
+      "pattern": "\\b(?:ppr|полипропилен\\w*)\\b"
+    },
+    {
+      "id": "copper",
+      "pattern": "\\b(?:меден\\w*|медни|медна|медта)\\b"
+    },
+    {
+      "id": "steel",
+      "pattern": "\\b(?:стоман\\w*|поцинкован\\w*)"
+    },
+    {
+      "id": "aluminium",
+      "pattern": "\\b(?:алумини\\w*|ал\\s*\\.)"
+    },
+    {
+      "id": "wood",
+      "pattern": "\\b(?:дървен\\w*|дървес\\w*|дъсчен\\w*)"
+    },
+    {
+      "id": "concrete",
+      "pattern": "\\b(?:бетон\\w*|стоманобетон\\w*|ст\\.?\\s*б\\.)"
+    },
+    {
+      "id": "bitumen",
+      "pattern": "\\bбитум\\w*"
+    },
+    {
+      "id": "silicone",
+      "pattern": "\\bсиликон\\w*"
+    },
+    {
+      "id": "mineral_wool",
+      "pattern": "\\b(?:минералн\\w*|каменн\\w*|стъклен\\w*)\\s+ват\\w*"
+    },
+    {
+      "id": "eps",
+      "pattern": "\\b(?:eps|епс)\\b|\\bекспандиран\\w*\\s+полистирол\\w*"
+    },
+    {
+      "id": "xps",
+      "pattern": "\\b(?:xps|хпс)\\b|\\bекструдиран\\w*\\s+полистирол\\w*"
+    },
+    {
+      "id": "latex",
+      "pattern": "\\bлатекс\\w*"
+    },
+    {
+      "id": "ceramic",
+      "pattern": "\\b(?:фаянс\\w*|теракот\\w*|гранитогрес\\w*|керамич\\w*\\s+плочк\\w*)\\b"
+    },
+    {
+      "id": "glass",
+      "pattern": "\\bстъкл\\w*"
+    },
+    {
+      "id": "granite",
+      "pattern": "\\bгранит\\b(?!огрес)"
+    },
+    {
+      "id": "gravel",
+      "pattern": "\\b(?:чакъл\\w*|трошен\\w*\\s+камък\\w*)\\b"
+    },
+    {
+      "id": "sand",
+      "pattern": "\\bпясък\\w*"
+    },
+    {
+      "id": "brass",
+      "pattern": "\\bмесинг\\w*"
+    },
+    {
+      "id": "aerated_concrete",
+      "pattern": "\\b(?:газобетон\\w*|пенобетон\\w*|газосиликат\\w*|пеноблок\\w*)\\b"
+    },
+    {
+      "id": "ceramic_granite",
+      "pattern": "\\bкерамогранит\\w*"
+    }
+  ],
+  "context_operations": [
+    {
+      "id": "demolish",
+      "objects": [
+        "masonry",
+        "plaster",
+        "screed"
+      ],
+      "pattern": "\\bотстраняване\\b"
+    }
+  ]
+}

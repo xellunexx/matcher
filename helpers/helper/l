@@ -1,0 +1,57 @@
+# Bulgarian KCC matcher: what to do
+
+**This is a patch for the ERP backend in the source bundle you uploaded, not for the separate `xellunexx/matcher` prototype.** It needs no LLM or model server for Bulgarian rows. It does **not** contain a database or the price corpus.
+
+## Which file is which
+
+| Delivered file | Purpose | What to do |
+| --- | --- | --- |
+| `bulgarian-costmatch-fix.patch` | Diff against your uploaded ERP backend source. | **Preferred:** apply once to that backend; check it first. Do not also copy the ZIP. |
+| `bulgarian-costmatch-fix.zip` | The same changed backend files, tests and offline runner at their backend-relative locations, plus an installation note. **Not** a full ERP installation. | **Alternative** if you cannot apply the patch: extract into a copy of the matching ERP backend, merging its folders. Do not also apply the patch. |
+| `kcc2-DETERMINISTIC-output.xlsx` | An already generated **offline test result**, with a `BG_MATCH_AUDIT` sheet. | Open it to inspect priced rows and reasons for blank prices. **Do not** copy it into the backend, import it as price data or treat it as verified ground truth. |
+| This Markdown file | Instructions and explanation. | Read it; there is nothing to install from it. |
+
+## Apply, check, use
+
+1. **Make a backup** of the ERP backend and stop the running backend. Keep your original KCC workbook and corpus unchanged. Do not apply this to `xellunexx/matcher` or another version of the ERP.
+2. **Choose exactly one code-installation route:**
+   - **Patch (recommended):** from the ERP backend's top directory, make the patch available there and run:
+
+     ```powershell
+     git apply --no-index --check .\bulgarian-costmatch-fix.patch
+     if ($LASTEXITCODE -ne 0) { throw 'Patch check failed. Stop; nothing should be installed.' }
+     git apply --no-index .\bulgarian-costmatch-fix.patch
+     if ($LASTEXITCODE -ne 0) { throw 'Patch application failed; restore the backend backup.' }
+     ```
+
+     If the **check** fails, **stop**: your backend differs from the supplied source. Do not force the patch or blindly overwrite it with the ZIP.
+   - **ZIP instead, only if this is the same source version you uploaded:** extract its `app`, `scripts` and `tests` folders into your **backed-up ERP backend**, preserving their internal paths. It replaces only the corresponding files; it does not replace the whole backend. The included Markdown note is optional. **Do not** use the ZIP to bypass a failed patch check, or install both ZIP and patch.
+3. **Check the code** from the patched backend directory, using its normal Python environment:
+
+   ```powershell
+   python -m pytest --confcutdir=tests/unit tests/unit/test_cost_match_matcher.py tests/unit/cost_match -q --tb=short
+   ```
+
+   Expected on the supplied version: **129 passed**. If dependencies are missing or tests fail, do not claim the backend is validated; use its existing dependency setup or restore your backup. In my lightweight test environment, three warnings came from missing async pytest configuration plugins; the focused tests still passed.
+4. **Restart your ERP backend as you normally do.** Run a **new** KCC match there to evaluate its real service/database behavior. The attached spreadsheet is an offline CSV run, not a live ERP result.
+5. **Optional offline reproduction:** with the exported `cost_items.csv` and original `kcc2-INPUT.xlsx`, run the included CSV runner from the backend directory (supply their locations as needed):
+
+   ```powershell
+   python scripts/kcc_match_bg.py --corpus cost_items.csv --input kcc2-INPUT.xlsx --output fresh-output.xlsx
+   ```
+
+   Open the resulting workbook's `BG_MATCH_AUDIT` sheet: `Decision` says exact/review/unmatched; the source code, quotation, parsed object and specifications, rejection reasons and alternatives are recorded there. On the supplied **unpriced** input, review/unmatched **unit-rate and total cells remain blank**. The runner preserves any rates already in the input rather than overwriting them. This runner uses the supplied KCC2 column layout and only auto-prices active positive **operator-origin** quotations. Its CSV export lacks some live database metadata and aliases.
+
+**Undo:** restore the backed-up backend. If you used the patch and have made no further edits to the patched files, you can instead check and reverse it with `git apply --no-index --reverse --check .\bulgarian-costmatch-fix.patch` followed by `git apply --no-index --reverse .\bulgarian-costmatch-fix.patch`.
+
+## What was wrong and what changed
+
+The old matcher **retrieved and scored words**, then treated a high score as evidence of equivalent work. `150` and `h` made a fan score 1.0 against a shrub. Shared words such as demolition and wall made brick-wall demolition match formwork demolition. A plaster noun could answer painting, and a matching unit did not make different diameters or pipe sizes interchangeable. The ERP already withheld **review-tier** prices; the failure was that incompatible candidates reached **exact/high-confidence tiers before that protection applied**. Section headings could also be offered prices. UUID-shaped learned operator rulings were unreachable through the `opr` base.
+
+The change parses the Bulgarian row into its **primary object, operation(s), material, supply/work scope, location, dimensions/specifications and included/excluded tasks**. It compares those requirements to each candidate **before** a lexical score can authorize a price. A contradiction (for example, fan versus plant, Ø160 versus Ø400, wall versus ceiling, or area versus volume) blocks the price; missing evidence leaves the row for review instead of guessing. Digits alone no longer count as semantic evidence or retrieval terms. Headers are rejected before matching. Compatible operator evidence remains traceable; duplicate prices using equivalent unit spellings are checked for disagreement. The `opr` base now includes learned UUID codes.
+
+## Why this is safer—and what remains unproved
+
+On a **fresh offline** run of the supplied workbook and 87,751-row CSV, **345 work rows received exact operator quotations, 188 require review and 2 were unmatched**; **all 19 highlighted bad positions remained unpriced**. The genuine learned brickwork twin was still accepted at **8 EUR/m³**. The changed matcher/workbook tests passed (**129**). These checks show the reported failure modes are blocked while at least some real evidence survives.
+
+**Not a claim of perfect understanding:** the rules have finite Bulgarian construction vocabulary. The 345 quotes were not checked against a fully corrected reference workbook, and I did **not** run the new code end-to-end against your live PostgreSQL ERP. Unknown wording should stay unresolved until tested with more real KCC/corpus examples—not be priced by loosening the gates.

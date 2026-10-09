@@ -1,0 +1,1422 @@
+# DDC-CWICR-OE: DataDrivenConstruction · OpenConstructionERP
+# Copyright (c) 2026 Artem Boiko / DataDrivenConstruction
+"""Approval Routes business logic.
+
+Stateless service layer that owns the workflow rules:
+
+* :meth:`ApprovalRouteService.create_route` - insert a route template + steps.
+* :meth:`ApprovalRouteService.start_instance` - begin a workflow for a target.
+* :meth:`ApprovalRouteService.submit_decision` - record a decision on the
+  current step; auto-advance / auto-complete the instance.
+* :meth:`ApprovalRouteService.cancel_instance` - terminate a pending workflow.
+
+Every transition writes an :func:`app.core.audit_log.log_activity` row
+under ``entity_type='approval_instance'``. Race protection is layered:
+
+* The DB enforces ``UniqueConstraint(instance_id, step_id,
+  approver_user_id)`` so two concurrent decision rows from the same user
+  on the same step collide at flush time.
+* The service additionally re-fetches the instance after acquiring an
+  exclusive lock (``with_for_update``) before mutating ``status`` /
+  ``current_step_ordinal``, so two approvers at the same step do not
+  race the advance computation.
+"""
+
+from __future__ import annotations
+
+import logging
+import uuid
+from collections import defaultdict
+from datetime import UTC, datetime, timedelta
+
+from fastapi import HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.audit_log import log_activity
+from app.core.events import event_bus
+from app.core.permissions import ROLE_HIERARCHY, _resolve_role
+from app.modules.approval_routes import analytics, delegation_engine
+from app.modules.approval_routes.delegation_engine import DelegationView
+from app.modules.approval_routes.models import (
+    INSTANCE_STATUSES,
+    STEP_MODES,
+    TARGET_KINDS,
+    Delegation,
+    Instance,
+    Route,
+    Step,
+    StepState,
+)
+from app.modules.approval_routes.repository import ApprovalRouteRepository
+from app.modules.approval_routes.schemas import (
+    AnalyticsBottleneck,
+    AnalyticsKpis,
+    AnalyticsRoleStat,
+    AnalyticsStepStat,
+    ApprovalAnalyticsResponse,
+    DecisionSubmit,
+    InstanceCreate,
+    RouteCreate,
+    RouteUpdate,
+    StepCreate,
+)
+from app.modules.approval_routes.simulate import min_approvals_to_clear, named_approver_quorum_conflict, step_cleared
+from app.modules.approval_routes.timeline import compute_timeline
+
+logger = logging.getLogger(__name__)
+
+
+def delegation_views_from_rows(rows: list[Delegation]) -> list[DelegationView]:
+    """Map :class:`Delegation` ORM rows to the pure engine's view objects.
+
+    Shared with the SLA monitor so both the decision path and the breach
+    sweep resolve out-of-office stand-ins through the same pure logic.
+    """
+    return [
+        DelegationView(
+            delegator_id=d.delegator_user_id,
+            delegate_id=d.delegate_user_id,
+            is_active=d.is_active,
+            starts_at=d.starts_at,
+            ends_at=d.ends_at,
+            project_id=d.project_id,
+        )
+        for d in rows
+    ]
+
+
+def step_holder(
+    instance: Instance,
+    step: Step,
+    delegations: list[DelegationView],
+    *,
+    now: datetime,
+    project_id: uuid.UUID | None,
+) -> uuid.UUID | None:
+    """Resolve who is expected to act on ``step`` right now.
+
+    This is the notification question, not the entitlement question, and the
+    two are not interchangeable: entitlement may legitimately name nobody (a
+    role step, which the engine never expands to members) while a nudge has to
+    reach someone. In order of precedence: the per-instance assignee override,
+    the named step approver resolved through any active out-of-office
+    delegation, and finally the user who started the instance.
+
+    Shared by the SLA monitor's breach reminder and the escalation reader so
+    the person nudged and the person reported as holding the step cannot
+    disagree.
+
+    Args:
+        instance: The pending instance.
+        step: Its current step.
+        delegations: Active delegation views; the caller batches the load.
+        now: Evaluation time, for the delegation window.
+        project_id: The route's project, for project-scoped delegations.
+
+    Returns:
+        The user expected to act, or ``None`` when nothing names one.
+    """
+    if instance.current_assignee_user_id is not None:
+        return instance.current_assignee_user_id
+    if step.approver_user_id is not None:
+        return delegation_engine.resolve_delegate(
+            step.approver_user_id,
+            delegations,
+            now=now,
+            project_id=project_id,
+        )
+    return instance.started_by
+
+
+def _validate_target_kind(kind: str) -> None:
+    if kind not in TARGET_KINDS:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"Unknown target_kind: {kind!r}",
+        )
+
+
+def _validate_step_mode(mode: str) -> None:
+    if mode not in STEP_MODES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"Unknown step mode: {mode!r}",
+        )
+
+
+def _validate_step_quorum(step: StepCreate) -> None:
+    """Refuse a named approver asked for more than one approval.
+
+    Checked here rather than on :class:`StepCreate` because ``clone_route``
+    rebuilds that schema from stored rows, and a validation error raised
+    there would surface as a 500 instead of this 422.
+    """
+    conflict = named_approver_quorum_conflict(step)
+    if conflict is not None:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=conflict)
+
+
+def _safe_publish(name: str, data: dict[str, object]) -> None:
+    """Fire-and-forget a lifecycle event without coupling to consumers.
+
+    Detached so a subscriber that opens its own session (variations,
+    changeorders, contracts reacting to a terminal decision) can't
+    deadlock the request transaction under SQLite's single-writer lock.
+    Any failure to schedule is swallowed at debug - emitting an event
+    must never break the workflow transition that produced it.
+    """
+    try:
+        event_bus.publish_detached(name, data, source_module="approval_routes")
+    except Exception:  # pragma: no cover - defensive, e.g. no running loop
+        logger.debug("approval_routes event publish skipped: %s", name)
+
+
+def _caller_role_satisfies(caller_role: str | None, required_role: str) -> bool:
+    """Whether the caller's effective role meets a role-based step's gate.
+
+    The route author configures ``approver_role`` as an app role name
+    (admin / manager / editor / viewer) or an industry alias. A caller
+    clears the gate when their role is an exact match OR ranks at or above
+    the required role in the permission hierarchy. Aliases (estimator,
+    owner, ...) are resolved to their canonical Role first - mirroring
+    :data:`app.core.permissions.ROLE_ALIASES`, the same translation
+    ``documents._iso_role_for`` performs - so a "quantity_surveyor"
+    satisfies an "editor" step. Unknown roles cannot satisfy a gate, so an
+    unrecognised caller or required role fails closed.
+    """
+    caller = (caller_role or "").strip().lower()
+    required = (required_role or "").strip().lower()
+    if caller and caller == required:
+        return True
+    caller_resolved = _resolve_role(caller)
+    required_resolved = _resolve_role(required)
+    if caller_resolved is None or required_resolved is None:
+        return False
+    return ROLE_HIERARCHY.get(caller_resolved, -99) >= ROLE_HIERARCHY.get(required_resolved, 99)
+
+
+class ApprovalRouteService:
+    """Business logic for the approval-routes feature."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+        self.repo = ApprovalRouteRepository(session)
+
+    # ── Routes ────────────────────────────────────────────────────────
+
+    async def get_route(self, route_id: uuid.UUID) -> Route:
+        row = await self.repo.get_route(route_id)
+        if row is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Route not found",
+            )
+        return row
+
+    async def list_routes(
+        self,
+        *,
+        project_id: uuid.UUID | None,
+        target_kind: str | None = None,
+        include_inactive: bool = True,
+    ) -> list[Route]:
+        if target_kind is not None:
+            _validate_target_kind(target_kind)
+        return await self.repo.list_routes(
+            project_id=project_id,
+            target_kind=target_kind,
+            include_inactive=include_inactive,
+        )
+
+    async def list_steps(self, route_id: uuid.UUID) -> list[Step]:
+        return await self.repo.list_steps(route_id)
+
+    async def list_steps_for_routes(
+        self,
+        route_ids: list[uuid.UUID],
+    ) -> dict[uuid.UUID, list[Step]]:
+        """Batched accessor - kills the per-route N+1 in :get:`/routes`."""
+        return await self.repo.list_steps_for_routes(route_ids)
+
+    async def create_route(
+        self,
+        payload: RouteCreate,
+        *,
+        created_by: uuid.UUID | None,
+    ) -> Route:
+        """Insert a route + all its steps atomically.
+
+        The schema validator already enforced dense ordinals 1..N; we
+        re-check the mode whitelist here because the literal type
+        constrains it at the API boundary but a service caller (e.g. a
+        seed script) can bypass that.
+        """
+        _validate_target_kind(payload.target_kind)
+        for step in payload.steps:
+            _validate_step_mode(step.mode)
+            _validate_step_quorum(step)
+
+        route = Route(
+            project_id=payload.project_id,
+            name=payload.name,
+            target_kind=payload.target_kind,
+            is_active=payload.is_active,
+            created_by=created_by,
+        )
+        await self.repo.add_route(route)
+
+        step_rows = [
+            Step(
+                route_id=route.id,
+                ordinal=s.ordinal,
+                approver_role=s.approver_role,
+                approver_user_id=s.approver_user_id,
+                mode=s.mode,
+                required_approver_count=s.required_approver_count,
+                sla_hours=s.sla_hours,
+            )
+            for s in payload.steps
+        ]
+        await self.repo.add_steps_bulk(step_rows)
+
+        await log_activity(
+            self.session,
+            actor_id=created_by,
+            entity_type="approval_route",
+            entity_id=str(route.id),
+            action="created",
+            to_status="active" if route.is_active else "inactive",
+            module="approval_routes",
+            metadata={
+                "name": route.name,
+                "target_kind": route.target_kind,
+                "step_count": len(step_rows),
+                "project_id": str(route.project_id) if route.project_id else None,
+            },
+        )
+        return route
+
+    async def clone_route(
+        self,
+        route_id: uuid.UUID,
+        *,
+        project_id: uuid.UUID,
+        name: str | None,
+        created_by: uuid.UUID | None,
+    ) -> Route:
+        """Copy a route (typically a read-only system preset) into a project.
+
+        The clone is an ordinary project-scoped route - no ``system_key`` - so
+        it can be edited straight away through :meth:`update_route`. This is
+        how a team "adopts" a tenant-wide preset in one click while keeping
+        the original preset untouched and reusable by every other project.
+        """
+        source = await self.get_route(route_id)
+        source_steps = await self.repo.list_steps(route_id)
+        if not source_steps:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Route has no steps to clone",
+            )
+
+        payload = RouteCreate(
+            project_id=project_id,
+            name=(name or source.name).strip() or source.name,
+            target_kind=source.target_kind,
+            is_active=True,
+            steps=[
+                StepCreate(
+                    ordinal=s.ordinal,
+                    approver_role=s.approver_role,
+                    approver_user_id=s.approver_user_id,
+                    mode=s.mode,
+                    required_approver_count=s.required_approver_count,
+                    sla_hours=s.sla_hours,
+                )
+                for s in source_steps
+            ],
+        )
+        clone = await self.create_route(payload, created_by=created_by)
+        logger.info(
+            "Approval route cloned: source=%s clone=%s project=%s",
+            route_id,
+            clone.id,
+            project_id,
+        )
+        return clone
+
+    async def update_route(
+        self,
+        route_id: uuid.UUID,
+        payload: RouteUpdate,
+        *,
+        actor_id: uuid.UUID | None,
+    ) -> Route:
+        route = await self.get_route(route_id)
+        changed: dict[str, object] = {}
+        if payload.name is not None and payload.name != route.name:
+            changed["name"] = (route.name, payload.name)
+            route.name = payload.name
+        if payload.is_active is not None and payload.is_active != route.is_active:
+            changed["is_active"] = (route.is_active, payload.is_active)
+            route.is_active = payload.is_active
+
+        # Replace the step list when supplied. Deleting steps cascades to
+        # any StepState rows, so we refuse to touch the steps of a route
+        # that already has instances - the decision history would be lost.
+        if payload.steps is not None:
+            for step in payload.steps:
+                _validate_step_mode(step.mode)
+                _validate_step_quorum(step)
+            existing = await self.repo.list_instances(route_id=route_id, limit=1)
+            if existing:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=("Route has instances; its steps can no longer be edited. Create a new route instead."),
+                )
+            old_steps = await self.repo.list_steps(route_id)
+            await self.repo.delete_steps_for_route(route_id)
+            new_steps = [
+                Step(
+                    route_id=route.id,
+                    ordinal=s.ordinal,
+                    approver_role=s.approver_role,
+                    approver_user_id=s.approver_user_id,
+                    mode=s.mode,
+                    required_approver_count=s.required_approver_count,
+                    sla_hours=s.sla_hours,
+                )
+                for s in payload.steps
+            ]
+            await self.repo.add_steps_bulk(new_steps)
+            changed["step_count"] = (len(old_steps), len(new_steps))
+
+        if not changed:
+            return route
+        await self.session.flush()
+        # The UPDATE fires ``updated_at``'s server-side ``onupdate=func.now()``,
+        # which expires the attribute. Reload the scalar columns inside the
+        # async greenlet so the synchronous ``RouteResponse.model_validate``
+        # downstream doesn't trigger lazy IO (MissingGreenlet). Mirrors the
+        # refresh in ``submit_decision`` / ``cancel_instance``.
+        await self.session.refresh(route)
+        await log_activity(
+            self.session,
+            actor_id=actor_id,
+            entity_type="approval_route",
+            entity_id=str(route.id),
+            action="updated",
+            module="approval_routes",
+            metadata={k: {"from": v[0], "to": v[1]} for k, v in changed.items()},
+        )
+        return route
+
+    async def delete_route(
+        self,
+        route_id: uuid.UUID,
+        *,
+        actor_id: uuid.UUID | None,
+    ) -> None:
+        route = await self.get_route(route_id)
+        # Reject delete when any instance still references this route -
+        # the FK uses RESTRICT, so we surface a friendly 409 instead of
+        # letting the DB raise a raw IntegrityError.
+        existing = await self.repo.list_instances(route_id=route_id, limit=1)
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Route has active instances; deactivate it instead",
+            )
+        await self.repo.delete_route(route)
+        await log_activity(
+            self.session,
+            actor_id=actor_id,
+            entity_type="approval_route",
+            entity_id=str(route_id),
+            action="deleted",
+            module="approval_routes",
+        )
+
+    # ── Instances ─────────────────────────────────────────────────────
+
+    async def get_instance(self, instance_id: uuid.UUID) -> Instance:
+        row = await self.repo.get_instance(instance_id)
+        if row is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Approval instance not found",
+            )
+        return row
+
+    async def list_step_states(self, instance_id: uuid.UUID) -> list[StepState]:
+        return await self.repo.list_step_states(instance_id)
+
+    async def list_step_states_for_instances(
+        self,
+        instance_ids: list[uuid.UUID],
+    ) -> dict[uuid.UUID, list[StepState]]:
+        """Batched accessor - kills the per-instance N+1 in :get:`/instances`."""
+        return await self.repo.list_step_states_for_instances(instance_ids)
+
+    async def instance_timeline(self, instance_id: uuid.UUID) -> dict:
+        """Held-days / approval-timeline analytics for one instance.
+
+        Assembles the per-step held time, total cycle time and SLA breaches
+        from the instance timestamps, its route steps (for ordinal + SLA) and
+        the recorded decisions. Pure computation lives in
+        :func:`app.modules.approval_routes.timeline.compute_timeline`; this
+        method only loads the rows and maps step ids to ordinals.
+        """
+        instance = await self.get_instance(instance_id)
+        steps = await self.list_steps(instance.route_id)
+        states = await self.list_step_states(instance_id)
+
+        ordinal_by_step: dict[uuid.UUID, int] = {s.id: s.ordinal for s in steps}
+        sla_by_ordinal: dict[int, int | None] = {s.ordinal: s.sla_hours for s in steps}
+
+        # A step (one ordinal) may collect several decision rows when it needs
+        # multiple approvers; the step is "decided" at the last decision on it.
+        decided_by_ordinal: dict[int, datetime] = {}
+        for st in states:
+            if st.decided_at is None:
+                continue
+            ordinal = ordinal_by_step.get(st.step_id)
+            if ordinal is None:
+                continue
+            prev = decided_by_ordinal.get(ordinal)
+            if prev is None or st.decided_at > prev:
+                decided_by_ordinal[ordinal] = st.decided_at
+
+        decisions: list[tuple[int, datetime | None]] = [(s.ordinal, decided_by_ordinal.get(s.ordinal)) for s in steps]
+
+        timeline = compute_timeline(
+            status=instance.status,
+            started_at=instance.started_at,
+            completed_at=instance.completed_at,
+            reference=datetime.now(UTC),
+            decisions=decisions,
+            sla_hours_by_ordinal=sla_by_ordinal,
+        )
+        return timeline.as_dict()
+
+    async def project_analytics(
+        self,
+        *,
+        project_id: uuid.UUID,
+        target_kind: str | None = None,
+        days: int = 180,
+        started_after: datetime | None = None,
+        started_before: datetime | None = None,
+        cap: int = 5000,
+    ) -> ApprovalAnalyticsResponse:
+        """Aggregate a project's approval workflows into cycle-time analytics.
+
+        Reuses the per-instance assembly from :meth:`instance_timeline` (collapse
+        each ordinal to its latest decision) across every instance on the
+        project's own routes, then delegates the held-time maths to the pure
+        :mod:`app.modules.approval_routes.analytics` aggregate. No schema change -
+        every input already lives on Instance / Route / Step / StepState.
+        """
+        now = datetime.now(UTC)
+        # An explicit range wins over the rolling window; range_days then stays
+        # None so the response tells the UI which mode produced the numbers.
+        if started_after is None and started_before is None:
+            started_after = now - timedelta(days=days)
+            range_days: int | None = days
+        else:
+            range_days = None
+
+        # Only the project's OWN routes belong to its analytics (tenant-wide
+        # presets are excluded, matching the /instances drill-down in
+        # router.list_instances).
+        routes = await self.list_routes(
+            project_id=project_id,
+            target_kind=target_kind,
+            include_inactive=True,
+        )
+        own = [r for r in routes if r.project_id == project_id]
+        route_name = {r.id: r.name for r in own}
+        route_ids = list(route_name)
+
+        if not route_ids:
+            empty = analytics.aggregate([], reference=now)
+            return ApprovalAnalyticsResponse(
+                project_id=project_id,
+                generated_at=now,
+                range_days=range_days,
+                started_after=started_after,
+                started_before=started_before,
+                sample_size=0,
+                truncated=False,
+                kpis=AnalyticsKpis(**empty.kpis.as_dict()),
+                by_role=[],
+                by_step=[],
+                bottlenecks=[],
+            )
+
+        # Exact status counts - accurate even when the compute set below is
+        # capped, so the KPI headline never undercounts a busy project.
+        status_counts = await self.repo.count_instances_by_status_for_routes(
+            route_ids,
+            started_after=started_after,
+            started_before=started_before,
+        )
+
+        # Bounded compute set (cap + 1 so truncation is detectable).
+        instances = await self.repo.list_instances_for_routes(
+            route_ids,
+            started_after=started_after,
+            started_before=started_before,
+            limit=cap + 1,
+        )
+        truncated = len(instances) > cap
+        if truncated:
+            instances = instances[:cap]
+        sample_size = len(instances)
+
+        steps_by_route = await self.repo.list_steps_for_routes(route_ids)
+        states_by_instance = await self.repo.list_step_states_for_instances(
+            [i.id for i in instances],
+        )
+
+        inputs: list[analytics.InstanceInput] = []
+        for inst in instances:
+            steps = steps_by_route.get(inst.route_id, [])
+            ordinal_by_step = {s.id: s.ordinal for s in steps}
+            # A step (one ordinal) may collect several decision rows; it is
+            # "decided" at the latest one (mirrors instance_timeline).
+            decided_by_ordinal: dict[int, datetime] = {}
+            for st in states_by_instance.get(inst.id, []):
+                if st.decided_at is None:
+                    continue
+                ordinal = ordinal_by_step.get(st.step_id)
+                if ordinal is None:
+                    continue
+                prev = decided_by_ordinal.get(ordinal)
+                if prev is None or st.decided_at > prev:
+                    decided_by_ordinal[ordinal] = st.decided_at
+            inputs.append(
+                analytics.InstanceInput(
+                    instance_id=str(inst.id),
+                    route_id=str(inst.route_id),
+                    route_name=route_name.get(inst.route_id, ""),
+                    status=inst.status,
+                    started_at=inst.started_at,
+                    completed_at=inst.completed_at,
+                    current_step_ordinal=inst.current_step_ordinal,
+                    steps=tuple(analytics.StepMeta(s.ordinal, s.approver_role, s.sla_hours) for s in steps),
+                    decisions=tuple((s.ordinal, decided_by_ordinal.get(s.ordinal)) for s in steps),
+                ),
+            )
+
+        result = analytics.aggregate(inputs, reference=now)
+
+        # The five status counts come from the exact GROUP BY; every other KPI
+        # is compute-derived over the (bounded) sample.
+        kpis_dict = result.kpis.as_dict()
+        kpis_dict["total_instances"] = sum(status_counts.values())
+        kpis_dict["pending"] = status_counts.get("pending", 0)
+        kpis_dict["approved"] = status_counts.get("approved", 0)
+        kpis_dict["rejected"] = status_counts.get("rejected", 0)
+        kpis_dict["cancelled"] = status_counts.get("cancelled", 0)
+
+        return ApprovalAnalyticsResponse(
+            project_id=project_id,
+            generated_at=now,
+            range_days=range_days,
+            started_after=started_after,
+            started_before=started_before,
+            sample_size=sample_size,
+            truncated=truncated,
+            kpis=AnalyticsKpis(**kpis_dict),
+            by_role=[AnalyticsRoleStat(**r.as_dict()) for r in result.by_role],
+            by_step=[AnalyticsStepStat(**s.as_dict()) for s in result.by_step],
+            bottlenecks=[AnalyticsBottleneck(**b.as_dict()) for b in result.bottlenecks],
+        )
+
+    async def list_instances(
+        self,
+        *,
+        target_kind: str | None = None,
+        target_id: uuid.UUID | None = None,
+        route_id: uuid.UUID | None = None,
+        instance_status: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list[Instance]:
+        if target_kind is not None:
+            _validate_target_kind(target_kind)
+        if instance_status is not None and instance_status not in INSTANCE_STATUSES:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=f"Unknown status: {instance_status!r}",
+            )
+        return await self.repo.list_instances(
+            target_kind=target_kind,
+            target_id=target_id,
+            route_id=route_id,
+            status=instance_status,
+            limit=limit,
+            offset=offset,
+        )
+
+    async def start_instance(
+        self,
+        payload: InstanceCreate,
+        *,
+        started_by: uuid.UUID | None,
+    ) -> Instance:
+        """Start a new workflow against a concrete target row.
+
+        Re-using an active workflow on the same target is rejected (409)
+        so consumer modules cannot accidentally fork the chain. The
+        caller can cancel the existing instance first if they really
+        need to restart the workflow.
+        """
+        _validate_target_kind(payload.target_kind)
+
+        route = await self.get_route(payload.route_id)
+        if not route.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="Route is not active",
+            )
+        if route.target_kind != payload.target_kind:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=(f"Route target_kind {route.target_kind!r} does not match requested {payload.target_kind!r}"),
+            )
+
+        steps = await self.repo.list_steps(route.id)
+        if not steps:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="Route has no steps",
+            )
+
+        # Reject duplicate workflow on the same target row.
+        active = await self.repo.list_instances(
+            target_kind=payload.target_kind,
+            target_id=payload.target_id,
+            status="pending",
+            limit=1,
+        )
+        if active:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="An approval workflow is already pending on this target",
+            )
+
+        now = datetime.now(UTC)
+        instance = Instance(
+            route_id=route.id,
+            target_kind=payload.target_kind,
+            target_id=payload.target_id,
+            current_step_ordinal=1,
+            status="pending",
+            started_at=now,
+            completed_at=None,
+            started_by=started_by,
+        )
+        await self.repo.add_instance(instance)
+
+        await log_activity(
+            self.session,
+            actor_id=started_by,
+            entity_type="approval_instance",
+            entity_id=str(instance.id),
+            action="started",
+            to_status="pending",
+            module="approval_routes",
+            metadata={
+                "route_id": str(route.id),
+                "target_kind": payload.target_kind,
+                "target_id": str(payload.target_id),
+                "step_count": len(steps),
+            },
+        )
+        _safe_publish(
+            "approval_routes.instance.started",
+            {
+                "instance_id": str(instance.id),
+                "route_id": str(route.id),
+                "target_kind": payload.target_kind,
+                "target_id": str(payload.target_id),
+                "step_count": len(steps),
+                "status": "pending",
+            },
+        )
+        return instance
+
+    async def submit_decision(
+        self,
+        instance_id: uuid.UUID,
+        payload: DecisionSubmit,
+        *,
+        approver_id: uuid.UUID | None,
+        caller_role: str | None = None,
+    ) -> Instance:
+        """Record a decision on the current step + auto-advance.
+
+        Workflow:
+            1. Re-fetch the instance under ``with_for_update`` to serialise
+               two concurrent decisions at the DB level.
+            2. Reject when the instance is not pending OR the step does
+               not belong to the instance's route OR the step's ordinal
+               is not the current one.
+            3. Insert one :class:`StepState` row. The unique constraint
+               ``(instance_id, step_id, approver_user_id)`` blocks a
+               duplicate decision from the same approver on the same step.
+            4. If decision is ``rejected`` → finalise the instance as
+               ``rejected`` immediately.
+            5. If decision is ``approved`` → consult the step's mode:
+
+                ``all``       - needs every distinct approver_user_id on
+                                 the step to approve.
+                ``any``       - first approval advances.
+                ``majority``  - strict majority of approvers (>50%).
+
+               The step's "expected approver count" is derived from
+               distinct ``approver_user_id`` rows submitted so far when
+               the step is role-based (we cannot expand a role to its
+               members from the engine - that is a consumer concern;
+               the safe fallback is ``any``-style advance for roles).
+               When the step is user-pinned, the count is 1.
+
+            6. On advance, if there is no next step, complete the
+               instance as ``approved``. Otherwise bump
+               ``current_step_ordinal`` and stay pending.
+
+        Who may decide is resolved once, by :meth:`entitled_deciders`, and the
+        same answer drives both the 403 above and the step-cleared check below.
+        A reassignment or an out-of-office delegation therefore moves the right
+        to decide and the power to clear the step together, instead of handing
+        the step to a stand-in whose approval the engine would then ignore.
+        """
+        # Lock the instance row so two approvers can't race the
+        # advance/complete computation. ``nowait=False`` is the default -
+        # we wait for the lock, which is the right semantic for a UI
+        # click (the second clicker just sees the post-advance state).
+        # SQLite ignores SELECT...FOR UPDATE silently; for production
+        # Postgres this is the actual race guard.
+        instance = await self._lock_instance(instance_id)
+
+        if instance.status != "pending":
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Instance is {instance.status}, not pending",
+            )
+
+        step = await self.repo.get_step(payload.step_id)
+        if step is None or step.route_id != instance.route_id:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="Step does not belong to this instance's route",
+            )
+        if step.ordinal != instance.current_step_ordinal:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(f"Step ordinal {step.ordinal} is not the current step ({instance.current_step_ordinal})"),
+            )
+
+        now = datetime.now(UTC)
+
+        # Determine who may decide the current step. The resolved set is passed
+        # on to ``_maybe_advance`` so the rule that clears the step is the same
+        # one that just let this caller through: an approval this gate accepts
+        # must be an approval the advance check counts, or the instance sits
+        # pending with nobody left who is allowed to rescue it.
+        entitled = await self.entitled_deciders(instance, step, now=now)
+        if entitled is not None:
+            if approver_id not in entitled:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=(
+                        "Not the assigned approver for this step"
+                        if instance.current_assignee_user_id is not None
+                        else "Not the named approver for this step"
+                    ),
+                )
+        elif step.approver_role and not _caller_role_satisfies(caller_role, step.approver_role):
+            # Role-based step: the caller must actually hold the required role.
+            # Without this, anyone with the ``approval_routes.decide`` permission
+            # could clear a step pinned to a higher role (e.g. an editor signing
+            # off a "manager" gate). The caller role is translated through the
+            # permission hierarchy / aliases the same way other role-gated
+            # services resolve it.
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Caller role does not satisfy the approver role for this step",
+            )
+
+        state = StepState(
+            instance_id=instance.id,
+            step_id=step.id,
+            approver_user_id=approver_id,
+            decision=payload.decision,
+            comment=payload.comment,
+            decided_at=now,
+        )
+        try:
+            await self.repo.add_step_state(state)
+        except IntegrityError as exc:
+            await self.session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Decision already recorded for this approver on this step",
+            ) from exc
+
+        previous_status = instance.status
+        previous_ordinal = instance.current_step_ordinal
+
+        # Lifecycle events to fan out once the transition is durable. The
+        # payload snapshots enough context (target_kind + target_id) for a
+        # consumer subscriber to locate the row without re-querying us.
+        events_to_fire: list[tuple[str, dict[str, object]]] = []
+        base_event = {
+            "instance_id": str(instance.id),
+            "route_id": str(instance.route_id),
+            "target_kind": instance.target_kind,
+            "target_id": str(instance.target_id),
+            "decision": payload.decision,
+            "step_id": str(step.id),
+            "step_ordinal": step.ordinal,
+            # The deciding approver, so a consumer subscriber that drives a
+            # domain FSM off a terminal decision (submittals / rfi feature 06)
+            # can attribute the resulting status change to the right actor in
+            # its own audit trail instead of recording it as anonymous.
+            "decided_by": str(approver_id) if approver_id else None,
+            "comment": payload.comment,
+        }
+
+        if payload.decision == "rejected":
+            instance.status = "rejected"
+            instance.completed_at = now
+            # The assignee override is scoped to the step it was set on; the
+            # workflow is now terminal so clear it.
+            instance.current_assignee_user_id = None
+            events_to_fire.append(("approval_routes.instance.rejected", {**base_event, "status": "rejected"}))
+        else:
+            advanced = await self._maybe_advance(instance, step, entitled_deciders=entitled)
+            if advanced is None:
+                # Step still pending - need more approvals. The override (if
+                # any) still applies to this same step, so leave it in place.
+                pass
+            elif advanced is True:
+                # All steps cleared - the clearing step both advanced the
+                # cursor and finished the chain, so both events fire.
+                instance.status = "approved"
+                instance.completed_at = now
+                instance.current_assignee_user_id = None
+                events_to_fire.append(("approval_routes.instance.advanced", {**base_event, "status": "pending"}))
+                events_to_fire.append(("approval_routes.instance.completed", {**base_event, "status": "approved"}))
+            else:
+                # Move to next step - the next step starts with its own
+                # approver, so any per-step override is cleared.
+                instance.current_step_ordinal = step.ordinal + 1
+                instance.current_assignee_user_id = None
+                events_to_fire.append(("approval_routes.instance.advanced", {**base_event, "status": "pending"}))
+
+        await self.session.flush()
+        await self.session.refresh(instance)
+
+        await log_activity(
+            self.session,
+            actor_id=approver_id,
+            entity_type="approval_instance",
+            entity_id=str(instance.id),
+            action="decision",
+            from_status=previous_status,
+            to_status=instance.status,
+            reason=payload.comment,
+            module="approval_routes",
+            metadata={
+                "step_id": str(step.id),
+                "step_ordinal_before": previous_ordinal,
+                "step_ordinal_after": instance.current_step_ordinal,
+                "decision": payload.decision,
+                "target_kind": instance.target_kind,
+                "target_id": str(instance.target_id),
+            },
+        )
+        for event_name, event_data in events_to_fire:
+            _safe_publish(event_name, event_data)
+        return instance
+
+    async def cancel_instance(
+        self,
+        instance_id: uuid.UUID,
+        *,
+        actor_id: uuid.UUID | None,
+        reason: str | None = None,
+    ) -> Instance:
+        instance = await self._lock_instance(instance_id)
+        if instance.status != "pending":
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Instance is {instance.status}, cannot cancel",
+            )
+        previous_status = instance.status
+        instance.status = "cancelled"
+        instance.completed_at = datetime.now(UTC)
+        await self.session.flush()
+        await self.session.refresh(instance)
+
+        await log_activity(
+            self.session,
+            actor_id=actor_id,
+            entity_type="approval_instance",
+            entity_id=str(instance.id),
+            action="cancelled",
+            from_status=previous_status,
+            to_status="cancelled",
+            reason=reason,
+            module="approval_routes",
+            metadata={
+                "target_kind": instance.target_kind,
+                "target_id": str(instance.target_id),
+            },
+        )
+        _safe_publish(
+            "approval_routes.instance.cancelled",
+            {
+                "instance_id": str(instance.id),
+                "route_id": str(instance.route_id),
+                "target_kind": instance.target_kind,
+                "target_id": str(instance.target_id),
+                "reason": reason,
+                "status": "cancelled",
+            },
+        )
+        return instance
+
+    # ── Reassignment / delegation ─────────────────────────────────────
+
+    async def reassign_current_step(
+        self,
+        instance_id: uuid.UUID,
+        *,
+        to_user_id: uuid.UUID,
+        actor_id: uuid.UUID | None,
+        reason: str | None = None,
+    ) -> Instance:
+        """One-tap reassignment of the current step to another user.
+
+        Pins ``current_assignee_user_id`` so the chosen stand-in becomes the
+        sole eligible decider for the instance's current step, without editing
+        the shared route template. Notifies the new assignee and records an
+        ``approval.reassigned`` timeline event.
+
+        Because the hand-off names exactly one decider, a step that needs
+        several distinct approvals is refused rather than pinned: pinning it
+        would let one stand-in clear a gate the route author declared for
+        several, which is a quorum the template never granted.
+
+        Args:
+            instance_id: The pending instance to hand off.
+            to_user_id: The stand-in who becomes the sole eligible decider.
+            actor_id: Who performed the hand-off, for the audit row.
+            reason: Optional free-text reason, recorded on the audit row.
+
+        Returns:
+            The updated :class:`Instance`.
+
+        Raises:
+            HTTPException: 409 when the instance is not pending, 422 when the
+                current step needs more than one approval or the stand-in has
+                no access to the route's project.
+        """
+        instance = await self._lock_instance(instance_id)
+        if instance.status != "pending":
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Instance is {instance.status}, cannot reassign",
+            )
+
+        # A stand-in is one person, so a hand-off only makes sense for a step
+        # that one approval can clear. Pinning a gate that demands several
+        # distinct approvers would collapse its quorum to whoever was named,
+        # which is a weaker gate than the route author declared, so the
+        # reassignment is refused instead. The demanded count comes from
+        # ``simulate.min_approvals_to_clear`` - the same rule the dry run
+        # shows the author - rather than a second reading of mode and quorum
+        # here. An instance pointing at an ordinal with no step has nothing to
+        # judge and is left to the existing behaviour.
+        steps = await self.repo.list_steps(instance.route_id)
+        current_step = next((s for s in steps if s.ordinal == instance.current_step_ordinal), None)
+        needed = min_approvals_to_clear(current_step) if current_step is not None else 1
+        if needed > 1:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=(
+                    f"Step {instance.current_step_ordinal} needs {needed} approvals, so it "
+                    f"cannot be reassigned to a single stand-in"
+                ),
+            )
+
+        # The chosen stand-in must actually belong to the route's project, or the
+        # hand-off would pin a decider who can never legitimately see the target.
+        # A project-agnostic route (no project_id) has no membership to enforce,
+        # so it is skipped. Mirrors the owner / team-member / admin rule that
+        # ``verify_project_access`` applies to the caller, but applied here to the
+        # reassignment TARGET so a step cannot be reassigned outside the project.
+        route = await self.get_route(instance.route_id)
+        if route.project_id is not None and not await self._user_can_access_project(route.project_id, to_user_id):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="Assignee does not have access to this route's project",
+            )
+
+        previous = instance.current_assignee_user_id
+        instance.current_assignee_user_id = to_user_id
+        await self.session.flush()
+        await self.session.refresh(instance)
+
+        await log_activity(
+            self.session,
+            actor_id=actor_id,
+            entity_type="approval_instance",
+            entity_id=str(instance.id),
+            action="reassigned",
+            reason=reason,
+            module="approval_routes",
+            metadata={
+                "step_ordinal": instance.current_step_ordinal,
+                "from_assignee": str(previous) if previous else None,
+                "to_assignee": str(to_user_id),
+                "target_kind": instance.target_kind,
+                "target_id": str(instance.target_id),
+            },
+        )
+
+        # Notify the new assignee so the hand-off is actionable. Best-effort:
+        # a notification failure must never break the reassignment.
+        try:
+            from app.modules.notifications.service import NotificationService
+
+            await NotificationService(self.session).create(
+                user_id=to_user_id,
+                notification_type="approval_reassigned",
+                title_key="notifications.approval.reassigned.title",
+                entity_type="approval_instance",
+                entity_id=str(instance.id),
+                body_key="notifications.approval.reassigned.body",
+                body_context={
+                    "target_kind": instance.target_kind,
+                    "step_ordinal": instance.current_step_ordinal,
+                },
+                action_url=f"/approvals/{instance.id}",
+                metadata={"step_ordinal": instance.current_step_ordinal},
+            )
+        except Exception:  # pragma: no cover - defensive
+            logger.debug("approval reassignment notification skipped for %s", instance.id)
+
+        # Named ``approval.*`` with a project_id so the unified timeline records
+        # it (matches the SLA monitor's ``approval.overdue`` convention - the
+        # ``approval_routes.*`` lifecycle events are not on the timeline
+        # allowlist and carry no project id).
+        _safe_publish(
+            "approval.reassigned",
+            {
+                "id": str(instance.id),
+                "project_id": str(route.project_id) if route.project_id else None,
+                "target_kind": instance.target_kind,
+                "target_id": str(instance.target_id),
+                "step_ordinal": instance.current_step_ordinal,
+                "to_assignee": str(to_user_id),
+            },
+        )
+        return instance
+
+    async def get_delegation(self, delegation_id: uuid.UUID) -> Delegation:
+        row = await self.repo.get_delegation(delegation_id)
+        if row is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Delegation not found",
+            )
+        return row
+
+    async def create_delegation(
+        self,
+        *,
+        delegator_id: uuid.UUID,
+        delegate_id: uuid.UUID,
+        project_id: uuid.UUID | None,
+        starts_at: datetime | None,
+        ends_at: datetime | None,
+        reason: str | None,
+        created_by: uuid.UUID | None,
+    ) -> Delegation:
+        """Create an out-of-office hand-off of ``delegator_id``'s approvals."""
+        if delegator_id == delegate_id:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="Cannot delegate approvals to yourself",
+            )
+        delegation = Delegation(
+            delegator_user_id=delegator_id,
+            delegate_user_id=delegate_id,
+            project_id=project_id,
+            starts_at=starts_at,
+            ends_at=ends_at,
+            is_active=True,
+            reason=reason,
+            created_by=created_by,
+        )
+        try:
+            await self.repo.add_delegation(delegation)
+        except IntegrityError as exc:
+            await self.session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="Unknown delegate user or project",
+            ) from exc
+        await log_activity(
+            self.session,
+            actor_id=created_by,
+            entity_type="approval_delegation",
+            entity_id=str(delegation.id),
+            action="created",
+            module="approval_routes",
+            metadata={
+                "delegator_user_id": str(delegator_id),
+                "delegate_user_id": str(delegate_id),
+                "project_id": str(project_id) if project_id else None,
+            },
+        )
+        return delegation
+
+    async def list_delegations(
+        self,
+        *,
+        delegator_user_id: uuid.UUID | None = None,
+        delegate_user_id: uuid.UUID | None = None,
+        include_inactive: bool = False,
+    ) -> list[Delegation]:
+        return await self.repo.list_delegations(
+            delegator_user_id=delegator_user_id,
+            delegate_user_id=delegate_user_id,
+            include_inactive=include_inactive,
+        )
+
+    async def revoke_delegation(
+        self,
+        delegation_id: uuid.UUID,
+        *,
+        actor_id: uuid.UUID | None,
+    ) -> Delegation:
+        """Soft-revoke a delegation (keeps the row as history)."""
+        delegation = await self.get_delegation(delegation_id)
+        if not delegation.is_active:
+            return delegation
+        delegation.is_active = False
+        await self.session.flush()
+        await self.session.refresh(delegation)
+        await log_activity(
+            self.session,
+            actor_id=actor_id,
+            entity_type="approval_delegation",
+            entity_id=str(delegation.id),
+            action="revoked",
+            module="approval_routes",
+        )
+        return delegation
+
+    async def entitled_deciders(
+        self,
+        instance: Instance,
+        step: Step,
+        *,
+        now: datetime,
+    ) -> set[uuid.UUID] | None:
+        """Resolve who is allowed to decide ``step`` on ``instance`` right now.
+
+        This is the single definition of "who may decide this step". It is
+        consulted twice inside one decision: :meth:`submit_decision` rejects
+        anyone outside the returned set with a 403, and :meth:`_maybe_advance`
+        judges the step cleared from the very same set. Resolving it once per
+        request also keeps the two answers identical when a delegation window
+        would close between them.
+
+        The escalation reader asks the same question for a different purpose:
+        it keeps everyone in this set out of the escalation chain, because
+        handing a step to someone who may already decide it is not an
+        escalation. Who should be *told* about the step is a separate
+        question - a nudge must reach someone even where entitlement names
+        nobody - and is answered by :func:`step_holder`.
+
+        Args:
+            instance: The running instance. A non-null
+                ``current_assignee_user_id`` (a one-tap reassignment) outranks
+                the template.
+            step: The step being decided - already checked to be the current one.
+            now: Reference time used to resolve delegation windows.
+
+        Returns:
+            The set of user ids entitled to decide, or ``None`` when the step is
+            role-based with no runtime override. A role cannot be expanded to
+            its members here (that is a consumer concern), so entitlement in
+            that case is a role check on the caller rather than a user set.
+        """
+        override = instance.current_assignee_user_id
+        if override is not None:
+            # A one-tap reassignment pins a specific stand-in: they become the
+            # sole eligible decider for this instance's current step and the
+            # template's approver / role no longer applies here.
+            return {override}
+
+        if step.approver_user_id is not None:
+            # User-pinned step: the named approver, or their active
+            # out-of-office delegate, may decide. We resolve the delegation
+            # chain lazily so a hand-off created after the step became active
+            # still routes correctly, without storing a stale override.
+            delegations = await self.repo.list_active_delegations()
+            if not delegations:
+                return {step.approver_user_id}
+            route = await self.get_route(instance.route_id)
+            return delegation_engine.eligible_deciders(
+                step.approver_user_id,
+                delegation_views_from_rows(delegations),
+                now=now,
+                project_id=route.project_id,
+            )
+
+        return None
+
+    # ── Internal helpers ──────────────────────────────────────────────
+
+    async def _user_can_access_project(self, project_id: uuid.UUID, user_id: uuid.UUID) -> bool:
+        """Whether ``user_id`` may access ``project_id`` (owner / member / admin).
+
+        The boolean companion to :func:`app.dependencies.verify_project_access`,
+        applying the same access rule (an admin reaches any project; otherwise the
+        user must own it or be a team member) so the reassignment target is held
+        to the exact policy the caller's own guard uses. Any lookup failure fails
+        closed (returns ``False``) rather than widening access.
+        """
+        from app.modules.projects.repository import ProjectRepository
+        from app.modules.teams.access import is_project_member
+        from app.modules.users.repository import UserRepository
+
+        try:
+            project = await ProjectRepository(self.session).get_by_id(project_id)
+        except Exception:  # noqa: BLE001 - a lookup failure must not widen access
+            return False
+        if project is None:
+            return False
+
+        if str(getattr(project, "owner_id", "")) == str(user_id):
+            return True
+
+        try:
+            user = await UserRepository(self.session).get_by_id(user_id)
+            if user is not None and getattr(user, "role", "") == "admin":
+                return True
+        except Exception:  # noqa: BLE001 - admin lookup failure falls through
+            logger.debug("admin-role lookup failed during reassign target check")
+
+        return await is_project_member(self.session, project_id, user_id)
+
+    async def _lock_instance(self, instance_id: uuid.UUID) -> Instance:
+        """Re-fetch the instance with a row lock.
+
+        SQLite silently drops ``FOR UPDATE`` so this is a true lock only
+        on Postgres; the application-level guard (status + ordinal check)
+        is the SQLite-safe fallback.
+        """
+        stmt = select(Instance).where(Instance.id == instance_id).with_for_update()
+        result = await self.session.execute(stmt)
+        row = result.scalar_one_or_none()
+        if row is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Approval instance not found",
+            )
+        return row
+
+    async def _maybe_advance(
+        self,
+        instance: Instance,
+        step: Step,
+        *,
+        entitled_deciders: set[uuid.UUID] | None,
+    ) -> bool | None:
+        """Decide whether the current step is cleared.
+
+        Args:
+            instance: The instance whose current step was just decided.
+            step: The decided step.
+            entitled_deciders: Who was allowed to decide this step, as resolved
+                by :meth:`entitled_deciders` for this same request, or ``None``
+                for a role-based step with no runtime override.
+
+        Returns:
+            ``True``  - every step has been cleared; complete the instance.
+            ``False`` - current step cleared; bump to the next step.
+            ``None``  - current step not yet cleared; stay put.
+        """
+        states = await self.repo.list_step_states_for_step(
+            instance_id=instance.id,
+            step_id=step.id,
+        )
+        # Tally the decisive rows once, then defer the advance rule to
+        # ``simulate.step_cleared`` - the single source of truth shared with
+        # the dry-run simulator so the running engine and the preview can
+        # never disagree.
+        #
+        # Role semantics (the engine does not expand roles to members - that
+        # is the consumer module's job) are driven by ``mode``:
+        #   any      - first approval advances
+        #   all      - every eligible approver approves, no rejection rows
+        #   majority - > 50% of the eligible approvers approved, no rejections
+        # When the author declares the eligible population on the step
+        # (``required_approver_count``) it is evaluated against that. Without
+        # it, ``all`` / ``majority`` require more than one distinct approver as
+        # the safe, non-deadlocking fallback, so the first approver cannot
+        # close a gate that was meant to require several.
+        approvals = [s for s in states if s.decision == "approved"]
+        approver_ids: set[uuid.UUID | None] = {s.approver_user_id for s in approvals}
+        rejections = [s for s in states if s.decision == "rejected"]
+        total_acted = len([s for s in states if s.decision != "pending"])
+        # ``user_pinned`` here means "this step has a concrete set of eligible
+        # deciders", which is what ``step_cleared`` tests - not "the template
+        # names a user". A reassignment or an out-of-office delegation moves
+        # that set off the template's ``approver_user_id`` at runtime, and the
+        # simulator, which only ever sees a template, has no such set. Reading
+        # the template column here instead of the entitled set is what left a
+        # reassigned step unclearable: the stand-in's approval was accepted and
+        # then ignored, while the named approver was already locked out by the
+        # 403 above.
+        entitled: set[uuid.UUID] = entitled_deciders or set()
+        cleared = step_cleared(
+            mode=step.mode,
+            user_pinned=entitled_deciders is not None,
+            pinned_user_approved=bool(entitled & approver_ids),
+            approvals=len(approvals),
+            distinct_approvers=len(approver_ids),
+            rejections=len(rejections),
+            total_acted=total_acted,
+            quorum=step.required_approver_count,
+        )
+
+        if not cleared:
+            return None
+
+        # Check whether there is a next step.
+        steps = await self.repo.list_steps(instance.route_id)
+        next_ordinal = step.ordinal + 1
+        has_next = any(s.ordinal == next_ordinal for s in steps)
+        return not has_next  # True == finished, False == has next step
+
+
+def _group_step_states_by_step(
+    states: list[StepState],
+) -> dict[uuid.UUID, list[StepState]]:
+    """Helper for tests / debugging - group state rows by their step."""
+    grouped: dict[uuid.UUID, list[StepState]] = defaultdict(list)
+    for s in states:
+        grouped[s.step_id].append(s)
+    return dict(grouped)
