@@ -23,3 +23,6 @@
   from the last VM update to the current local-7200 state; a new DB bake is
   owed whenever seed/db/corpus or related logic changed; updates run only
   from `c:\lab\oneidiottwoidiots` and never depend on `c:\lab\idiot`.
+- `DB_SOURCES.md`: added the **PR/commit ledger** — every change touching DB
+  sources/corpus/pricing logic must be listed with what it fixed and what it
+  ships; unlisted work does not count as landed.

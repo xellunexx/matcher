@@ -300,6 +300,20 @@ A query-code row (`KSO 1.1` → `KSO 1.1`) is an anchor only — never spent as 
   way depend on anything under `c:\lab\idiot`: not its venv, not its paths,
   not its gits, not its db.
 
+## PR/commit ledger — what each change fixed and ships (MANDATORY)
+
+Every PR or commit that touches DB sources, the corpus, seeds, pricing
+logic, or the tooling around them MUST be listed here with **what it
+fixed** and **what it ships**. If a change isn't on this list, it isn't
+done — the ledger plus `CHANGELOG.md` entry plus the PR body are the
+definition of landed work.
+
+| PR / commit | Fixed | Ships |
+|---|---|---|
+| [PR #2](https://github.com/xellunexx/matcher/pull/2) | No runbook existed for processing DB sources (the 12 GB heap had no defined flow); no CHANGELOG.md at all; no consensus-pool tooling; no "VM update" definition. | `DB_SOURCES.md` (6-stage pipeline, gates, SEK/KSO schemes, hooked consensus, 2026 medians, vocab-training mandate, VM-update definition, this ledger); `tools/build_consensus_pools.py` (deterministic norm-pool crawler, verified: 69 sek pools / 176 hooked lines / 4,020 unhooked / 0 skipped on 30111+40111); `CHANGELOG.md`. |
+
+Append new rows at the top of this table, one per PR/commit.
+
 ## Big-heap rules (12 GB class)
 
 - Heap → `rows.jsonl` → seed JSON. Never heap → DB directly.
