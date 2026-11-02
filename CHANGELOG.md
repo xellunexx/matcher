@@ -19,3 +19,7 @@
   dated/undated line counts, unhooked analyses (no `Шифър`), and a drop log.
   Verified on 30111.xlsx + 40111.xlsx: 69 sek pools / 176 hooked lines /
   4,020 unhooked analyses / 0 silently skipped sheets.
+- `DB_SOURCES.md`: added the **"VM update" definition** — the full code diff
+  from the last VM update to the current local-7200 state; a new DB bake is
+  owed whenever seed/db/corpus or related logic changed; updates run only
+  from `c:\lab\oneidiottwoidiots` and never depend on `c:\lab\idiot`.
