@@ -287,6 +287,19 @@ A query-code row (`KSO 1.1` → `KSO 1.1`) is an anchor only — never spent as 
 
 ---
 
+## "VM update" — what it means and when a DB re-bake is owed
+
+- **A VM update = the full code diff from the last VM update until the current
+  local 7200 code state.** Every diff since the last update is reviewed against
+  what now runs at `127.0.0.1:7200`.
+- **It means a new DB bake** whenever the local 7200 seed/db/corpus — or any
+  logic in that regard — was changed/updated since the last update. Seed,
+  corpus, source ingestion, consensus pools: changed → re-bake.
+- **It happens ONLY from `c:\lab\oneidiottwoidiots`** — the venv, paths, gits
+  and DB in that directory are the environment. A VM update does not in any
+  way depend on anything under `c:\lab\idiot`: not its venv, not its paths,
+  not its gits, not its db.
+
 ## Big-heap rules (12 GB class)
 
 - Heap → `rows.jsonl` → seed JSON. Never heap → DB directly.
